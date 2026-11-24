@@ -24,6 +24,8 @@ const MONTHLY_WORDS = ['rent', 'kiraya', 'bijli', 'electricity', 'emi', 'sip', '
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const FILLER = ['rs', 'rs.', '₹', 'rupay', 'rupaye', 'rupees', 'ka', 'ki', 'ke', 'ko', 'pe', 'par', 'on', 'by', 'for', 'tak', 'se'];
 const DATE_WORDS = ['tareekh', 'tarikh', 'tarik', 'date'];
+const UNIT_WORDS = ['month', 'months', 'mahine', 'mahina', 'day', 'days', 'din', 'year', 'years', 'saal', 'week', 'weeks', 'hour', 'hours', 'hrs', 'min', 'mins', 'minutes', 'baje', 'am', 'pm', 'kg', 'g', 'gm', 'km', 'l', 'litre', 'litres', 'pcs', 'pieces', 'items', 'people', 'log', 'times', 'baar', '%', 'percent'];
+const SCALE_WORDS: Record<string, number> = { k: 1e3, thousand: 1e3, hazaar: 1e3, hazar: 1e3, lakh: 1e5, lac: 1e5, lakhs: 1e5, cr: 1e7, crore: 1e7, crores: 1e7 };
 
 const CATEGORY_MAP: [string, string[]][] = [
   ['Food', ['khana', 'chai', 'lunch', 'dinner', 'breakfast', 'swiggy', 'zomato', 'restaurant', 'cafe', 'coffee']],
@@ -77,6 +79,7 @@ export function parseAmountToken(tok: string): number | null {
 export function parse(text: string, ref: Date = today()): Parsed {
   const toks = text.trim().split(/\s+/).filter(Boolean);
   let amount: number | null = null;
+  let amountMarked = false;
   let date: Date | null = null;
   const words: string[] = [];
 
@@ -104,8 +107,20 @@ export function parse(text: string, ref: Date = today()): Parsed {
       date = dayToDate(+m[1], +m[2] - 1, ref);
       continue;
     }
-    const amt = parseAmountToken(raw);
-    if (amt !== null && amount === null) { amount = amt; continue; }
+    let amt = parseAmountToken(raw);
+    if (amt !== null) {
+      const marked = /^(₹|rs)/i.test(raw);
+      // "12 months", "3 days", "2 kg" are counts, not money.
+      if (!marked && UNIT_WORDS.includes(nx)) { words.push(raw); continue; }
+      // "₹1 lakh", "5 hazaar", "2 cr" — amount followed by a scale word.
+      const scale = SCALE_WORDS[nx];
+      if (scale && /^\D*\d+(\.\d+)?$/.test(t)) { amt *= scale; i++; }
+      // A ₹-marked amount wins over an earlier bare number.
+      if (amount === null || (marked && !amountMarked)) {
+        amount = amt; amountMarked = marked;
+        continue;
+      }
+    }
     if (FILLER.includes(t)) continue;
     words.push(raw);
   }
@@ -155,6 +170,9 @@ export function detectChips(text: string, ref: Date = today()): SmartChip[] {
     if (!hasAmt && !hasDate) continue;
     const p = parse(l.replace(/,(?=\d{3})/g, ''), ref);
     if (p.amount === null && p.date === null) continue;
+    // Money without a date only becomes a chip on short list-like lines ("chai 40"),
+    // not inside long sentences that merely mention a number.
+    if (p.date === null && l.split(/\s+/).length > 6) continue;
     const suggest = p.amount !== null && p.date !== null ? 'bill' : p.amount !== null ? 'expense' : 'task';
     out.push({ match: l, amount: p.amount, date: p.date, suggest });
   }

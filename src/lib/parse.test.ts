@@ -162,3 +162,28 @@ describe('lineAmount — self-totalling lists', () => {
     expect(lineAmount('Shoes ₹1999')).toBe(1999);
   });
 });
+
+describe('numbers that are not money', () => {
+  it('"12 months" is a count, not ₹12', () => {
+    expect(parse('Get all 12 months signed', REF).amount).toBeNull();
+  });
+  it('"₹1 lakh" reads the scale word', () => {
+    expect(parse('rent above ₹1 lakh', REF).amount).toBe(100000);
+  });
+  it('"5 hazaar" reads the scale word', () => {
+    expect(parse('shaadi gift 5 hazaar', REF).amount).toBe(5000);
+  });
+  it('a ₹-marked amount wins over an earlier bare number', () => {
+    expect(parse('2 shirts ₹1,200', REF).amount).toBe(1200);
+  });
+  it('no money chip inside a long sentence without a date', () => {
+    const body = 'Needed for the HRA claim. Get all 12 months signed, with his PAN if rent is above ₹1 lakh a year.';
+    expect(detectChips(body, REF)).toEqual([]);
+  });
+  it('short list lines still get an expense chip', () => {
+    expect(detectChips('chai 40', REF)[0]).toMatchObject({ amount: 40, suggest: 'expense' });
+  });
+  it('the plumber line still becomes a bill chip', () => {
+    expect(detectChips('Pay plumber 1500 on 12th', REF)[0]).toMatchObject({ amount: 1500, date: '2026-12-12', suggest: 'bill' });
+  });
+});
