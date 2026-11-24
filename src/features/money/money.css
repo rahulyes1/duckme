@@ -1,0 +1,124 @@
+/* Money screen + entry editor. Tokens only; both themes come from :root tokens. */
+
+/* ---------- top bar ---------- */
+.money-add { position: relative; }
+.money-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: var(--z-fab); min-width: 200px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-3); padding: 6px; display: grid; gap: 4px; transform-origin: top right; }
+.money-menu-item { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; border: 0; border-radius: var(--r-sm);
+  background: transparent; font-weight: 600; font-size: 16px; text-align: left; }
+.money-menu-item:hover, .money-menu-item:focus-visible { background: var(--surface-2); }
+
+.money-month { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.money-month .icon-btn:disabled { opacity: .35; cursor: not-allowed; }
+.money-month-name { font-family: var(--f-display); font-weight: 600; font-size: 18px; min-width: 150px; text-align: center; font-variant-numeric: tabular-nums; }
+.money-this { margin-left: auto; }
+
+/* ---------- layout ---------- */
+.money-layout { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); padding-top: 4px; }
+@media (min-width: 900px) {
+  .money-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .money-summary, .money-split, .money-wide { grid-column: 1 / -1; }
+}
+.money-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow-1); min-width: 0; }
+.money-h { font-family: var(--f-display); font-size: 18px; font-weight: 600; margin: 0 0 10px; }
+.money-h .money-muted { font-family: var(--f-body); font-size: 14px; font-weight: 500; margin-left: 6px; }
+.money-h-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.money-h-row .money-h { margin: 0; }
+.money-muted { color: var(--muted); font-size: 14px; margin: 6px 0; }
+.money-total { font-weight: 700; }
+.money-k { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--muted); }
+.money-sk { display: block; font-size: 13px; color: var(--muted); }
+.money-mid { display: block; font-family: var(--f-display); font-size: 24px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.money-note { font-size: 13px; color: var(--muted); margin: 14px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.money-empty-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+/* summary: deep teal strip, as in the mockup */
+.money-summary { background: var(--strip); color: var(--strip-ink); border-radius: var(--r-lg); padding: 18px; display: grid; gap: 16px; }
+.money-summary .money-k, .money-summary .money-sk { color: var(--strip-muted); }
+.money-big { display: block; font-family: var(--f-display); font-size: 40px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin: 4px 0; }
+.money-vs { font-size: 15px; color: var(--strip-ink); }
+.money-sum-side { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.money-sum-side > div + div { border-left: 1px solid color-mix(in srgb, var(--strip-ink) 15%, transparent); padding-left: 14px; }
+@media (min-width: 700px) { .money-summary { grid-template-columns: 1.2fr 1fr; align-items: center; } }
+
+/* salary split */
+.money-split-cols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .money-split-cols { grid-template-columns: 1fr 1fr; } .money-split-cols > div + div { border-left: 1px solid var(--line); padding-left: 16px; } }
+
+/* ---------- lists ---------- */
+.money-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.money-mini { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left;
+  padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--c, transparent); transition: transform .12s var(--ease-out); }
+.money-mini:active { transform: scale(.99); }
+.money-mini:hover { border-color: color-mix(in srgb, var(--ink) 25%, transparent); }
+.money-mini-text { display: grid; min-width: 0; }
+.money-row-title { font-weight: 600; font-size: 16px; overflow-wrap: anywhere; display: inline-flex; align-items: center; gap: 6px; }
+.money-sub { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.money-row-amt { font-weight: 700; white-space: nowrap; flex: none; }
+
+.money-row.money-bill { display: flex; align-items: stretch; gap: 8px; border-radius: var(--r-md); background: var(--c, var(--surface)); border: 1px solid var(--card-line); padding: 4px; }
+.money-row-main { flex: 1; min-width: 0; border: 0; background: transparent; text-align: left; padding: 8px; border-radius: var(--r-sm); display: grid; gap: 6px; }
+.money-row-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.money-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.money-paid { align-self: center; flex: none; min-width: 84px; margin-right: 4px; }
+
+/* ---------- categories ---------- */
+.money-cats { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.money-cat-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.money-cat-name { font-weight: 600; }
+.money-bar { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; margin-top: 6px; }
+.money-bar i { display: block; height: 100%; background: var(--accent); border-radius: inherit; transform-origin: left center; transition: transform .3s var(--ease-out); }
+.money-bar.thin { height: 6px; margin-top: 0; flex: 0 0 80px; }
+.money-bar.thin i { background: var(--ok); }
+.money-budget { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 13px; color: var(--muted); }
+.money-budget span { display: inline-flex; align-items: center; gap: 4px; }
+.money-budget.over { color: var(--warn); font-weight: 600; }
+.money-budget.over .money-bar.thin i { background: var(--warn); }
+
+.money-budget-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.money-sheet-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; position: sticky; bottom: 0; background: var(--surface); padding-top: 8px; }
+.money-rupee-input { position: relative; }
+.money-rupee-input > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 600; pointer-events: none; }
+.money-rupee-input .input { padding-left: 32px; }
+
+/* ---------- investments ---------- */
+.money-inv-tot { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 6px; }
+.money-kind .sec-label, .money-vault .sec-label { margin: 14px 2px 4px; display: flex; align-items: center; gap: 6px; }
+
+/* ---------- trend chart ---------- */
+.money-trend { margin: 0; }
+.money-trend svg { width: 100%; height: auto; display: block; overflow: visible; }
+.money-grid { stroke: var(--line); stroke-width: 1; }
+.money-tbar { fill: color-mix(in srgb, var(--accent) 40%, transparent); }
+.money-tbar.cur { fill: var(--accent); }
+.money-tval { fill: var(--ink); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--f-body); }
+.money-tlab { fill: var(--muted); font-size: 11px; font-family: var(--f-body); }
+.money-tlab.cur { fill: var(--ink); font-weight: 700; }
+.money-trend figcaption b { color: var(--ink); }
+
+/* ---------- recent ---------- */
+.money-day + .money-day { margin-top: 12px; }
+.money-day-h { display: flex; justify-content: space-between; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin: 8px 4px 0; }
+
+/* ---------- editor ---------- */
+.money-editor-kind { flex: 1; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: color-mix(in srgb, var(--ink) 70%, transparent); padding-left: 4px; }
+.money-editor-actions { display: flex; gap: 8px; }
+.money-form { max-width: 640px; margin: 8px auto 0; display: grid; gap: 18px; }
+.money-amount .money-rupee-input > span { font-family: var(--f-display); font-size: 32px; color: var(--ink); left: 16px; }
+.money-amount .input { font-family: var(--f-display); font-size: 36px; font-weight: 700; min-height: 72px; padding-left: 46px; letter-spacing: -.01em;
+  background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.money-form .input, .money-form .textarea { background: color-mix(in srgb, var(--surface) 80%, transparent); }
+.money-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.money-chips .chip { min-height: 44px; color: var(--ink); }
+.money-chips .chip[aria-pressed="true"] { color: var(--bg); }
+.money-switches { display: grid; gap: 8px; }
+.money-switches .switch { text-align: left; }
+.money-readout { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -8px; }
+.money-markpaid { min-height: 52px; font-size: 16px; }
+.money-more { display: grid; gap: 8px; }
+.money-more .btn { justify-content: flex-start; }
+.money-linked .sec-label { display: flex; align-items: center; gap: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .money-bar i, .money-mini { transition: none; }
+}

@@ -1,0 +1,154 @@
+import { Bell, CheckSquare, IndianRupee, Lock, Pin, Receipt, StickyNote, TrendingUp } from 'lucide-react';
+import type { Card, Settings } from '../lib/types';
+import { KIND_LABEL, HORIZON_LABEL } from '../lib/types';
+import { addDaysISO, daysLeft, dueLabel, dueTone, fmtDate, fmtDateY, inr, salarySide } from '../lib/format';
+import { lineAmount } from '../lib/parse';
+
+export const TYPE_ICON = {
+  note: StickyNote, task: CheckSquare, bill: Receipt, expense: IndianRupee, invest: TrendingUp,
+} as const;
+
+function Ring({ due }: { due: string }) {
+  const n = daysLeft(due), r = 11, C = 2 * Math.PI * r;
+  const frac = Math.max(0, Math.min(1, n / 30));
+  const tone = dueTone(due);
+  return (
+    <svg className={`ring ${tone}`} width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+      <circle className="bg" cx="14" cy="14" r={r} />
+      <circle className="fg" cx="14" cy="14" r={r} strokeDasharray={C} strokeDashoffset={C * (1 - frac)} />
+      <text x="14" y="17.3" textAnchor="middle">{Math.max(n, 0)}</text>
+    </svg>
+  );
+}
+
+export function Spark({ points }: { points: number[] }) {
+  if (points.length < 2) return null;
+  const mn = Math.min(...points), mx = Math.max(...points);
+  const xy = points.map((p, i) => [(i / (points.length - 1)) * 100, 26 - ((p - mn) / (mx - mn || 1)) * 22]);
+  const line = xy.map(p => p.join(',')).join(' ');
+  return (
+    <svg className="spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+      <polygon className="a" points={`0,28 ${line} 100,28`} />
+      <polyline className="l" points={line} />
+    </svg>
+  );
+}
+
+export function DuePill({ due }: { due: string }) {
+  const tone = dueTone(due);
+  return <span className={`pill ${tone === 'normal' ? '' : tone}`}>{dueLabel(due)}</span>;
+}
+
+/** Sum of ₹ amounts in a checklist (self-totalling lists). */
+export function checklistTotal(c: Card): { total: number; open: number } | null {
+  if (!c.checklist?.length) return null;
+  let total = 0, open = 0, found = false;
+  for (const i of c.checklist) {
+    const a = lineAmount(i.text);
+    if (a !== null) { found = true; total += a; if (!i.done) open += a; }
+  }
+  return found ? { total, open } : null;
+}
+
+interface Props {
+  card: Card;
+  settings: Settings;
+  /** Locked and not yet unlocked in this session. */
+  hidden?: boolean;
+  onOpen?: (el: HTMLElement) => void;
+  /** Extra class names (e.g. 'newpop'). */
+  className?: string;
+}
+
+/** The one card look used by Home and Notes grids. Pure display; wrap it for swipe. */
+export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: Props) {
+  const Icon = TYPE_ICON[c.type];
+  const kind = c.type === 'invest' && c.invest ? c.invest.kind : KIND_LABEL[c.type];
+  const hasRing = c.type === 'bill' && !!c.due && c.status === 'open';
+  const pills: JSX.Element[] = [];
+
+  if (c.type === 'bill' && c.due) {
+    pills.push(<DuePill key="d" due={c.due} />);
+    pills.push(<span key="s" className="pill hint">{salarySide(c.due, settings.salaryDay) === 'before' ? 'Before salary' : 'After salary'}</span>);
+    if (c.lastSafe) pills.push(<span key="l" className="pill outline hint">Last safe day {fmtDate(addDaysISO(c.due, 3))}</span>);
+  }
+  if (c.autorenew) pills.push(<span key="a" className="pill solid">Auto-renews</span>);
+  if (c.type === 'task') {
+    if (c.horizon !== 'none') pills.push(<span key="h" className="pill solid">{HORIZON_LABEL[c.horizon]}</span>);
+    if (c.due) pills.push(<DuePill key="d" due={c.due} />);
+  }
+  if (c.penalty && (c.type === 'bill' || c.type === 'task')) pills.push(<span key="p" className="pill pen hint">{c.penalty}</span>);
+  if (c.reminder) pills.push(<span key="r" className="pill outline"><Bell size={11} aria-hidden="true" />{fmtDate(c.reminder.slice(0, 10))} {c.reminder.slice(11, 16)}</span>);
+
+  const total = checklistTotal(c);
+  const items = c.checklist ?? [];
+  const shownItems = [...items.filter(i => !i.done), ...items.filter(i => i.done)].slice(0, 6);
+
+  return (
+    <button
+      type="button"
+      className={`tile ${hasRing ? 'has-ring' : ''} ${className}`}
+      data-color={c.color}
+      data-id={c.id}
+      aria-label={`${KIND_LABEL[c.type]}: ${hidden ? 'locked note' : c.title || 'Untitled'}`}
+      onClick={e => onOpen?.(e.currentTarget)}
+    >
+      {hasRing && <Ring due={c.due!} />}
+      <div className="k">
+        <Icon size={12} strokeWidth={2.4} aria-hidden="true" />
+        <span>{kind}</span>
+        {c.pinned && <Pin size={11} aria-label="Pinned" />}
+        {c.locked && <Lock size={11} aria-label="Locked" />}
+      </div>
+
+      {hidden ? (
+        <>
+          {c.title && <div className="t">{c.title}</div>}
+          <div className="locked"><Lock size={16} aria-hidden="true" /> Locked. Tap to unlock.</div>
+        </>
+      ) : (
+        <>
+          {!!c.images?.length && c.type === 'note' && (
+            <div className="thumbs" style={c.images.length === 1 ? { gridTemplateColumns: '1fr' } : undefined}>
+              {c.images.slice(0, 2).map((src, i) => <img key={i} src={src} alt="" />)}
+            </div>
+          )}
+          {c.title && <div className="t">{c.title}</div>}
+
+          {(c.type === 'note' || c.type === 'task') && c.body && <div className="body">{c.body}</div>}
+          {!!items.length && (
+            <ul className="check">
+              {shownItems.map(i => <li key={i.id} className={i.done ? 'on' : ''}><i />{i.text}</li>)}
+              {items.length > 6 && <li className="more">+{items.length - 6} more</li>}
+            </ul>
+          )}
+          {total && <div className="total">Total {inr(total.total)}{total.open !== total.total ? ` · ${inr(total.open)} left` : ''}</div>}
+
+          {c.type === 'bill' && <div className="amt">{c.amount ? inr(c.amount) : <small>Add amount</small>}</div>}
+          {c.type === 'expense' && (
+            <>
+              <div className="amt">{inr(c.amount)}</div>
+              <div className="meta">{c.category ?? 'Other'} · {c.mode ?? 'UPI'}{c.date ? ` · ${fmtDate(c.date)}` : ''}</div>
+            </>
+          )}
+          {c.type === 'invest' && c.invest && (
+            c.invest.kind === 'SIP' || c.invest.kind === 'RD' ? (
+              <>
+                <div className="amt">{inr(c.invest.value ?? c.amount)} <small>value</small></div>
+                <div className="meta">{inr(c.amount)}/month{c.invest.next ? ` · next ${fmtDate(c.invest.next)}` : ''}</div>
+              </>
+            ) : (
+              <>
+                <div className="amt">{inr(c.invest.value ?? c.amount)}</div>
+                <div className="meta">{c.invest.maturity ? `Matures ${fmtDateY(c.invest.maturity)}` : `Invested ${inr(c.amount)}`}</div>
+              </>
+            )
+          )}
+        </>
+      )}
+
+      {!!pills.length && <div className="pills">{pills}</div>}
+      {!!c.labels.length && !hidden && <div className="labels">{c.labels.map(l => <span key={l} className="pill outline">{l}</span>)}</div>}
+    </button>
+  );
+}

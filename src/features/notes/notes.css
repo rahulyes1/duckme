@@ -1,0 +1,150 @@
+/* Notes feature. Tokens only (see styles.css); works in light and dark. */
+
+/* ---------- screen ---------- */
+.notes-top-tools { margin-left: auto; display: flex; gap: 8px; }
+.notes-search-row { margin-top: 8px; }
+.notes-search-row .search { padding-right: 0; }
+.notes-clear { width: 44px; height: 44px; }
+.notes-chips { margin-top: 10px; }
+.notes-chips .chip { min-height: 44px; }
+
+.notes-colors { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+.notes-swatch-btn { width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; display: grid; place-items: center; padding: 0; }
+.notes-swatch { width: 30px; height: 30px; border-radius: 50%; background: var(--c); border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+.notes-swatch-btn[aria-pressed="true"] .notes-swatch { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.notes-swatch-any { width: auto; padding: 0 14px; border: 1px solid var(--line); font-size: 14px; font-weight: 600; color: var(--muted); }
+.notes-swatch-any[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.notes-take { display: flex; align-items: center; gap: 8px; max-width: 640px; margin: 8px auto 12px; padding-right: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-1); }
+.notes-take-main { flex: 1; min-width: 0; min-height: 52px; padding: 0 16px; border: 0; background: transparent; text-align: left;
+  font-size: 16px; font-weight: 500; color: var(--muted); border-radius: 16px; }
+.notes-take-main:hover { color: var(--ink); }
+
+.notes-list { display: grid; gap: 10px; max-width: 680px; margin: 0 auto; }
+
+.notes-trash-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 12px 0 4px; }
+.notes-trash-bar p { margin: 0; color: var(--muted); font-size: 15px; }
+.notes-confirm { margin: 8px 0 12px; padding: 14px 16px; border-radius: var(--r-md); background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); }
+.notes-confirm p { margin: 0 0 10px; }
+.notes-confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.notes-trash-item { display: grid; gap: 6px; }
+.notes-trash-meta { font-size: 13px; color: var(--muted); padding: 0 4px; }
+.notes-trash-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.notes-trash-actions .btn { flex: 1 1 auto; padding: 0 12px; font-size: 14px; }
+
+/* ---------- editor ---------- */
+.notes-tools { display: flex; gap: 8px; }
+.notes-title, .notes-body { display: block; width: 100%; border: 0; background: transparent; color: var(--ink); resize: none; overflow: hidden; padding: 6px 0; }
+.notes-title { font-family: var(--f-display); font-size: 24px; font-weight: 600; line-height: 1.3; margin-top: 4px; }
+.notes-body { font-size: 17px; line-height: 1.6; min-height: 160px; }
+.notes-title::placeholder, .notes-body::placeholder, .notes-item-text::placeholder { color: var(--muted); opacity: 1; }
+.notes-title:focus-visible, .notes-body:focus-visible, .notes-item-text:focus-visible { outline: none; box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 70%, transparent); border-radius: 0; }
+.notes-title, .notes-body, .notes-item-text { overflow-wrap: anywhere; }
+
+.notes-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+
+.notes-imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 4px 0 8px; }
+.notes-imgs.one { grid-template-columns: 1fr; }
+.notes-img { position: relative; margin: 0; }
+.notes-img img { width: 100%; max-height: 420px; object-fit: cover; border-radius: 14px; }
+.notes-img-x { position: absolute; top: 6px; right: 6px; background: color-mix(in srgb, var(--surface) 88%, transparent); box-shadow: var(--shadow-1); }
+.notes-img-x:hover { background: var(--surface); }
+
+.notes-total { margin: 10px 0 4px; padding: 10px 14px; border-radius: var(--r-md); font-weight: 700; font-size: 16px;
+  background: color-mix(in srgb, var(--surface) 55%, transparent); border: 1px solid var(--card-line); }
+.notes-total span { color: var(--muted); font-weight: 600; }
+
+.notes-labels { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.notes-label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  background: color-mix(in srgb, var(--ink) 8%, transparent); border: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.notes-smart { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.notes-smart-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 999px; text-align: left;
+  border: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--ink); font-size: 14px; line-height: 1.3; max-width: 100%; transition: transform .12s var(--ease-out); }
+.notes-smart-chip svg { flex: none; color: var(--accent); }
+.notes-smart-chip b { color: var(--accent); font-weight: 700; }
+.notes-smart-chip:active { transform: scale(.97); }
+.notes-smart-chip.is-done { border-style: solid; border-color: var(--card-line); }
+.notes-smart-chip.is-done b { color: var(--muted); }
+
+.notes-linked { margin-top: 18px; display: grid; gap: 8px; }
+.notes-linked .sec-label { margin: 0 4px; }
+.notes-linked-row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px; border-radius: var(--r-md); text-align: left;
+  border: 1px solid var(--card-line); background: color-mix(in srgb, var(--surface) 60%, transparent); color: var(--ink); font-size: 15px; }
+.notes-linked-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.notes-linked-a { font-weight: 700; }
+
+.notes-bar-space { height: 84px; }
+.notes-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 8px;
+  padding: 4px max(12px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  background: var(--c, var(--surface)); border-top: 1px solid var(--card-line); }
+.notes-edited { margin-left: auto; min-width: 0; text-align: right; font-size: 13px; color: color-mix(in srgb, var(--ink) 72%, transparent); padding-right: 4px; }
+
+/* task extras */
+.notes-task { display: grid; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-line); }
+.notes-task .field > label, .notes-task .field > .label { color: color-mix(in srgb, var(--ink) 75%, transparent); }
+.notes-task .help { color: color-mix(in srgb, var(--ink) 70%, transparent); }
+.notes-seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.notes-seg-btn { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 15px; }
+.notes-seg-btn[aria-checked="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* ---------- checklist ---------- */
+.notes-cl { margin-top: 4px; }
+.notes-item { display: flex; align-items: flex-start; gap: 0; border-radius: 12px; position: relative; background: transparent; }
+.notes-item.is-dragging { z-index: 5; background: var(--c, var(--surface)); box-shadow: var(--shadow-3); }
+.notes-handle { color: color-mix(in srgb, var(--ink) 55%, transparent); cursor: grab; touch-action: none; }
+.notes-handle:active { cursor: grabbing; }
+.notes-handle-space { width: 44px; flex: none; }
+.notes-check { position: relative; width: 44px; height: 44px; flex: none; display: grid; place-items: center; cursor: pointer; }
+.notes-check input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.notes-box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid color-mix(in srgb, var(--ink) 60%, transparent); display: grid; place-items: center;
+  color: var(--bg); transition: background .15s, border-color .15s; pointer-events: none; }
+.notes-check input:checked + .notes-box { background: var(--ink); border-color: var(--ink); }
+.notes-check input:focus-visible + .notes-box { outline: 3px solid var(--accent); outline-offset: 2px; }
+.notes-item-text { flex: 1; min-width: 0; border: 0; background: transparent; resize: none; overflow: hidden; font-size: 16px; line-height: 1.5; padding: 10px 0; color: var(--ink); }
+.notes-item-text.is-done { text-decoration: line-through; color: var(--muted); }
+.notes-item-x { opacity: .75; }
+.notes-item-x:hover, .notes-item-x:focus-visible { opacity: 1; }
+.notes-add-item { display: flex; align-items: center; gap: 12px; min-height: 44px; width: 100%; padding: 0 0 0 54px; border: 0; background: transparent;
+  color: color-mix(in srgb, var(--ink) 72%, transparent); font-size: 16px; font-weight: 500; text-align: left; border-radius: 12px; }
+.notes-ticked-toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin-top: 8px; padding: 0 0 0 12px; border: 0;
+  border-top: 1px solid var(--card-line); background: transparent; color: color-mix(in srgb, var(--ink) 72%, transparent); font-size: 15px; font-weight: 600; text-align: left; }
+.notes-ticked-toggle svg { transition: transform .2s var(--ease-out); }
+.notes-ticked-toggle .notes-rot { transform: rotate(-90deg); }
+
+/* ---------- sheets ---------- */
+.notes-menu { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 2px; }
+.notes-menu button, .notes-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 48px; padding: 0 10px; border: 0; background: transparent;
+  border-radius: 12px; font-size: 16px; font-weight: 500; color: var(--ink); text-align: left; cursor: pointer; }
+.notes-row { padding-left: 0; }
+.notes-menu button:hover, .notes-row:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.notes-menu button.danger { color: var(--danger); }
+.notes-newlabel { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+.notes-newlabel .btn { margin-top: 27px; min-height: 48px; }
+.notes-muted { color: var(--muted); font-size: 14px; margin: 4px 0 12px; }
+.notes-form { display: grid; gap: 14px; }
+.notes-form .notes-muted { margin: 0; }
+.notes-picks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.notes-pick { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 600; font-size: 15px; color: var(--ink); }
+.notes-pick:hover { border-color: var(--ink); }
+
+.notes-vers { list-style: none; margin: 0; padding: 0; }
+.notes-vers li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.notes-ver-text { flex: 1; min-width: 0; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.notes-ver-at { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.notes-ver-p { font-size: 14px; color: color-mix(in srgb, var(--ink) 80%, transparent); white-space: pre-wrap; }
+
+/* ---------- PIN pad ---------- */
+.notes-pin { display: grid; gap: 16px; max-width: 320px; margin: 24px auto 0; justify-items: stretch; text-align: center; }
+.notes-pin-ico { justify-self: center; color: var(--ink); }
+.notes-pin-title { font-family: var(--f-display); font-size: 22px; margin: 0; }
+.notes-pin .field { text-align: left; }
+.notes-pin-input { text-align: center; font-size: 22px; letter-spacing: .4em; }
+.notes-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.notes-key { min-height: 60px; border-radius: 18px; border: 1px solid var(--card-line); background: color-mix(in srgb, var(--surface) 75%, transparent);
+  font-size: 22px; font-weight: 600; color: var(--ink); display: grid; place-items: center; font-variant-numeric: tabular-nums; transition: transform .1s var(--ease-out); }
+.notes-key:active { transform: scale(.95); }
+.notes-key-go { font-size: 16px; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }

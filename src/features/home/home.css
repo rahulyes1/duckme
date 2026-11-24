@@ -1,0 +1,96 @@
+/* Home screen (hybrid grid, swipe, salary strip, FAB, quick add). Tokens only. */
+
+/* room for strip + FAB above the bottom nav */
+.home { padding-bottom: 150px; }
+
+.home-brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 2px 10px; }
+.home-date { color: var(--muted); font-size: 14px; font-weight: 500; white-space: nowrap; }
+.home-gap { height: 8px; }
+
+/* 36px chips get a 44px hit area (padding on the scroller so the hit area isn't clipped) */
+.home-chips { margin-top: 6px; padding: 4px 0; }
+.home-chips .chip, .home-qa-types .chip, .home-qa-examples button { position: relative; }
+.home-chips .chip::after, .home-qa-types .chip::after, .home-qa-examples button::after { content: ""; position: absolute; inset: -4px 0; }
+
+.home-hint { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 4px; padding: 4px 4px 4px 14px;
+  border-radius: var(--r-md); background: var(--accent-soft); color: var(--ink); font-size: 14px; line-height: 1.35; }
+.home-hint .btn { flex: none; color: var(--accent); }
+
+.home-grid { animation: home-fade .22s var(--ease-out); }
+@keyframes home-fade { from { opacity: .3; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---------- swipe ---------- */
+.home-sw { position: relative; border-radius: 16px; }
+.home-sw-card { position: relative; border-radius: 16px; touch-action: pan-y; will-change: transform; }
+.home-trail { position: absolute; inset: 0; border-radius: 16px; display: flex; align-items: center; padding: 0 16px;
+  font-size: 13px; font-weight: 700; color: var(--bg); background: var(--ok); opacity: 0; pointer-events: none; }
+.home-trail.is-r { justify-content: flex-start; background: var(--ok); }
+.home-trail.is-l { justify-content: flex-end; background: var(--warn); }
+.home-trail.is-kill { background: var(--danger); }
+.home-trail-ic { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; transition: transform .18s var(--spring); }
+.home-trail-ic.is-armed { transform: scale(1.25); }
+
+.home-newpop { animation: home-newpop .5s var(--spring); }
+@keyframes home-newpop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---------- dock: salary strip + FAB ---------- */
+.home-dock { position: fixed; left: 0; right: 0; z-index: calc(var(--z-nav) - 1);
+  /* tucks 8px under the nav so no content peeks through */
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) - 8px); }
+.home-strip { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  background: var(--strip); color: var(--strip-ink);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 18px max(16px, env(safe-area-inset-left, 0px)); }
+.home-strip > div { min-width: 0; }
+.home-strip > div + div { border-left: 1px solid color-mix(in srgb, var(--strip-ink) 15%, transparent); padding-left: 14px; }
+.home-strip small { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--strip-muted); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-strip b { display: block; font-family: var(--f-display); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.home-strip b em { font-style: normal; font-size: 13px; font-family: var(--f-body); font-weight: 500; color: var(--strip-muted); margin-left: 5px; }
+
+.home-fab { position: absolute; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(100% + 12px);
+  width: 58px; height: 58px; border-radius: 20px; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center;
+  box-shadow: 0 10px 24px -6px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: transform .2s var(--spring), border-radius .2s var(--ease-out);
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.home-fab:active { transform: scale(.92); }
+.home-fab.is-open { transform: rotate(45deg); border-radius: 50%; }
+.home-fab:focus-visible { outline-offset: 3px; border-radius: 20px; }
+
+.home-fan-scrim { position: fixed; inset: 0; z-index: 0; background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+.home-fan { position: absolute; z-index: 2; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(100% + 12px + 58px + 14px);
+  display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 10px; pointer-events: none; }
+.home-pick { pointer-events: auto; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; padding: 0 5px 0 0; min-height: 48px; color: var(--ink); }
+.home-pick span { background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 999px; }
+.home-pick i { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: var(--c); color: var(--ink);
+  border: 1px solid var(--card-line); box-shadow: var(--shadow-3); }
+
+/* While Home is mounted, lift the shared toast above the strip + FAB so they never overlap.
+   (Lead: feel free to move this into styles.css.) */
+body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 140px); }
+
+@media (min-width: 1024px) {
+  body:has(.home-dock) .toast { bottom: 110px; }
+  .home { padding-bottom: 0; }
+  .home-dock { position: sticky; left: auto; right: auto; bottom: 16px; margin-top: 24px; z-index: var(--z-fab); }
+  .home-strip { border-radius: var(--r-lg); padding: 12px 22px; box-shadow: var(--shadow-3); }
+  .home-strip b { font-size: 22px; }
+  .home-fab, .home-fan { right: 8px; }
+}
+
+/* ---------- quick add ---------- */
+.home-qa-examples { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.home-qa-examples button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px dashed color-mix(in srgb, var(--ink) 30%, transparent);
+  background: transparent; color: var(--muted); font-size: 14px; }
+.home-qa-examples button:hover { color: var(--ink); }
+.home-qa-types { flex-wrap: wrap; overflow: visible; padding: 4px 0; margin-bottom: 8px; }
+.home-qa-detect { margin: 4px 0 8px; font-size: 14px; color: var(--muted); min-height: 21px; }
+.home-qa-detect b { color: var(--ink); font-weight: 600; }
+.home-qa-preview { min-height: 100px; margin-bottom: 14px; perspective: 800px; pointer-events: none; }
+.home-qa-preview > div { width: min(260px, 72%); transform-origin: 50% 50%; }
+.home-qa-preview .tile { cursor: default; }
+.home-ghost { opacity: .5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .home-grid, .home-newpop { animation: none; }
+}

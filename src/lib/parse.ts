@@ -1,0 +1,175 @@
+/**
+ * Hinglish quick-add parser. "bijli 2400 15th" → bill ₹2,400 due on the next 15th.
+ * Pure functions; `ref` (today) is injectable for tests.
+ */
+import type { CardType, InvestKind } from './types';
+import { addDays, toISO, today } from './format';
+
+export interface Parsed {
+  type: CardType;
+  title: string;
+  amount: number | null;
+  /** YYYY-MM-DD */
+  date: string | null;
+  category: string;
+  repeat: 'none' | 'monthly';
+  investKind: InvestKind | null;
+}
+
+const BILL_WORDS = ['bijli', 'electricity', 'rent', 'kiraya', 'emi', 'bill', 'recharge', 'wifi', 'broadband', 'gas', 'insurance', 'premium', 'maintenance', 'card', 'subscription', 'school', 'fees', 'fee', 'dth', 'postpaid', 'water', 'paani'];
+const INVEST_WORDS: Record<string, InvestKind> = { sip: 'SIP', fd: 'FD', rd: 'RD', ppf: 'PPF', mf: 'MF', gold: 'Gold', sona: 'Gold', stock: 'Stock', stocks: 'Stock', shares: 'Stock', nps: 'NPS' };
+const TASK_WORDS = ['karna', 'karo', 'karni', 'todo', 'renew', 'file', 'call', 'book', 'submit', 'update', 'check', 'puc', 'remind', 'yaad', 'banwana', 'lena', 'dena'];
+const EXPENSE_WORDS = ['kharcha', 'spent', 'diya', 'khana', 'chai', 'lunch', 'dinner', 'breakfast', 'petrol', 'diesel', 'auto', 'uber', 'ola', 'rapido', 'metro', 'groceries', 'sabzi', 'dawai', 'medicine', 'movie', 'shopping', 'kapde', 'swiggy', 'zomato', 'blinkit', 'zepto', 'doodh'];
+const MONTHLY_WORDS = ['rent', 'kiraya', 'bijli', 'electricity', 'emi', 'sip', 'wifi', 'broadband', 'maintenance', 'har', 'monthly', 'mahina'];
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const FILLER = ['rs', 'rs.', '₹', 'rupay', 'rupaye', 'rupees', 'ka', 'ki', 'ke', 'ko', 'pe', 'par', 'on', 'by', 'for', 'tak', 'se'];
+const DATE_WORDS = ['tareekh', 'tarikh', 'tarik', 'date'];
+
+const CATEGORY_MAP: [string, string[]][] = [
+  ['Food', ['khana', 'chai', 'lunch', 'dinner', 'breakfast', 'swiggy', 'zomato', 'restaurant', 'cafe', 'coffee']],
+  ['Groceries', ['groceries', 'sabzi', 'doodh', 'milk', 'blinkit', 'zepto', 'kirana', 'ration']],
+  ['Fuel', ['petrol', 'diesel', 'cng', 'fuel']],
+  ['Travel', ['auto', 'uber', 'ola', 'rapido', 'metro', 'cab', 'bus', 'train', 'flight', 'ticket']],
+  ['Health', ['dawai', 'medicine', 'doctor', 'hospital', 'pharmacy', 'test']],
+  ['Shopping', ['shopping', 'kapde', 'clothes', 'amazon', 'flipkart', 'myntra', 'shoes']],
+  ['Entertainment', ['movie', 'netflix', 'hotstar', 'prime', 'spotify', 'concert']],
+  ['Rent', ['rent', 'kiraya']],
+  ['Bills', ['bijli', 'electricity', 'wifi', 'broadband', 'recharge', 'gas', 'water', 'paani', 'dth', 'postpaid']],
+  ['Education', ['school', 'fees', 'fee', 'tuition', 'course', 'books']],
+];
+
+const TITLE_FIX: [RegExp, string][] = [
+  [/\bbijli\b/i, 'Bijli bill'],
+  [/\bkiraya\b/i, 'Rent'],
+  [/\bpaani\b/i, 'Water bill'],
+];
+
+const norm = (t: string) => t.toLowerCase().replace(/[,.!?;:]+$/, '');
+
+/** Resolve a day-of-month (and optional month index) to the next occurrence on/after ref. */
+export function dayToDate(day: number, monthIdx: number, ref: Date): Date {
+  // Clamp to the month's last day so "31st" in a 30-day month doesn't spill into the next month.
+  const mk = (y: number, m: number) => {
+    const t = new Date(y, m, 1);
+    const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    return new Date(t.getFullYear(), t.getMonth(), Math.min(day, last));
+  };
+  if (monthIdx >= 0) {
+    let d = mk(ref.getFullYear(), monthIdx);
+    if (d < ref) d = mk(ref.getFullYear() + 1, monthIdx);
+    return d;
+  }
+  let d = mk(ref.getFullYear(), ref.getMonth());
+  if (d < ref) d = mk(ref.getFullYear(), ref.getMonth() + 1);
+  return d;
+}
+
+export function parseAmountToken(tok: string): number | null {
+  const m = norm(tok).replace(/^₹|^rs\.?/, '').replace(/,/g, '').match(/^(\d+(?:\.\d+)?)(k|l|lakh|lac|cr)?$/);
+  if (!m) return null;
+  let v = parseFloat(m[1]);
+  if (m[2] === 'k') v *= 1e3;
+  else if (m[2] === 'cr') v *= 1e7;
+  else if (m[2]) v *= 1e5;
+  return v;
+}
+
+export function parse(text: string, ref: Date = today()): Parsed {
+  const toks = text.trim().split(/\s+/).filter(Boolean);
+  let amount: number | null = null;
+  let date: Date | null = null;
+  const words: string[] = [];
+
+  for (let i = 0; i < toks.length; i++) {
+    const raw = toks[i];
+    const t = norm(raw);
+    const nx = norm(toks[i + 1] ?? '');
+    const nxMonth = MONTHS.indexOf(nx.slice(0, 3));
+    let m: RegExpMatchArray | null;
+
+    if (t === 'kal' || t === 'tomorrow') { date = addDays(ref, 1); continue; }
+    if (t === 'parso' || t === 'parson') { date = addDays(ref, 2); continue; }
+    if (t === 'aaj' || t === 'today') { date = ref; continue; }
+    if ((m = t.match(/^(\d{1,2})(st|nd|rd|th)$/)) && +m[1] >= 1 && +m[1] <= 31) {
+      date = dayToDate(+m[1], nxMonth, ref);
+      if (nxMonth >= 0) i++;
+      continue;
+    }
+    if ((m = t.match(/^(\d{1,2})$/)) && +m[1] >= 1 && +m[1] <= 31 && (DATE_WORDS.includes(nx) || nxMonth >= 0)) {
+      date = dayToDate(+m[1], nxMonth, ref);
+      i++;
+      continue;
+    }
+    if ((m = t.match(/^(\d{1,2})\/(\d{1,2})$/))) {
+      date = dayToDate(+m[1], +m[2] - 1, ref);
+      continue;
+    }
+    const amt = parseAmountToken(raw);
+    if (amt !== null && amount === null) { amount = amt; continue; }
+    if (FILLER.includes(t)) continue;
+    words.push(raw);
+  }
+
+  const lw = words.map(norm);
+  const has = (arr: string[]) => lw.some(w => arr.includes(w));
+  const investKind = (lw.map(w => INVEST_WORDS[w]).find(Boolean) as InvestKind | undefined) ?? null;
+
+  let type: CardType;
+  if (investKind) type = 'invest';
+  else if (has(BILL_WORDS) || (amount !== null && date !== null)) type = 'bill';
+  else if (has(EXPENSE_WORDS) && amount !== null) type = 'expense';
+  else if (has(TASK_WORDS) || date !== null) type = 'task';
+  else if (amount !== null) type = 'expense';
+  else type = 'note';
+
+  let title = words.join(' ').replace(/^(idea|note|todo):\s*/i, '');
+  for (const [re, rep] of TITLE_FIX) title = title.replace(re, rep);
+  title = title ? title[0].toUpperCase() + title.slice(1) : '';
+  if (!title && investKind) title = investKind;
+
+  const category = CATEGORY_MAP.find(([, ws]) => lw.some(w => ws.includes(w)))?.[0] ?? 'Other';
+  const repeat = has(MONTHLY_WORDS) ? 'monthly' : 'none';
+
+  return { type, title, amount, date: date ? toISO(date) : null, category, repeat, investKind };
+}
+
+export interface SmartChip {
+  /** The matched text inside the note. */
+  match: string;
+  amount: number | null;
+  date: string | null;
+  suggest: 'bill' | 'expense' | 'task';
+}
+
+/**
+ * Finds money/date phrases inside free text, line by line, e.g.
+ * "Pay plumber 1500 on 12th" → { amount: 1500, date: next 12th, suggest: 'bill' }.
+ */
+export function detectChips(text: string, ref: Date = today()): SmartChip[] {
+  const out: SmartChip[] = [];
+  for (const line of text.split(/\n/)) {
+    const l = line.trim();
+    if (!l) continue;
+    const hasAmt = /(?:₹|rs\.?\s?)?\b\d[\d,]*(?:\.\d+)?\s?(?:k|l|lakh|cr)?\b/i.test(l) && /\d{2,}|\d+\s?(k|l|lakh|cr)\b|₹\s?\d/i.test(l);
+    const hasDate = /\b(\d{1,2}(st|nd|rd|th)|kal|parso|tomorrow|aaj|today|\d{1,2}\s+(tareekh|tarikh|date|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*|\d{1,2}\/\d{1,2})\b/i.test(l);
+    if (!hasAmt && !hasDate) continue;
+    const p = parse(l.replace(/,(?=\d{3})/g, ''), ref);
+    if (p.amount === null && p.date === null) continue;
+    const suggest = p.amount !== null && p.date !== null ? 'bill' : p.amount !== null ? 'expense' : 'task';
+    out.push({ match: l, amount: p.amount, date: p.date, suggest });
+  }
+  return out.slice(0, 6);
+}
+
+/** Sum of ₹ amounts found in checklist lines (self-totalling lists). */
+export function lineAmount(text: string): number | null {
+  const m = text.replace(/,(?=\d{2,3}\b|\d{2,3},)/g, '').match(/(?:₹|rs\.?\s?)\s?(\d+(?:\.\d+)?)(k|l|lakh)?|\b(\d+(?:\.\d+)?)(k|l|lakh)\b|\b(\d{2,}(?:\.\d+)?)\b/i);
+  if (!m) return null;
+  const num = m[1] ?? m[3] ?? m[5];
+  const suf = (m[2] ?? m[4] ?? '').toLowerCase();
+  let v = parseFloat(num);
+  if (suf === 'k') v *= 1e3; else if (suf) v *= 1e5;
+  // Ignore things that look like years or day numbers without a ₹ sign.
+  if (!m[1] && (v >= 1900 && v <= 2100 && !suf)) return null;
+  return v;
+}
