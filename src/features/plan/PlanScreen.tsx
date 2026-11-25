@@ -1,16 +1,38 @@
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCards, useSettings } from '../../lib/hooks';
 import { MyOrder } from './MyOrder';
 import { Timeline } from './Timeline';
+import { Board } from './Board';
+import { WeekMonth } from './WeekMonth';
 import './plan.css';
 
-type View = 'order' | 'time';
+type View = 'box' | 'wm' | 'order' | 'time';
+const VIEWS: { id: View; label: string }[] = [
+  { id: 'box', label: '4-box' },
+  { id: 'wm', label: 'Week & Month' },
+  { id: 'order', label: 'My order' },
+  { id: 'time', label: 'Timeline' },
+];
+const VIEW_KEY = 'hisaab.plan.view';
+
+function loadView(): View {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v && VIEWS.some(x => x.id === v)) return v as View;
+  } catch { /* storage blocked */ }
+  return 'box';
+}
 
 export default function PlanScreen() {
   const cards = useCards();
   const settings = useSettings();
-  const [view, setView] = useState<View>('order');
+  const reduce = useReducedMotion();
+  const [view, setViewState] = useState<View>(loadView);
+  const setView = (v: View) => {
+    setViewState(v);
+    try { localStorage.setItem(VIEW_KEY, v); } catch { /* storage blocked */ }
+  };
 
   return (
     <div className="screen plan">
@@ -19,8 +41,9 @@ export default function PlanScreen() {
           <h1 className="screen-title">Plan</h1>
         </div>
         <div className="plan-seg plan-views" role="group" aria-label="Plan view">
-          <button type="button" aria-pressed={view === 'order'} onClick={() => setView('order')}>My order</button>
-          <button type="button" aria-pressed={view === 'time'} onClick={() => setView('time')}>Timeline</button>
+          {VIEWS.map(v => (
+            <button key={v.id} type="button" aria-pressed={view === v.id} onClick={() => setView(v.id)}>{v.label}</button>
+          ))}
         </div>
       </header>
 
@@ -28,11 +51,14 @@ export default function PlanScreen() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={view}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] } }}
-            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: reduce ? 0.01 : 0.22, ease: [0.2, 0.8, 0.2, 1] } }}
+            exit={{ opacity: 0, transition: { duration: reduce ? 0.01 : 0.12 } }}
           >
-            {view === 'order' ? <MyOrder cards={cards} settings={settings} /> : <Timeline cards={cards} settings={settings} />}
+            {view === 'box' && <Board cards={cards} />}
+            {view === 'wm' && <WeekMonth cards={cards} />}
+            {view === 'order' && <MyOrder cards={cards} settings={settings} />}
+            {view === 'time' && <Timeline cards={cards} settings={settings} />}
           </motion.div>
         </AnimatePresence>
       )}

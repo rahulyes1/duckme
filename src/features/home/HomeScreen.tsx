@@ -36,7 +36,8 @@ export default function HomeScreen() {
 
   const isHidden = useCallback((c: Card) => !!c.locked && !app.isUnlocked(c.id), [app]);
 
-  const open = useMemo(() => (cards ?? []).filter(c => isActive(c)), [cards]);
+  // Journal pages live in Notes → Today, not in the Home grid.
+  const open = useMemo(() => (cards ?? []).filter(c => isActive(c) && !c.journalDate), [cards]);
   const shown = useMemo(() => {
     const query = q.trim();
     return open

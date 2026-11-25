@@ -76,3 +76,19 @@
   background: var(--accent-soft); color: var(--ink); }
 .set-install > svg { color: var(--accent); flex: none; }
 .set-install .set-text { flex: 1 1 200px; }
+
+/* ---------- account & sync (AccountSection) ---------- */
+.set-acct-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.set-acct-avatar { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink); font-family: var(--f-display); font-weight: 700; font-size: 20px; }
+.set-acct-id { display: grid; gap: 2px; min-width: 0; }
+.set-acct-name { font-weight: 700; }
+.set-acct-email { overflow-wrap: anywhere; }
+.set-acct-status { display: flex; align-items: center; gap: 8px; margin: 0; min-height: 24px; font-size: 15px; font-weight: 600; color: var(--muted); }
+.set-acct-status svg { flex: none; color: var(--accent); }
+.set-acct-status.is-error { color: var(--danger); }
+.set-acct-status.is-error svg { color: var(--danger); }
+.set-acct-ask { display: grid; gap: 10px; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); }
+.set-acct-spin { animation: set-acct-spin 1s linear infinite; }
+@keyframes set-acct-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .set-acct-spin { animation: none; } }

@@ -1,21 +1,25 @@
-import { useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'framer-motion';
 import {
-  Archive, Bell, CheckSquare, ImagePlus, LayoutGrid, List, Lock, Palette, Search, StickyNote, Trash2, Undo2, X,
+  Archive, Bell, BookOpen, CheckSquare, ImagePlus, LayoutGrid, List, Lock, Palette, Search, StickyNote, Trash2, Undo2, X,
 } from 'lucide-react';
 import './notes.css';
 import { useApp } from '../../app-context';
-import { restore } from '../../lib/actions';
+import { archive, restore } from '../../lib/actions';
 import { matchesQuery, useCards, useSettings } from '../../lib/hooks';
 import type { Card, CardColor } from '../../lib/types';
 import { CARD_COLORS } from '../../lib/types';
 import { CardTile } from '../../ui/CardTile';
 import { EmptyState } from '../../ui/bits';
+import { Masonry } from '../../ui/Masonry';
 import { deleteForeverWithUndo, emptyItem, pref, readImages } from './notes-lib';
 import { isActive } from '../../lib/types';
+import { JOURNAL_LABEL } from './journal';
+import { SwipeTile } from './SwipeTile';
+import { TodayBanner } from './TodayBanner';
 
 type View = 'grid' | 'list';
-type Fixed = 'all' | 'tasks' | 'reminders' | 'locked' | 'archive' | 'trash';
+type Fixed = 'all' | 'journal' | 'tasks' | 'reminders' | 'locked' | 'archive' | 'trash';
 type Filter = Fixed | `label:${string}`;
 
 const COLOR_NAME: Record<CardColor, string> = {
@@ -41,6 +45,7 @@ export default function NotesScreen() {
   const labels = useMemo(() => {
     const s = new Set(settings.labels);
     for (const c of pool) if (c.status !== 'trashed') c.labels.forEach(l => s.add(l));
+    s.delete(JOURNAL_LABEL); // has its own chip
     return [...s].sort((a, b) => a.localeCompare(b));
   }, [pool, settings.labels]);
 
@@ -54,7 +59,9 @@ export default function NotesScreen() {
   const list = (() => {
     let l: Card[];
     const open = pool.filter(c => isActive(c));
-    if (filter === 'all') l = open.filter(c => c.type === 'note');
+    // Journal pages live in the Today area and the Journal chip; a search still finds them.
+    if (filter === 'all') l = open.filter(c => c.type === 'note' && (!c.journalDate || !!q.trim()));
+    else if (filter === 'journal') l = pool.filter(c => !!c.journalDate && (isActive(c) || c.status === 'archived'));
     else if (filter === 'tasks') l = open.filter(c => c.type === 'task');
     else if (filter === 'reminders') l = open.filter(c => !!c.reminder);
     else if (filter === 'locked') l = open.filter(c => c.locked);
@@ -66,11 +73,12 @@ export default function NotesScreen() {
     if (filter === 'reminders') l.sort((a, b) => (a.reminder ?? '').localeCompare(b.reminder ?? ''));
     else if (filter === 'tasks') l.sort((a, b) => (a.rank || 0) - (b.rank || 0));
     else if (filter === 'trash') l.sort((a, b) => (b.trashedAt ?? 0) - (a.trashedAt ?? 0));
+    else if (filter === 'journal') l.sort((a, b) => (b.journalDate ?? '').localeCompare(a.journalDate ?? '') || b.updatedAt - a.updatedAt);
     else l.sort((a, b) => b.updatedAt - a.updatedAt);
     return l;
   })();
 
-  const sectioned = filter !== 'trash' && filter !== 'archive' && filter !== 'reminders';
+  const sectioned = filter !== 'trash' && filter !== 'archive' && filter !== 'reminders' && filter !== 'journal';
   const pinned = sectioned ? list.filter(c => c.pinned) : [];
   const others = sectioned ? list.filter(c => !c.pinned) : list;
 
@@ -110,9 +118,44 @@ export default function NotesScreen() {
     app.openCard(c.id, el);
   };
 
+  // ---- swipe to archive ----
+  const [swipeHint, setSwipeHint] = useState(() => pref.get('notes.swiped') !== '1');
+  const swipeArchive = async (c: Card) => {
+    if (swipeHint) { setSwipeHint(false); pref.set('notes.swiped', '1'); }
+    try {
+      const undo = await archive(c.id);
+      app.toast(`${c.type === 'task' ? 'Task' : 'Note'} archived`, undo);
+    } catch {
+      app.toast('Could not archive. Try again.');
+    }
+  };
+
+  // Tiles that appear after the first paint (a new note, an undo) pop in. Others never re-animate.
+  const seen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!cards) return;
+    if (!seen.current) seen.current = new Set();
+    for (const c of cards) seen.current.add(c.id);
+  }, [cards]);
+  const isFresh = (id: string) => !!seen.current && !seen.current.has(id);
+
   const tile = (c: Card) => {
     const t = <CardTile card={c} settings={settings} hidden={hiddenOf(c)} onOpen={el => open(c, el)} />;
-    if (c.status !== 'trashed') return <div key={c.id}>{t}</div>;
+    const canSwipe = isActive(c);
+    if (c.status !== 'trashed') {
+      return (
+        <motion.div
+          key={c.id}
+          layoutId={c.id}
+          layout="position"
+          initial={isFresh(c.id) ? { opacity: 0, scale: 0.9 } : false}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 520, damping: 40, mass: 0.8 }}
+        >
+          {canSwipe ? <SwipeTile onArchive={() => swipeArchive(c)}>{t}</SwipeTile> : t}
+        </motion.div>
+      );
+    }
     const left = Math.max(0, 30 - Math.floor((Date.now() - (c.trashedAt ?? Date.now())) / DAY));
     return (
       <div key={c.id} className="notes-trash-item">
@@ -130,11 +173,14 @@ export default function NotesScreen() {
     );
   };
 
-  const grid = (items: Card[]) => <div className={view === 'grid' ? 'masonry' : 'notes-list'}>{items.map(tile)}</div>;
+  const grid = (items: Card[]) => (view === 'grid'
+    ? <Masonry items={items} keyOf={c => c.id} render={tile} />
+    : <div className="notes-list">{items.map(tile)}</div>);
 
   const loading = cards === undefined;
   const chipsDef: { f: Filter; label: string; icon?: JSX.Element }[] = [
     { f: 'all', label: 'All notes' },
+    { f: 'journal', label: 'Journal', icon: <BookOpen size={15} aria-hidden="true" /> },
     { f: 'tasks', label: 'Tasks', icon: <CheckSquare size={15} aria-hidden="true" /> },
     ...labels.map(l => ({ f: `label:${l}` as Filter, label: l })),
     { f: 'reminders', label: 'Reminders', icon: <Bell size={15} aria-hidden="true" /> },
@@ -142,9 +188,11 @@ export default function NotesScreen() {
     { f: 'archive', label: 'Archive', icon: <Archive size={15} aria-hidden="true" /> },
     { f: 'trash', label: counts.trash ? `Trash (${counts.trash})` : 'Trash', icon: <Trash2 size={15} aria-hidden="true" /> },
   ];
-  const canCreate = filter !== 'trash' && filter !== 'archive';
+  const canCreate = filter !== 'trash' && filter !== 'archive' && filter !== 'journal';
+  const showToday = !loading && ((filter === 'all' && !q.trim() && !color) || filter === 'journal');
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="screen">
       <header className="topbar">
         <div className="topbar-row">
@@ -192,6 +240,8 @@ export default function NotesScreen() {
         </AnimatePresence>
       </header>
 
+      {showToday && <TodayBanner cards={pool} />}
+
       {canCreate && (
         <div className="notes-take" ref={barRef}>
           <button type="button" className="notes-take-main" onClick={newNote}>
@@ -231,6 +281,7 @@ export default function NotesScreen() {
         <Empty filter={filter} q={q} color={color} onClear={() => { setQ(''); setColor(null); }} onNew={newNote} onBack={() => pick('all')} />
       ) : (
         <motion.div key={`${filter}-${view}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}>
+          <LayoutGroup id={`${filter}-${view}`}>
           {pinned.length > 0 && (
             <>
               <h2 className="sec-label">Pinned</h2>
@@ -239,9 +290,12 @@ export default function NotesScreen() {
             </>
           )}
           {others.length > 0 && grid(others)}
+          </LayoutGroup>
         </motion.div>
       )}
+      {swipeHint && canCreate && list.length > 0 && <p className="notes-swipe-hint">Swipe a note sideways to archive it.</p>}
     </div>
+    </MotionConfig>
   );
 }
 
@@ -257,6 +311,7 @@ function Empty({ filter, q, color, onClear, onNew, onBack }: {
     );
   }
   const map: Record<string, { icon: JSX.Element; title: string; text: string; action: 'new' | 'back' }> = {
+    journal: { icon: <BookOpen size={40} aria-hidden="true" />, title: 'No journal pages yet', text: 'Tap Today above to start today’s page. Unticked items carry over to the next day.', action: 'back' },
     all: { icon: <StickyNote size={40} aria-hidden="true" />, title: 'Your notes live here', text: 'Shopping lists, ideas, things to pay. Type ₹ amounts and dates, and Hisaab offers to make a bill or expense.', action: 'new' },
     tasks: { icon: <CheckSquare size={40} aria-hidden="true" />, title: 'No open tasks', text: 'Add a task with a deadline, like “Renew bike insurance by 15 Dec”.', action: 'new' },
     reminders: { icon: <Bell size={40} aria-hidden="true" />, title: 'No reminders', text: 'Open a note and tap the bell to set one.', action: 'new' },

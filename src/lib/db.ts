@@ -47,9 +47,10 @@ export class HisaabDB extends Dexie {
     });
 
     // Every local change stamps updatedAt (sync uses it: newest write wins).
-    this.cards.hook('updating', (mods: Partial<Card>) => {
+    this.cards.hook('updating', (mods: Partial<Card>, _key, obj: Card) => {
       if (syncState.applyingRemote || 'updatedAt' in mods) return undefined;
-      return { updatedAt: Date.now() };
+      // Always move forward, even if this device's clock is behind the last writer's.
+      return { updatedAt: Math.max(Date.now(), (obj?.updatedAt ?? 0) + 1) };
     });
     // Every local hard delete is logged so it can be deleted in the cloud too.
     this.cards.hook('deleting', (primKey: string, _obj, tx) => {

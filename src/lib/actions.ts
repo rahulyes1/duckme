@@ -44,9 +44,14 @@ export async function withUndo(fn: () => Promise<void>): Promise<Undo> {
   const before = await db.cards.toArray();
   await fn();
   return async () => {
-    await db.transaction('rw', db.cards, async () => {
-      await db.cards.clear();
-      await db.cards.bulkPut(before);
+    // Restore without clear(): delete only cards created by `fn` (so the deletion is logged for
+    // sync), and re-stamp restored cards so the undo wins over the cloud copy on every device.
+    const keep = new Set(before.map(c => c.id));
+    const now = Date.now();
+    await db.transaction('rw', db.cards, db.deletions, async () => {
+      const current = (await db.cards.toCollection().primaryKeys()) as string[];
+      await db.cards.bulkDelete(current.filter(id => !keep.has(id)));
+      await db.cards.bulkPut(before.map(c => ({ ...c, updatedAt: now })));
     });
   };
 }
@@ -223,8 +228,10 @@ export async function exportAll(): Promise<string> {
 }
 
 export async function deleteEverything(): Promise<void> {
-  await db.transaction('rw', db.cards, db.versions, db.settings, async () => {
-    await db.cards.clear();
+  // bulkDelete (not clear) so every deletion is logged and also removed from the cloud copy.
+  await db.transaction('rw', db.cards, db.versions, db.settings, db.deletions, async () => {
+    const ids = (await db.cards.toCollection().primaryKeys()) as string[];
+    await db.cards.bulkDelete(ids);
     await db.versions.clear();
     await db.settings.clear();
   });

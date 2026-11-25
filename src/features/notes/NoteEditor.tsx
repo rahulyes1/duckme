@@ -3,7 +3,7 @@ import { MotionConfig } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Archive, ArchiveRestore, ArrowLeft, Bell, BellOff, Check, CheckCircle2, CheckSquare, Copy, History, ImagePlus,
-  IndianRupee, ListChecks, Lock, LockOpen, MoreVertical, Palette, Pin, PinOff, Receipt, StickyNote, Tag, Trash2, X,
+  BookOpen, IndianRupee, ListChecks, Lock, LockOpen, MoreVertical, Palette, PenLine, Pin, PinOff, Receipt, StickyNote, Tag, Trash2, X,
 } from 'lucide-react';
 import './notes.css';
 import { useApp } from '../../app-context';
@@ -13,7 +13,7 @@ import {
 } from '../../lib/actions';
 import { useCard, useSettings } from '../../lib/hooks';
 import { detectChips } from '../../lib/parse';
-import { fmtDate, inr, nextSalary, sha256, toISO, todayISO } from '../../lib/format';
+import { fmtDate, fromISO, inr, nextSalary, sha256, toISO, todayISO } from '../../lib/format';
 import type { Card, CardType, ChecklistItem, Horizon, Repeat, Version } from '../../lib/types';
 import { HORIZON_LABEL, KIND_LABEL } from '../../lib/types';
 import { Sheet } from '../../ui/Sheet';
@@ -21,6 +21,9 @@ import { ColorPicker } from '../../ui/bits';
 import { TYPE_ICON, checklistTotal } from '../../ui/CardTile';
 import { Checklist, useAutoGrow } from './Checklist';
 import { PinPad } from './PinPad';
+import { BodyEditor } from './BodyEditor';
+import { PlanRow } from './PlanRow';
+import { hasMarkup } from './md-lite';
 import {
   CHIP_ACTION, chipCard, chipLabel, chipTitle, convertFill, deleteForeverWithUndo, emptyItem, itemsToText, readImages,
   relTime, textToItems,
@@ -76,16 +79,27 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   const mounted = useRef(true);
   const fileRef = useRef<HTMLInputElement>(null);
   const isNew = useRef(!card.title && !card.body && !(card.checklist?.some(i => i.text)) && Date.now() - card.createdAt < 5000);
-  const bodyRef = useAutoGrow(body);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const isJournal = !!card.journalDate;
+  // Notes that use formatting open in the rendered read view; tapping any line goes straight to typing there.
+  const [mode, setMode] = useState<'edit' | 'read'>(() => (!isNew.current && hasMarkup(card.body) ? 'read' : 'edit'));
 
   const pending = useRef<Partial<Card>>({});
   const timer = useRef<number>();
+  // Every write goes through one queue. Before, two quick flushes could finish out of order
+  // (the first one also writes a version snapshot) and the older text overwrote the newer one.
+  const chain = useRef<Promise<void>>(Promise.resolve());
+  const write = useCallback((patch: Partial<Card>) => {
+    chain.current = chain.current.then(() => updateCard(id, patch)).catch(err => { console.error('Note save failed', err); });
+    return chain.current;
+  }, [id]);
   const flush = useCallback(async () => {
     clearTimeout(timer.current);
     const p = pending.current;
     pending.current = {};
-    if (Object.keys(p).length) await updateCard(id, p);
-  }, [id]);
+    if (Object.keys(p).length) await write(p);
+    else await chain.current;
+  }, [write]);
   const queue = (patch: Partial<Card>) => {
     Object.assign(pending.current, patch);
     clearTimeout(timer.current);
@@ -95,24 +109,26 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   useEffect(() => {
     mounted.current = true;
     const onHide = () => { if (document.visibilityState === 'hidden') void flush(); };
+    // pagehide can fire while visibilityState is still "visible" (iOS, bfcache): always flush there.
+    const onPageHide = () => { void flush(); };
     document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pagehide', onPageHide);
     const iv = window.setInterval(() => tick(n => n + 1), 30000);
     return () => {
       mounted.current = false;
       document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('pagehide', onPageHide);
       clearInterval(iv);
       void flush();
     };
   }, [flush]);
 
   useEffect(() => {
-    if (isNew.current && !card.checklist) bodyRef.current?.focus();
+    if (isNew.current && (!card.checklist || isJournal)) bodyRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const save = async (patch: Partial<Card>) => { await flush(); await updateCard(id, patch); };
+  const save = async (patch: Partial<Card>) => { await flush(); await write(patch); };
 
   const onTitle = (v: string) => { setTitle(v); queue({ title: v }); };
   const onBody = (v: string) => { setBody(v); queue({ body: v }); };
@@ -146,10 +162,17 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
 
   // ---- actions ----
   const toggleChecklist = () => {
+    if (isJournal && !checklist) {
+      // A journal keeps its writing; the list is added below it.
+      const list = [emptyItem()];
+      setChecklist(list);
+      queue({ checklist: list });
+      return;
+    }
     if (checklist) {
       const text = itemsToText(checklist);
       const nextBody = body.trim() ? `${body.trimEnd()}\n${text}` : text;
-      setChecklist(undefined); setBody(nextBody);
+      setChecklist(undefined); setBody(nextBody); setMode('edit');
       queue({ checklist: undefined, body: nextBody });
     } else {
       const items = textToItems(body);
@@ -251,6 +274,15 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
     });
   };
 
+  const focusAfterTitle = () => {
+    if (checklist && !isJournal) {
+      document.querySelector<HTMLElement>('.editor .notes-item-text')?.focus();
+      return;
+    }
+    setMode('edit');
+    requestAnimationFrame(() => bodyRef.current?.focus());
+  };
+
   const Icon = TYPE_ICON[card.type];
   const isTask = card.type === 'task';
 
@@ -292,24 +324,28 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
           <div className="notes-status"><Icon size={14} aria-hidden="true" /> {card.status === 'archived' ? 'In archive' : card.status === 'done' ? 'Done' : card.status === 'trashed' ? 'In trash' : 'Closed'}</div>
         )}
 
+        {isJournal && (
+          <p className="notes-journal-k">
+            <BookOpen size={14} aria-hidden="true" /> Journal · {fromISO(card.journalDate!).toLocaleDateString('en-IN', { weekday: 'long' })}
+          </p>
+        )}
         <label htmlFor={`t-${id}`} className="sr-only">Title</label>
-        <TitleInput id={`t-${id}`} value={title} onChange={onTitle} isTask={isTask} />
+        <TitleInput id={`t-${id}`} value={title} onChange={onTitle} isTask={isTask} onEnter={focusAfterTitle} />
 
-        {checklist ? (
-          <Checklist items={checklist} onChange={onChecklist} autoFocus={isNew.current} />
-        ) : (
-          <>
-            <label htmlFor={`b-${id}`} className="sr-only">{isTask ? 'Task details' : 'Note'}</label>
-            <textarea
-              id={`b-${id}`}
-              ref={bodyRef}
-              className="notes-body"
-              value={body}
-              rows={3}
-              placeholder={isTask ? 'Details' : 'Note'}
-              onChange={e => onBody(e.target.value)}
-            />
-          </>
+        {(!checklist || isJournal) && (
+          <BodyEditor
+            id={`b-${id}`}
+            value={body}
+            onChange={onBody}
+            label={isTask ? 'Task details' : isJournal ? 'Journal' : 'Note'}
+            placeholder={isJournal ? 'How did today go? Type / for headings, lists and checkboxes' : isTask ? 'Details' : 'Note  (type / for formatting)'}
+            mode={mode}
+            onMode={setMode}
+            textareaRef={bodyRef}
+          />
+        )}
+        {checklist && (
+          <Checklist items={checklist} onChange={onChecklist} autoFocus={isNew.current && !isJournal} />
         )}
 
         {total && (
@@ -334,6 +370,8 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
             </button>
           </div>
         )}
+
+        {!isJournal && isActive(card) && <PlanRow card={card} save={save} />}
 
         {chips.length > 0 && (
           <section className="notes-smart" aria-label="Smart suggestions">
@@ -393,6 +431,11 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
         <button type="button" className="icon-btn" aria-label="Labels" onClick={() => setSheet('labels')}>
           <Tag size={20} aria-hidden="true" />
         </button>
+        {(!checklist || isJournal) && !!body.trim() && (
+          <button type="button" className="icon-btn" aria-label={mode === 'read' ? 'Edit text' : 'Read view'} onClick={() => setMode(m => (m === 'read' ? 'edit' : 'read'))}>
+            {mode === 'read' ? <PenLine size={20} aria-hidden="true" /> : <BookOpen size={20} aria-hidden="true" />}
+          </button>
+        )}
         <span className="notes-edited">Edited {relTime(card.updatedAt)}</span>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={e => addImages(e.target.files)} aria-label="Choose images" />
       </div>
@@ -440,7 +483,9 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   );
 }
 
-function TitleInput({ id, value, onChange, isTask }: { id: string; value: string; onChange: (v: string) => void; isTask: boolean }) {
+function TitleInput({ id, value, onChange, isTask, onEnter }: {
+  id: string; value: string; onChange: (v: string) => void; isTask: boolean; onEnter: () => void;
+}) {
   const ref = useAutoGrow(value);
   return (
     <textarea
@@ -450,12 +495,16 @@ function TitleInput({ id, value, onChange, isTask }: { id: string; value: string
       rows={1}
       value={value}
       placeholder={isTask ? 'Task' : 'Title'}
-      onChange={e => onChange(e.target.value.replace(/\n/g, ' '))}
+      onChange={e => {
+        const v = e.target.value;
+        // A phone keyboard may insert the newline without a usable keydown: treat it as "next field".
+        if (v.includes('\n')) { onChange(v.replace(/\r?\n/g, ' ').trimEnd()); onEnter(); return; }
+        onChange(v);
+      }}
       onKeyDown={e => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
           e.preventDefault();
-          const next = document.querySelector<HTMLElement>('.notes-body, .notes-item-text');
-          next?.focus();
+          onEnter();
         }
       }}
     />
@@ -466,11 +515,22 @@ function TitleInput({ id, value, onChange, isTask }: { id: string; value: string
 function TaskFields({ card, save, onDone }: { card: Card; save: (p: Partial<Card>) => Promise<void>; onDone: () => void }) {
   const [penalty, setPenalty] = useState(card.penalty ?? '');
   const t = useRef<number>();
-  useEffect(() => () => clearTimeout(t.current), []);
+  const pendingPenalty = useRef<string | null>(null);
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  const flushPenalty = () => {
+    clearTimeout(t.current);
+    const v = pendingPenalty.current;
+    pendingPenalty.current = null;
+    if (v !== null) void saveRef.current({ penalty: v.trim() || undefined });
+  };
+  // Closing the editor within 300ms of typing used to drop the penalty text. Flush instead of clearing.
+  useEffect(() => () => flushPenalty(), []); // eslint-disable-line react-hooks/exhaustive-deps
   const onPenalty = (v: string) => {
     setPenalty(v);
+    pendingPenalty.current = v;
     clearTimeout(t.current);
-    t.current = window.setTimeout(() => { void save({ penalty: v.trim() || undefined }); }, 300);
+    t.current = window.setTimeout(flushPenalty, 300);
   };
   return (
     <section className="notes-task" aria-label="Task details">
@@ -498,7 +558,7 @@ function TaskFields({ card, save, onDone }: { card: Card; save: (p: Partial<Card
       </div>
       <div className="field">
         <label htmlFor={`pn-${card.id}`}>Penalty if missed</label>
-        <input id={`pn-${card.id}`} className="input" type="text" value={penalty} placeholder="e.g. Late fee ₹500" onChange={e => onPenalty(e.target.value)} />
+        <input id={`pn-${card.id}`} className="input" type="text" value={penalty} placeholder="e.g. Late fee ₹500" onChange={e => onPenalty(e.target.value)} onBlur={flushPenalty} />
         <span className="help">Shown on the card as a hint. It never changes the order.</span>
       </div>
       {isActive(card) && (
@@ -534,15 +594,6 @@ function LabelsSheet({ open, onClose, card, allLabels, save }: {
 
   return (
     <Sheet open={open} onClose={onClose} title="Labels">
-      <form className="notes-newlabel" onSubmit={add}>
-        <div className="field" style={{ flex: 1 }}>
-          <label htmlFor={`nl-${card.id}`}>New label</label>
-          <input id={`nl-${card.id}`} className="input" value={name} maxLength={40} onChange={e => { setName(e.target.value); setErr(''); }}
-            aria-invalid={!!err} aria-describedby={err ? `nle-${card.id}` : undefined} />
-          {err && <span id={`nle-${card.id}`} className="err" role="alert">{err}</span>}
-        </div>
-        <button type="submit" className="btn primary">Add</button>
-      </form>
       {all.length ? (
         <ul className="notes-menu" aria-label="Labels on this note">
           {all.map(l => (
@@ -557,7 +608,16 @@ function LabelsSheet({ open, onClose, card, allLabels, save }: {
             </li>
           ))}
         </ul>
-      ) : <p className="notes-muted">No labels yet. Make one above, like “Ghar” or “Office”.</p>}
+      ) : <p className="notes-muted">No labels yet. Make one below, like “Ghar” or “Office”.</p>}
+      <form className="notes-newlabel" onSubmit={add}>
+        <div className="field" style={{ flex: 1 }}>
+          <label htmlFor={`nl-${card.id}`}>New label</label>
+          <input id={`nl-${card.id}`} className="input" value={name} maxLength={40} onChange={e => { setName(e.target.value); setErr(''); }}
+            aria-invalid={!!err} aria-describedby={err ? `nle-${card.id}` : undefined} />
+          {err && <span id={`nle-${card.id}`} className="err" role="alert">{err}</span>}
+        </div>
+        <button type="submit" className="btn primary">Add</button>
+      </form>
       <button type="button" className="btn block" onClick={onClose}>Done</button>
     </Sheet>
   );

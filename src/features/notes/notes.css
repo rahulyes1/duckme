@@ -66,7 +66,7 @@
   color: var(--ink); font-size: 14px; line-height: 1.3; max-width: 100%; transition: transform .12s var(--ease-out); }
 .notes-smart-chip svg { flex: none; color: var(--accent); }
 .notes-smart-chip b { color: var(--accent); font-weight: 700; }
-.notes-smart-chip:active { transform: scale(.97); }
+.notes-smart-chip:active { filter: brightness(.92); }
 .notes-smart-chip.is-done { border-style: solid; border-color: var(--card-line); }
 .notes-smart-chip.is-done b { color: var(--muted); }
 
@@ -146,5 +146,147 @@
 .notes-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .notes-key { min-height: 60px; border-radius: 18px; border: 1px solid var(--card-line); background: color-mix(in srgb, var(--surface) 75%, transparent);
   font-size: 22px; font-weight: 600; color: var(--ink); display: grid; place-items: center; font-variant-numeric: tabular-nums; transition: transform .1s var(--ease-out); }
-.notes-key:active { transform: scale(.95); }
+.notes-key:active { filter: brightness(.92); }
 .notes-key-go { font-size: 16px; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* =====================================================================
+   Today page (daily journal)
+   ===================================================================== */
+.notes-today { max-width: 640px; margin: 8px auto 10px; padding: 6px 6px 8px; border-radius: var(--r-lg);
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.notes-today-main { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 8px 10px; border: 0; border-radius: var(--r-md);
+  background: transparent; color: var(--ink); text-align: left; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform .12s var(--ease-out); }
+.notes-today-main:active { filter: brightness(.92); }
+.notes-today-ico { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); }
+.notes-today-text { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.notes-today-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, var(--ink) 78%, transparent); }
+.notes-today-date { font-family: var(--f-display); font-size: 22px; font-weight: 700; line-height: 1.2; letter-spacing: -.01em; }
+.notes-today-p { font-size: 15px; color: color-mix(in srgb, var(--ink) 80%, transparent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notes-today-go { flex: none; color: color-mix(in srgb, var(--ink) 70%, transparent); }
+
+.notes-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
+.notes-day { min-height: 48px; min-width: 0; display: grid; justify-items: center; align-content: center; gap: 4px; border: 0; border-radius: 12px;
+  background: transparent; color: var(--ink); font-size: 13px; font-weight: 600; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.notes-day:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.notes-day:disabled { cursor: default; color: color-mix(in srgb, var(--ink) 60%, transparent); }
+.notes-day-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--ink) 55%, transparent); transition: transform .2s var(--spring); }
+.notes-day.has .notes-day-dot { background: var(--accent); border-color: var(--accent); }
+.notes-day.is-today { background: var(--surface); box-shadow: var(--shadow-1); }
+.notes-day.is-today .notes-day-w { color: var(--accent); }
+.notes-day:active:not(:disabled) .notes-day-dot { filter: brightness(.92); }
+
+.notes-journal-k { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: color-mix(in srgb, var(--ink) 75%, transparent); }
+
+/* "Carried over" marker in a journal checklist */
+.notes-carry { display: flex; align-items: center; gap: 6px; margin: 10px 0 2px 12px; font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: color-mix(in srgb, var(--ink) 72%, transparent); }
+
+/* =====================================================================
+   Swipe to archive (notes grid)
+   ===================================================================== */
+.notes-swipe { position: relative; touch-action: pan-y; border-radius: 16px; }
+.notes-swipe-mover { position: relative; z-index: 1; }
+.notes-swipe-bg { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-radius: 16px;
+  background: color-mix(in srgb, var(--ink) 10%, var(--bg)); color: var(--ink); font-size: 14px; font-weight: 700; transition: background .15s; }
+.notes-swipe-bg.is-l { justify-content: flex-end; }
+.notes-swipe-bg.is-armed { background: var(--accent); color: var(--accent-ink); }
+.notes-swipe-bg svg { flex: none; transition: transform .18s var(--spring); }
+.notes-swipe-bg.is-armed svg { transform: scale(1.15); }
+.notes-swipe-hint { text-align: center; font-size: 13px; color: var(--muted); margin: 16px 0 0; }
+
+/* =====================================================================
+   Markdown-lite (tile + editor read view)
+   ===================================================================== */
+.notes-md { display: block; }
+.notes-md > * { display: block; }
+.notes-md strong { font-weight: 700; color: var(--ink); }
+.notes-md-gap { height: .5em; }
+.notes-md-hr { height: 0; border-top: 1.5px solid color-mix(in srgb, var(--ink) 25%, transparent); margin: .55em 0; }
+.notes-md-h { font-family: var(--f-display); font-weight: 700; color: var(--ink); line-height: 1.3; margin: .3em 0 .1em; }
+.notes-md-h1 { font-size: 1.25em; }
+.notes-md-h2 { font-size: 1.1em; }
+.notes-md > .notes-md-li, .notes-md > .notes-md-todo { display: flex; align-items: flex-start; gap: .5em; }
+.notes-md-dot { flex: none; width: .38em; height: .38em; border-radius: 50%; background: currentColor; margin: .62em .2em 0 .25em; }
+.notes-md-tbox { flex: none; width: 14px; height: 14px; margin-top: .2em; border-radius: 4px; display: grid; place-items: center;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 55%, transparent); color: var(--bg); }
+.notes-md-todo.is-done .notes-md-tbox { background: var(--ink); border-color: var(--ink); }
+.notes-md-todo.is-done .notes-md-ttext { text-decoration: line-through; color: var(--muted); }
+.notes-md-p { margin: 0; }
+
+/* inside a CardTile: compact and clipped */
+.tile .body.notes-md-tile { display: block; white-space: normal; -webkit-line-clamp: unset; max-height: calc(1.45em * 9); overflow: hidden; line-height: 1.45; }
+.tile .notes-md-tile .notes-md-p, .tile .notes-md-tile .notes-md-ttext { white-space: pre-wrap; }
+.tile .notes-md-tile .notes-md-h { margin-top: .1em; }
+
+/* editor read view */
+.notes-md-read { font-size: 17px; line-height: 1.6; min-height: 160px; padding: 6px 0; color: var(--ink); cursor: text; overflow-wrap: anywhere; }
+.notes-md-read .notes-md-p, .notes-md-read .notes-md-ttext { white-space: pre-wrap; }
+.notes-md-read .notes-md-h1 { font-size: 22px; }
+.notes-md-read .notes-md-h2 { font-size: 19px; }
+.notes-md-read > .notes-md-todo { align-items: center; margin-left: -10px; }
+.notes-md-cbtn { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 12px; padding: 0;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.notes-md-cbtn .notes-md-tbox { width: 22px; height: 22px; margin: 0; border-radius: 6px; border-width: 2px; transition: background .15s, border-color .15s, transform .2s var(--spring); }
+.notes-md-cbtn:active .notes-md-tbox { filter: brightness(.92); }
+.notes-md-read .notes-md-ttext { padding: 8px 0; }
+
+/* =====================================================================
+   Body editor + "/" command menu
+   ===================================================================== */
+.notes-mdx { position: relative; }
+.notes-slash { position: absolute; left: 0; z-index: 6; list-style: none; margin: 0; padding: 6px; min-width: 240px; max-width: min(320px, 100%);
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-3);
+  animation: notes-menu-in .16s var(--ease-out); transform-origin: top left; }
+.notes-slash-opt { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 10px; border-radius: 10px; cursor: pointer; font-size: 16px;
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+.notes-slash-opt + .notes-slash-opt { margin-top: 2px; }
+.notes-slash-opt[aria-selected="true"] { background: var(--accent-soft); }
+.notes-slash-opt svg { flex: none; color: var(--accent); }
+.notes-slash-l { flex: 1; font-weight: 600; }
+.notes-slash-h { font-size: 13px; color: var(--muted); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; }
+@keyframes notes-menu-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: none; } }
+
+/* =====================================================================
+   Plan it + 4-box priority
+   ===================================================================== */
+.notes-plan { display: grid; gap: 10px; margin-top: 14px; }
+.notes-plan-when { display: flex; align-items: center; gap: 8px; }
+.notes-plan-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; font-size: 15px; font-weight: 600;
+  border: 1px dashed color-mix(in srgb, var(--ink) 40%, transparent); background: color-mix(in srgb, var(--surface) 60%, transparent); color: var(--ink);
+  transition: transform .12s var(--ease-out); }
+.notes-plan-btn:active { filter: brightness(.92); }
+.notes-plan-btn.is-set { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+.notes-plan-btn svg { color: var(--accent); }
+.notes-quad { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.notes-quad-l { font-size: 13px; font-weight: 700; color: color-mix(in srgb, var(--ink) 75%, transparent); margin-right: 2px; }
+.notes-quad-btn { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--ink); transition: transform .12s var(--ease-out); }
+.notes-quad-btn:active { filter: brightness(.92); }
+.notes-quad-btn[aria-checked="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.notes-quad-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--q); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--bg) 60%, transparent); }
+.notes-quad-btn[data-q="do"] { --q: var(--danger); }
+.notes-quad-btn[data-q="schedule"] { --q: var(--accent); }
+.notes-quad-btn[data-q="quick"] { --q: var(--warn); }
+.notes-quad-btn[data-q="later"] { --q: var(--muted); }
+
+/* =====================================================================
+   Checklist motion: check pop + strike-through sweep
+   ===================================================================== */
+.notes-item-tw { position: relative; flex: 1; min-width: 0; display: block; }
+.notes-item-tw .notes-item-text { display: block; width: 100%; }
+.notes-strike { position: absolute; left: 0; top: 21px; height: 2px; border-radius: 2px; background: var(--muted); pointer-events: none;
+  transform-origin: left center; transform: scaleX(0); animation: notes-sweep .3s var(--ease-out) forwards; }
+.notes-box.is-pop { animation: notes-pop .28s var(--spring); }
+@keyframes notes-sweep { 0% { transform: scaleX(0); opacity: 1; } 70% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes notes-pop { 0% { transform: scale(1); } 45% { transform: scale(1.28); } 100% { transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .notes-box.is-pop, .notes-slash { animation: none; }
+  .notes-strike { display: none; }
+  .notes-today-main, .notes-plan-btn, .notes-quad-btn, .notes-day-dot, .notes-md-cbtn .notes-md-tbox, .notes-swipe-bg svg { transition: none; }
+}
+
+/* taps: no double-tap-zoom delay on non-button tap targets (checkbox labels, slash menu options) */
+.notes-check, .notes-check input, .notes-row, .notes-slash-opt { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

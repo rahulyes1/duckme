@@ -3,6 +3,7 @@ import type { Card, Settings } from '../lib/types';
 import { KIND_LABEL, HORIZON_LABEL } from '../lib/types';
 import { addDaysISO, daysLeft, dueLabel, dueTone, fmtDate, fmtDateY, inr, salarySide } from '../lib/format';
 import { gainLoss } from '../lib/logic';
+import { NoteBody } from '../features/notes/NoteBody';
 import { lineAmount } from '../lib/parse';
 import { isActive } from '../lib/types';
 
@@ -131,7 +132,7 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
           )}
           {c.title && <div className="t">{c.title}</div>}
 
-          {(c.type === 'note' || c.type === 'task') && c.body && <div className="body">{c.body}</div>}
+          {(c.type === 'note' || c.type === 'task') && c.body && <NoteBody text={c.body} />}
           {!!items.length && (
             <ul className="check">
               {shownItems.map(i => <li key={i.id} className={i.done ? 'on' : ''}><i />{i.text}</li>)}

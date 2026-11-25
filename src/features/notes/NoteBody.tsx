@@ -1,0 +1,100 @@
+import type { KeyboardEvent, MouseEvent } from 'react';
+import { Check } from 'lucide-react';
+import './notes.css';
+import { parseNote, type Block, type Span } from './md-lite';
+
+function Spans({ spans }: { spans: Span[] }) {
+  return <>{spans.map((s, i) => (s.bold ? <strong key={i}>{s.text}</strong> : <span key={i}>{s.text}</span>))}</>;
+}
+
+const plain = (spans: Span[]) => spans.map(s => s.text).join('');
+
+interface Props {
+  text: string;
+  /**
+   * 'tile' (default): non-interactive, safe inside the CardTile <button>.
+   * 'read': the editor's read view — checkboxes are tappable, tapping any other line asks to edit it.
+   */
+  variant?: 'tile' | 'read';
+  /** read only: flip "[ ]" ↔ "[x]" on this source line. */
+  onToggle?: (line: number) => void;
+  /** read only: switch to editing with the caret at the end of this source line. */
+  onEdit?: (line: number) => void;
+  className?: string;
+}
+
+/**
+ * Renders a note body written in markdown-lite (# heading, - bullet, [ ] / [x] checkbox, ---, **bold**)
+ * as React elements. No HTML is ever injected. Only <span>s are used in the tile variant, so it is
+ * valid inside a <button>.
+ */
+export function NoteBody({ text, variant = 'tile', onToggle, onEdit, className = '' }: Props) {
+  const blocks = parseNote(text);
+  if (variant === 'tile') {
+    // Trim trailing blank lines so the tile does not grow.
+    while (blocks.length && blocks[blocks.length - 1].kind === 'blank') blocks.pop();
+    return (
+      <span className={`body notes-md notes-md-tile ${className}`}>
+        {blocks.map(b => <TileLine key={b.line} b={b} />)}
+      </span>
+    );
+  }
+
+  const lineOf = (e: MouseEvent | KeyboardEvent) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-line]');
+    return el ? Number(el.dataset.line) : blocks.length ? blocks[blocks.length - 1].line : 0;
+  };
+  return (
+    <div
+      className={`notes-md notes-md-read ${className}`}
+      onClick={e => onEdit?.(lineOf(e))}
+    >
+      {blocks.map(b => <ReadLine key={b.line} b={b} onToggle={onToggle} />)}
+    </div>
+  );
+}
+
+function TileLine({ b }: { b: Block }) {
+  switch (b.kind) {
+    case 'blank': return <span className="notes-md-gap" aria-hidden="true" />;
+    case 'hr': return <span className="notes-md-hr" role="separator" />;
+    case 'h': return <span className={`notes-md-h notes-md-h${b.level}`}><Spans spans={b.spans} /></span>;
+    case 'li': return <span className="notes-md-li"><span className="notes-md-dot" aria-hidden="true" /><span><Spans spans={b.spans} /></span></span>;
+    case 'todo': return (
+      <span className={`notes-md-todo ${b.done ? 'is-done' : ''}`}>
+        <span className="notes-md-tbox" aria-hidden="true">{b.done && <Check size={10} strokeWidth={3.5} />}</span>
+        <span className="sr-only">{b.done ? 'Done: ' : 'To do: '}</span>
+        <span className="notes-md-ttext"><Spans spans={b.spans} /></span>
+      </span>
+    );
+    case 'p': return <span className="notes-md-p"><Spans spans={b.spans} /></span>;
+  }
+}
+
+function ReadLine({ b, onToggle }: { b: Block; onToggle?: (line: number) => void }) {
+  switch (b.kind) {
+    case 'blank': return <div className="notes-md-gap" data-line={b.line} aria-hidden="true" />;
+    case 'hr': return <div className="notes-md-hr" data-line={b.line} role="separator" />;
+    case 'h': {
+      const H = b.level === 1 ? 'h3' : 'h4';
+      return <H className={`notes-md-h notes-md-h${b.level}`} data-line={b.line}><Spans spans={b.spans} /></H>;
+    }
+    case 'li': return <div className="notes-md-li" data-line={b.line}><span className="notes-md-dot" aria-hidden="true" /><span><Spans spans={b.spans} /></span></div>;
+    case 'todo': return (
+      <div className={`notes-md-todo is-read ${b.done ? 'is-done' : ''}`} data-line={b.line}>
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={b.done}
+          aria-label={`${b.done ? 'Untick' : 'Tick'} ${plain(b.spans) || 'item'}`}
+          className="notes-md-cbtn"
+          onClick={e => { e.stopPropagation(); onToggle?.(b.line); }}
+        >
+          <span className="notes-md-tbox" aria-hidden="true">{b.done && <Check size={14} strokeWidth={3.5} />}</span>
+        </button>
+        <span className="notes-md-ttext"><Spans spans={b.spans} /></span>
+      </div>
+    );
+    case 'p': return <p className="notes-md-p" data-line={b.line}><Spans spans={b.spans} /></p>;
+  }
+}

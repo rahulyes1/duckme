@@ -44,11 +44,14 @@ function AmountField({ id, label, value, onValue, big, allowZero, required }: {
   const [text, setText] = useState(() => fmtPlain(value));
   const [err, setErr] = useState('');
   const focused = useRef(false);
+  // Only complain about an empty box after the user has typed in it. Showing an error line on a
+  // plain blur pushed every control below it down mid-tap, so the tap landed on the wrong thing.
+  const dirty = useRef(false);
   useEffect(() => { if (!focused.current) setText(fmtPlain(value)); }, [value]);
 
   const check = (raw: string): string => {
     const n = parseAmount(raw);
-    if (!raw.trim()) return required ? 'Enter an amount' : '';
+    if (!raw.trim()) return required && dirty.current ? 'Enter an amount' : '';
     if (n === null) return 'Use numbers only, like 1,250';
     if (allowZero ? n < 0 : n <= 0) return allowZero ? 'Amount can’t be negative' : 'Amount must be more than ₹0';
     return '';
@@ -64,6 +67,7 @@ function AmountField({ id, label, value, onValue, big, allowZero, required }: {
           onFocus={() => { focused.current = true; }}
           onChange={e => {
             const raw = e.target.value;
+            dirty.current = true;
             setText(raw);
             if (err && !check(raw)) setErr('');
             const n = parseAmount(raw);
@@ -94,8 +98,12 @@ function DateField({ id, label, value, onChange, required, help }: {
     <div className="field">
       <label htmlFor={id}>{label}</label>
       <input id={id} type="date" className="input num" value={value ?? ''} aria-invalid={!!err} aria-describedby={desc}
-        onChange={e => { onChange(e.target.value || undefined); if (e.target.value) setErr(''); }}
-        onBlur={e => setErr(required && !e.target.value ? 'Pick a date' : '')} />
+        onChange={e => {
+          // A required date can't be cleared (the box snaps back), so there is no error to show on blur.
+          if (!e.target.value && required) { setErr('This date is needed'); return; }
+          setErr('');
+          onChange(e.target.value || undefined);
+        }} />
       {help && <span className="help" id={`${id}-help`}>{help}</span>}
       {err && <span className="err" id={`${id}-err`} role="alert">{err}</span>}
     </div>
@@ -135,19 +143,29 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
   const { toast, burst, openCard } = useApp();
   const [draft, setDraft] = useState<Card | null>(null);
   const pending = useRef<Partial<Card>>({});
+  /** Edits being written right now. Kept on top of the DB copy until the write lands, so a live-query
+   *  update that arrives mid-write can't flip a switch or chip back for a moment. */
+  const inflight = useRef<Partial<Card>>({});
   const timer = useRef<number>();
   const [sheet, setSheet] = useState<'color' | 'more' | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
 
   // Keep the draft in step with the database, but never overwrite edits not yet saved.
-  useEffect(() => { if (card) setDraft({ ...card, ...pending.current }); }, [card]);
+  useEffect(() => { if (card) setDraft({ ...card, ...inflight.current, ...pending.current }); }, [card]);
 
   const flush = useCallback(async () => {
     clearTimeout(timer.current);
     const p = pending.current;
     if (!Object.keys(p).length) return;
     pending.current = {};
-    await updateCard(id, p);
+    inflight.current = { ...inflight.current, ...p };
+    try {
+      await updateCard(id, p);
+    } finally {
+      const rest = { ...inflight.current } as Record<string, unknown>;
+      for (const k of Object.keys(p)) if (rest[k] === (p as Record<string, unknown>)[k]) delete rest[k];
+      inflight.current = rest as Partial<Card>;
+    }
   }, [id]);
 
   useEffect(() => () => { void flush(); }, [flush]);

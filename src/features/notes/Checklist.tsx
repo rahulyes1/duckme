@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, GripVertical, Plus, X } from 'lucide-react';
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { Check, ChevronDown, CornerDownRight, GripVertical, Plus, X } from 'lucide-react';
 import {
   DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ChecklistItem } from '../../lib/types';
-import { uid } from '../../lib/format';
+import { prefersReducedMotion, uid } from '../../lib/format';
+import { isCarried } from './journal';
 
 /** Textarea that grows with its content (long text wraps, never clips). */
 export function useAutoGrow(value: string) {
@@ -21,9 +22,22 @@ export function useAutoGrow(value: string) {
   return ref;
 }
 
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+/** Width of the item's text (capped to the box), so the strike-through sweep stops where the words stop. */
+function textWidth(el: HTMLTextAreaElement): number {
+  if (measureCtx === undefined) measureCtx = document.createElement('canvas').getContext('2d');
+  const avail = el.clientWidth;
+  if (!measureCtx) return avail;
+  const cs = getComputedStyle(el);
+  measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  return Math.min(avail, Math.ceil(measureCtx.measureText(el.value).width) + 2);
+}
+
 interface RowProps {
   item: ChecklistItem;
   sortable: boolean;
+  /** Just ticked: plays the check pop and the strike-through sweep before the row glides down. */
+  justDone?: boolean;
   register: (id: string, el: HTMLTextAreaElement | null) => void;
   onText: (text: string) => void;
   onToggle: () => void;
@@ -32,25 +46,32 @@ interface RowProps {
   onPaste: (e: ClipboardEvent<HTMLTextAreaElement>) => void;
 }
 
-function ItemBody({ item, register, onText, onToggle, onRemove, onKeyDown, onPaste }: Omit<RowProps, 'sortable'>) {
+function ItemBody({ item, justDone, register, onText, onToggle, onRemove, onKeyDown, onPaste }: Omit<RowProps, 'sortable'>) {
   const ref = useAutoGrow(item.text);
+  const strike = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    if (justDone && strike.current && ref.current) strike.current.style.width = `${textWidth(ref.current)}px`;
+  }, [justDone, ref]);
   return (
     <>
       <label className="notes-check">
         <input type="checkbox" checked={item.done} onChange={onToggle} aria-label={`${item.done ? 'Untick' : 'Tick'} ${item.text || 'item'}`} />
-        <span className="notes-box" aria-hidden="true">{item.done && <Check size={16} strokeWidth={3} />}</span>
+        <span className={`notes-box ${justDone ? 'is-pop' : ''}`} aria-hidden="true">{item.done && <Check size={16} strokeWidth={3} />}</span>
       </label>
-      <textarea
-        ref={el => { ref.current = el; register(item.id, el); }}
-        className={`notes-item-text ${item.done ? 'is-done' : ''}`}
-        rows={1}
-        value={item.text}
-        aria-label="List item"
-        placeholder="List item"
-        onChange={e => onText(e.target.value.replace(/\n/g, ' '))}
-        onKeyDown={onKeyDown}
-        onPaste={onPaste}
-      />
+      <span className="notes-item-tw">
+        <textarea
+          ref={el => { ref.current = el; register(item.id, el); }}
+          className={`notes-item-text ${item.done ? 'is-done' : ''}`}
+          rows={1}
+          value={item.text}
+          aria-label="List item"
+          placeholder="List item"
+          onChange={e => onText(e.target.value)}
+          onKeyDown={onKeyDown}
+          onPaste={onPaste}
+        />
+        {justDone && !!item.text && <span ref={strike} className="notes-strike" aria-hidden="true" />}
+      </span>
       <button type="button" className="icon-btn notes-item-x" aria-label={`Remove ${item.text || 'item'}`} onClick={onRemove}>
         <X size={18} aria-hidden="true" />
       </button>
@@ -80,16 +101,25 @@ interface Props {
   autoFocus?: boolean;
 }
 
-const LIST_T = { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] as const };
+const LIST_T = { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] as const };
+const HOLD_MS = 340;
 
 export function Checklist({ items, onChange, autoFocus }: Props) {
   const [showTicked, setShowTicked] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [settling, setSettling] = useState(false);
+  /** Ticked a moment ago: stays in place (ticked, struck through) for ~340ms, then glides to the ticked section. */
+  const [holding, setHolding] = useState<ReadonlySet<string>>(() => new Set());
+  const holdTimers = useRef(new Map<string, number>());
   const refs = useRef(new Map<string, HTMLTextAreaElement>());
   const focusReq = useRef<{ id: string; at: number | 'end' } | null>(
     autoFocus ? (() => { const f = items.find(i => !i.done); return f ? { id: f.id, at: 'end' as const } : null; })() : null,
   );
+
+  useEffect(() => {
+    const timers = holdTimers.current;
+    return () => { timers.forEach(t => clearTimeout(t)); };
+  }, []);
 
   useEffect(() => {
     const f = focusReq.current;
@@ -107,8 +137,22 @@ export function Checklist({ items, onChange, autoFocus }: Props) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const open = items.filter(i => !i.done);
-  const ticked = items.filter(i => i.done);
+  const hold = (id: string, on: boolean) => {
+    clearTimeout(holdTimers.current.get(id));
+    holdTimers.current.delete(id);
+    const reduce = prefersReducedMotion();
+    setHolding(prev => {
+      if (!on && !prev.has(id)) return prev;
+      const n = new Set(prev);
+      if (on && !reduce) n.add(id); else n.delete(id);
+      return n;
+    });
+    if (on && !reduce) holdTimers.current.set(id, window.setTimeout(() => hold(id, false), HOLD_MS));
+  };
+
+  // The data is saved at once; `holding` only delays where the row is drawn.
+  const open = items.filter(i => !i.done || holding.has(i.id));
+  const ticked = items.filter(i => i.done && !holding.has(i.id));
   const register = (id: string, el: HTMLTextAreaElement | null) => {
     if (el) refs.current.set(id, el); else refs.current.delete(id);
   };
@@ -136,6 +180,14 @@ export function Checklist({ items, onChange, autoFocus }: Props) {
     onChange(items.filter(i => i.id !== id));
   };
 
+  /** Splits an item at the caret into two (Enter). */
+  const split = (item: ChecklistItem, before: string, afterTexts: string[]) => {
+    const idx = items.findIndex(i => i.id === item.id) + 1;
+    const fresh = afterTexts.map(text => ({ id: uid(), text, done: false }));
+    focusReq.current = { id: fresh[fresh.length - 1].id, at: 0 };
+    onChange([...items.slice(0, idx), ...fresh, ...items.slice(idx)].map(i => (i.id === item.id ? { ...i, text: before } : i)));
+  };
+
   const keyHandler = (item: ChecklistItem) => (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing) return;
     const el = e.currentTarget;
@@ -143,13 +195,8 @@ export function Checklist({ items, onChange, autoFocus }: Props) {
       e.preventDefault();
       if (item.done) return;
       const caret = el.selectionStart ?? el.value.length;
-      const before = el.value.slice(0, caret), after = el.value.slice(caret);
-      const idx = items.findIndex(i => i.id === item.id) + 1;
-      const fresh = { id: uid(), text: after, done: false };
-      const next = [...items.slice(0, idx), fresh, ...items.slice(idx)].map(i => (i.id === item.id ? { ...i, text: before } : i));
-      focusReq.current = { id: fresh.id, at: 0 };
-      onChange(next);
-    } else if (e.key === 'Backspace' && el.value === '' ) {
+      split(item, el.value.slice(0, caret), [el.value.slice(el.selectionEnd ?? caret)]);
+    } else if (e.key === 'Backspace' && el.value === '') {
       e.preventDefault();
       remove(item.id, true);
     } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.shiftKey) {
@@ -160,6 +207,17 @@ export function Checklist({ items, onChange, autoFocus }: Props) {
       const t = e.key === 'ArrowUp' && atStart ? list[pos - 1] : e.key === 'ArrowDown' && atEnd ? list[pos + 1] : null;
       if (t) { e.preventDefault(); refs.current.get(t.id)?.focus(); }
     }
+  };
+
+  /**
+   * Text changed. A newline can still arrive here when a phone keyboard skips the Enter keydown
+   * (e.g. Enter while a word is being composed). It used to become a space; now it splits the item.
+   */
+  const onText = (item: ChecklistItem, raw: string) => {
+    if (!raw.includes('\n')) { setItem(item.id, { text: raw }); return; }
+    if (item.done) { setItem(item.id, { text: raw.replace(/\r?\n+/g, ' ') }); return; }
+    const [first, ...rest] = raw.split(/\r?\n/);
+    split(item, first, rest);
   };
 
   const pasteHandler = (item: ChecklistItem) => (e: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -190,12 +248,20 @@ export function Checklist({ items, onChange, autoFocus }: Props) {
     onChange([...arrayMove(open, from, to), ...ticked]);
   };
 
+  const toggle = (item: ChecklistItem) => {
+    const done = !item.done;
+    hold(item.id, done);
+    setItem(item.id, { done });
+  };
+
+  const firstCarried = open.find(i => isCarried(i) && !i.done)?.id;
   const layoutOn = !dragging && !settling;
   const rowProps = (item: ChecklistItem) => ({
     item,
+    justDone: holding.has(item.id),
     register,
-    onText: (text: string) => setItem(item.id, { text }),
-    onToggle: () => setItem(item.id, { done: !item.done }),
+    onText: (text: string) => onText(item, text),
+    onToggle: () => toggle(item),
     onRemove: () => remove(item.id, false),
     onKeyDown: keyHandler(item),
     onPaste: pasteHandler(item),
@@ -203,60 +269,83 @@ export function Checklist({ items, onChange, autoFocus }: Props) {
 
   return (
     <div className="notes-cl">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={() => setDragging(true)}
-        onDragCancel={() => setDragging(false)}
-        onDragEnd={onDragEnd}
-      >
-        <SortableContext items={open.map(i => i.id)} strategy={verticalListSortingStrategy}>
-          <AnimatePresence initial={false}>
-            {open.map(item => (
-              <motion.div
-                key={item.id}
-                layout={layoutOn ? 'position' : false}
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
-                transition={LIST_T}
-              >
-                <SortableRow sortable {...rowProps(item)} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </SortableContext>
-      </DndContext>
+      <LayoutGroup>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={() => setDragging(true)}
+          onDragCancel={() => setDragging(false)}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext items={open.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            <AnimatePresence initial={false}>
+              {open.flatMap(item => {
+                const row = (
+                  <motion.div
+                    key={item.id}
+                    layoutId={layoutOn ? `cl-${item.id}` : undefined}
+                    layout={layoutOn ? 'position' : false}
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                    transition={LIST_T}
+                  >
+                    <SortableRow sortable {...rowProps(item)} />
+                  </motion.div>
+                );
+                if (item.id !== firstCarried) return [row];
+                return [
+                  <motion.div
+                    key="carry-mark"
+                    className="notes-carry"
+                    layout={layoutOn ? 'position' : false}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                    transition={LIST_T}
+                  >
+                    <CornerDownRight size={14} aria-hidden="true" /> Carried over
+                  </motion.div>,
+                  row,
+                ];
+              })}
+            </AnimatePresence>
+          </SortableContext>
+        </DndContext>
 
-      <button type="button" className="notes-add-item" onClick={() => insertAfter(null, [''])}>
-        <Plus size={20} aria-hidden="true" /> List item
-      </button>
-
-      {ticked.length > 0 && (
         <motion.div layout={layoutOn ? 'position' : false} transition={LIST_T}>
-          <button type="button" className="notes-ticked-toggle" aria-expanded={showTicked} onClick={() => setShowTicked(v => !v)}>
-            <ChevronDown size={18} aria-hidden="true" className={showTicked ? '' : 'notes-rot'} />
-            {ticked.length} ticked
+          <button type="button" className="notes-add-item" onClick={() => insertAfter(null, [''])}>
+            <Plus size={20} aria-hidden="true" /> List item
           </button>
-          <AnimatePresence initial={false}>
-            {showTicked && ticked.map(item => (
-              <motion.div
-                key={item.id}
-                layout={layoutOn ? 'position' : false}
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                transition={LIST_T}
-              >
-                <div className="notes-item notes-item-ticked">
-                  <span className="notes-handle-space" aria-hidden="true" />
-                  <ItemBody {...rowProps(item)} />
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
         </motion.div>
-      )}
+
+        {ticked.length > 0 && (
+          <motion.div layout={layoutOn ? 'position' : false} transition={LIST_T}>
+            <button type="button" className="notes-ticked-toggle" aria-expanded={showTicked} onClick={() => setShowTicked(v => !v)}>
+              <ChevronDown size={18} aria-hidden="true" className={showTicked ? '' : 'notes-rot'} />
+              {ticked.length} ticked
+            </button>
+            <AnimatePresence initial={false}>
+              {showTicked && ticked.map(item => (
+                <motion.div
+                  key={item.id}
+                  layoutId={layoutOn ? `cl-${item.id}` : undefined}
+                  layout={layoutOn ? 'position' : false}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                  transition={LIST_T}
+                >
+                  <div className="notes-item notes-item-ticked">
+                    <span className="notes-handle-space" aria-hidden="true" />
+                    <ItemBody {...rowProps(item)} />
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </LayoutGroup>
     </div>
   );
 }

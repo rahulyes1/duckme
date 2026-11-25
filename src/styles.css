@@ -80,10 +80,13 @@ img { max-width: 100%; display: block; }
 .nav .brand { display: none; font-family: var(--f-display); font-weight: 700; font-size: 26px; padding: 4px 12px 18px; }
 .nav .brand span { color: var(--accent); }
 
+@keyframes route-fade { from { opacity: 0; } to { opacity: 1; } }
+.route-fade { animation: route-fade .2s ease-out; }
+
 /* ---------- primitives ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px;
   border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 15px; transition: transform .12s var(--ease-out), background .15s; }
-.btn:active { transform: scale(.97); }
+.btn:active { filter: brightness(.92); }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .btn.dark { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: transparent; }
@@ -212,8 +215,12 @@ canvas.fx { position: fixed; inset: 0; z-index: var(--z-fx); pointer-events: non
 
 /* ---------- tap feedback on phones (no hover there, and tap highlight is off) ---------- */
 .chip, .switch, .icon-btn, .tile, .btn, .nav a, .set-seg-btn, .home-pick { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-.chip:active, .icon-btn:active, .switch:active, .set-seg-btn:active, .home-pick:active { transform: scale(.94); transition: transform 60ms; }
-.tile:active { transform: scale(.985); transition: transform 80ms; }
+/* Press feedback must NOT change size: a shrinking control makes taps near its edge miss. */
+.chip:active, .icon-btn:active, .set-seg-btn:active, .home-pick span:active { background-color: color-mix(in srgb, var(--ink) 12%, transparent); }
+.chip[aria-pressed="true"]:active { filter: brightness(1.15); }
+.switch:active i { filter: brightness(.9); }
+.tile:active { filter: brightness(.96); }
+.switch, .chip { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .nav a:active .ico { transform: scale(.9); }
 .switch i, .switch i::after { will-change: transform; }
 @media (hover: none) { .tile:hover { border-color: var(--card-line); } .icon-btn:hover { background: transparent; } }

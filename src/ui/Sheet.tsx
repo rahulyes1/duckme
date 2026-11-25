@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   open: boolean;
@@ -41,7 +42,9 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
   }, [open, onClose]);
 
   const wide = typeof window !== 'undefined' && window.innerWidth >= 720;
-  return (
+  // Portal to <body>: a parent with transform/will-change would otherwise turn position:fixed into
+  // "fixed to that parent", pushing the sheet off-screen on long pages.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -71,6 +74,7 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

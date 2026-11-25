@@ -1,15 +1,17 @@
-// CONTRACT STUB — implemented by the Sync agent. Keep these exports stable.
-export type SyncStatus =
-  | { state: 'off' }            // not configured (no Supabase keys) or signed out
-  | { state: 'syncing' }
-  | { state: 'ok'; at: number }
-  | { state: 'offline' }
-  | { state: 'error'; message: string };
+// Public sync API. main.tsx calls startSync(); the UI reads useSyncStatus() / useSyncAccount().
+import { useSyncExternalStore } from 'react';
+import { getSnapshot, subscribe, type SyncSnapshot, type SyncStatus } from './store';
 
-/** Called once from main.tsx. Restores the session and starts background sync if signed in. */
-export function startSync(): void {}
+export type { SyncStatus, SyncSnapshot, Account } from './store';
+export { startSync, syncNow, signIn, signOut } from './engine';
+export { isConfigured } from './client';
 
 /** Live sync status for the UI. */
 export function useSyncStatus(): SyncStatus {
-  return { state: 'off' };
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot).status;
+}
+
+/** Live account + sync state (configured, signed-in person, status). */
+export function useSyncAccount(): SyncSnapshot {
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

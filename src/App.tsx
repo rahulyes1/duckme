@@ -139,11 +139,10 @@ export default function App() {
           ))}
         </nav>
         <main className="main" id="main">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={route} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} transition={{ duration: 0.2 }}>
-              <Screen />
-            </motion.div>
-          </AnimatePresence>
+          {/* Plain CSS fade: no transform/will-change, so fixed bars and sheets stay fixed to the screen. */}
+          <div key={route} className="route-fade">
+            <Screen />
+          </div>
         </main>
       </div>
 
