@@ -319,3 +319,13 @@
 .plan-pf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .plan-pf-clear { justify-self: start; min-height: 40px; padding: 0 10px; color: var(--muted); }
 .plan-pf-summary { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* month date grid + deadline chips */
+.plan-mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+.plan-mgrid-h { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding: 2px 0; }
+.plan-mday { min-height: 40px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); background: var(--surface);
+  color: var(--ink); font-weight: 600; font-size: 15px; touch-action: manipulation; }
+.plan-mday[data-past] { opacity: .45; }
+.plan-mday[data-today] { box-shadow: inset 0 0 0 2px var(--accent); }
+.plan-mday[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); opacity: 1; }
+.plan-dchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }

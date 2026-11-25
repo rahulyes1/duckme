@@ -23,7 +23,7 @@ const NAV: { r: Route; label: string; Icon: typeof Home }[] = [
   { r: 'home', label: 'Home', Icon: Home },
   { r: 'notes', label: 'Notes', Icon: StickyNote },
   { r: 'money', label: 'Money', Icon: Wallet },
-  { r: 'plan', label: 'Plan', Icon: CalendarRange },
+  { r: 'plan', label: 'Priorities', Icon: CalendarRange },
   { r: 'more', label: 'More', Icon: Settings2 },
 ];
 

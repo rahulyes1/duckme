@@ -16,11 +16,8 @@ const VIEWS: { id: View; label: string }[] = [
 ];
 const VIEW_KEY = 'hisaab.plan.view';
 
+/** Always open on Priorities. (Restoring the last view made people land on 4-box and miss it.) */
 function loadView(): View {
-  try {
-    const v = localStorage.getItem(VIEW_KEY);
-    if (v && VIEWS.some(x => x.id === v)) return v as View;
-  } catch { /* storage blocked */ }
   return 'wm';
 }
 
@@ -38,7 +35,7 @@ export default function PlanScreen() {
     <div className="screen plan">
       <header className="topbar">
         <div className="topbar-row plan-head">
-          <h1 className="screen-title">Plan</h1>
+          <h1 className="screen-title">Priorities</h1>
         </div>
         <div className="plan-seg plan-views" role="group" aria-label="Plan view">
           {VIEWS.map(v => (

@@ -50,6 +50,56 @@ function DayChips({ card: c, days }: { card: Card; days: Date[] }) {
   );
 }
 
+/** This month's dates as a Mon-first grid; tap a date to plan it for that day. */
+function MonthGrid({ card: c }: { card: Card }) {
+  const ref = today();
+  const t = toISO(ref);
+  const first = new Date(ref.getFullYear(), ref.getMonth(), 1);
+  const count = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7; // blanks before the 1st (Mon-first)
+  const sel = c.when?.unit === 'day' ? c.when.start : null;
+  const monthOf: When = { unit: 'month', start: toISO(first) };
+  return (
+    <div className="plan-mgrid" role="group" aria-label={`Which date for ${titleOf(c)}`}>
+      {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={i} className="plan-mgrid-h" aria-hidden="true">{d}</span>)}
+      {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} aria-hidden="true" />)}
+      {Array.from({ length: count }, (_, i) => {
+        const d = new Date(ref.getFullYear(), ref.getMonth(), i + 1);
+        const iso = toISO(d);
+        const on = sel === iso;
+        return (
+          <button key={iso} type="button" className="plan-mday num" aria-pressed={on} data-past={iso < t || undefined} data-today={iso === t || undefined}
+            aria-label={`${DOW_SHORT[d.getDay()]} ${fmtDate(iso)}${iso === t ? ', today' : ''}`}
+            onClick={() => { buzz(6); void updateCard(c.id, { when: on ? monthOf : { unit: 'day', start: iso } }); }}>
+            {i + 1}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** One-tap deadlines: today, tomorrow, this Sunday, last day of the month. */
+function DeadlineChips({ card: c }: { card: Card }) {
+  const ref = today();
+  const opts: [string, string][] = [
+    ['Today', toISO(ref)],
+    ['Tomorrow', toISO(addDays(ref, 1))],
+    ['This Sunday', toISO(addDays(weekStart(ref), 6))],
+    ['Month end', toISO(new Date(ref.getFullYear(), ref.getMonth() + 1, 0))],
+  ];
+  return (
+    <div className="plan-dchips" role="group" aria-label={`Quick deadline for ${titleOf(c)}`}>
+      {opts.map(([label, iso]) => (
+        <button key={label} type="button" className="chip" aria-pressed={c.due === iso}
+          onClick={() => { buzz(6); void updateCard(c.id, { due: c.due === iso ? undefined : iso }); }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function PlanPanel({ card: c, slot, onPick }: { card: Card; slot: Slot; onPick: (id: string, unit: When['unit']) => void }) {
   const ref = today();
   const dueId = `due-${c.id}`;
@@ -60,6 +110,11 @@ function PlanPanel({ card: c, slot, onPick }: { card: Card; slot: Slot; onPick: 
           <span className="plan-plabel">Which day?</span>
           <DayChips card={c} days={weekDays(slot === 'week' ? 0 : 1, ref)} />
         </>
+      ) : slot === 'month' ? (
+        <>
+          <span className="plan-plabel">Which day this month?</span>
+          <MonthGrid card={c} />
+        </>
       ) : (
         <div className="plan-prowline">
           <span className="plan-plabel">Which day?</span>
@@ -69,8 +124,10 @@ function PlanPanel({ card: c, slot, onPick }: { card: Card; slot: Slot; onPick: 
           </button>
         </div>
       )}
+      <span className="plan-plabel">Deadline</span>
+      <DeadlineChips card={c} />
       <div className="plan-prowline">
-        <label className="plan-plabel" htmlFor={dueId}>Deadline</label>
+        <label className="plan-plabel" htmlFor={dueId}>Or a date</label>
         <input id={dueId} type="date" className="input plan-pdue num" value={c.due ?? ''}
           onChange={e => void updateCard(c.id, { due: e.target.value || undefined })} />
         {c.due && (
@@ -136,7 +193,7 @@ function PRow({ card: c, slot, open, onToggle, onPick }: {
   );
 }
 
-function AddLine({ slot, title }: { slot: Slot; title: string }) {
+function AddLine({ slot, title, onAdded }: { slot: Slot; title: string; onAdded: (id: string) => void }) {
   const app = useApp();
   const [text, setText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -146,9 +203,10 @@ function AddLine({ slot, title }: { slot: Slot; title: string }) {
     if (!t) return;
     setText('');
     try {
-      await createCard({ type: 'task', title: t, when: whenForSlot(slot, today()) });
+      const c = await createCard({ type: 'task', title: t, when: whenForSlot(slot, today()) });
       buzz(6);
-      app.toast(`Added to ${title}. Tap Plan to pick a day or deadline.`);
+      // Open its day + deadline choices straight away.
+      onAdded(c.id);
     } catch {
       setText(t);
       app.toast('Could not add that.');
@@ -213,7 +271,7 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
 
   return (
     <section aria-label="Priorities for this week and this month" className="plan-wm">
-      <p className="plan-lead">Add a few things for this week and this month. Tap <b>Plan</b> on any of them to pick the day you'll do it and set a deadline.</p>
+      <p className="plan-lead">Add what matters this week and this month. Pick the <b>day</b> you'll do it and a <b>deadline</b> — tap <b>Plan</b> any time to change them.</p>
       {SLOTS.map(s => {
         const list = groups[s.id];
         const days = groupByDay(list, s.id);
@@ -234,7 +292,7 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
                 </ul>
               </div>
             ))}
-            <AddLine slot={s.id} title={s.title} />
+            <AddLine slot={s.id} title={s.title} onAdded={setOpenId} />
           </section>
         );
       })}
