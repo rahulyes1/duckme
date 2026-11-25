@@ -44,6 +44,43 @@ export interface InvestInfo {
   maturity?: string;
 }
 
+export interface AutopayInfo {
+  /** Bank account name it debits, e.g. "HDFC salary". */
+  account?: string;
+  /** Mandate cap in ₹ (UPI autopay / NACH limit). */
+  cap?: number;
+}
+
+export interface StaffEntry {
+  id: string;
+  date: string;                 // YYYY-MM-DD
+  kind: 'advance' | 'paid' | 'leave' | 'extra' | 'bonus';
+  amount?: number;              // ₹ for advance / paid / bonus / extra
+  days?: number;                // for leave / extra days
+  note?: string;
+}
+
+export interface StaffInfo {
+  role: string;                 // Maid, Cook, Driver, Landlord…
+  phone?: string;
+  /** Advance still to be recovered (₹). */
+  advance: number;
+  log: StaffEntry[];
+}
+
+export interface SplitPerson {
+  name: string;
+  /** Their share in ₹. */
+  share: number;
+  settled: boolean;
+}
+
+export interface SplitInfo {
+  /** Who paid: 'me' or a person's name. */
+  paidBy: string;
+  people: SplitPerson[];
+}
+
 export interface Card {
   id: string;
   type: CardType;
@@ -89,6 +126,13 @@ export interface Card {
   when?: When;
   /** Set on the daily journal note ("Today page"): one note per date, YYYY-MM-DD. */
   journalDate?: string;
+
+  /** Bills / investments paid by a standing instruction (UPI autopay, NACH, card autopay). */
+  autopay?: AutopayInfo;
+  /** A household staff member (maid, cook, driver…) kept as a monthly bill with a ledger. */
+  staff?: StaffInfo;
+  /** An expense shared with other people. */
+  split?: SplitInfo;
 
   status: Status;
   /** Linked cards, e.g. note → bill → expense chain. */
@@ -136,6 +180,16 @@ export interface Settings {
   favCategories?: string[];
   /** Last successful cloud sync (ms). Set by the sync engine. */
   lastSyncAt?: number;
+  /** Your bank accounts (names) and the balance you last typed, for the autopay register. */
+  accounts?: { name: string; balance?: number }[];
+  /** Your own UPI ID + name, used in "settle up" pay links you send to friends. */
+  upiId?: string;
+  upiName?: string;
+  /** Names you split with often (flatmates, friends). */
+  splitPeople?: string[];
+  /** Weekly review streak (consecutive Sundays reviewed) and last review date. */
+  reviewStreak?: number;
+  lastReviewISO?: string;
 }
 
 export const CARD_COLORS: CardColor[] = ['white', 'haldi', 'mint', 'rose', 'sky', 'lilac', 'sand'];
@@ -143,7 +197,7 @@ export const KIND_LABEL: Record<CardType, string> = {
   note: 'Note', task: 'Task', bill: 'Bill', expense: 'Expense', invest: 'Investment',
 };
 export const DEFAULT_COLOR: Record<CardType, CardColor> = {
-  note: 'haldi', task: 'white', bill: 'rose', expense: 'white', invest: 'mint',
+  note: 'lilac', task: 'white', bill: 'rose', expense: 'white', invest: 'mint',
 };
 export const HORIZON_LABEL: Record<Horizon, string> = {
   week: 'This week', month: 'This month', year: 'This year', none: 'No horizon',

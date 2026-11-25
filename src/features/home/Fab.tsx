@@ -8,7 +8,7 @@ import { useLongPress } from '../../lib/hooks';
 import { buzz } from '../../lib/format';
 
 const FAN: CardType[] = ['note', 'task', 'bill', 'expense', 'invest'];
-const FAN_COLOR: Record<CardType, CardColor> = { note: 'haldi', task: 'sky', bill: 'rose', expense: 'white', invest: 'mint' };
+const FAN_COLOR: Record<CardType, CardColor> = { note: 'lilac', task: 'sky', bill: 'rose', expense: 'white', invest: 'mint' };
 
 interface Props {
   fanOpen: boolean;

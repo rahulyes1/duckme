@@ -6,7 +6,7 @@ import { inr } from '../lib/format';
 import { useCountUp } from '../lib/hooks';
 
 const COLOR_NAME: Record<CardColor, string> = {
-  white: 'Default', haldi: 'Haldi yellow', mint: 'Mint', rose: 'Rose', sky: 'Sky', lilac: 'Lilac', sand: 'Sand',
+  white: 'Default', haldi: 'Peach', mint: 'Mint', rose: 'Rose', sky: 'Sky', lilac: 'Lilac', sand: 'Sand',
 };
 
 export function ColorPicker({ value, onChange }: { value: CardColor; onChange: (c: CardColor) => void }) {

@@ -6,7 +6,9 @@
   --accent: #0B7356; --accent-ink: #FFFFFF; --accent-soft: #D6EFE5;
   --warn: #A4490A; --danger: #B3261E; --ok: #146C43;
   --strip: #16201B; --strip-ink: #EAF1EC; --strip-muted: #A9BBB0;
-  --c-white: #FFFFFF; --c-haldi: #FFEFB0; --c-mint: #D2F0E1; --c-rose: #F9D8DD; --c-sky: #D5E7F8; --c-lilac: #E5DDF8; --c-sand: #F0E4D2;
+  --c-white: #FFFFFF; --c-haldi: #FFE3D6; --c-mint: #D3F4E6; --c-rose: #FCDDE8; --c-sky: #D9EBFF; --c-lilac: #E8E0FF; --c-sand: #F4ECDF;
+  /* second pastel per colour, for the slow 'live' glow inside note cards */
+  --g-white: #EEF2FF; --g-haldi: #FFD3E0; --g-mint: #D6ECFF; --g-rose: #E6DBFF; --g-sky: #DDF5EC; --g-lilac: #FFDCEB; --g-sand: #FFE3D6;
   --card-line: rgba(27, 33, 29, .10); --shadow-1: 0 1px 2px rgba(20, 30, 25, .06); --shadow-3: 0 18px 40px -12px rgba(10, 20, 15, .35);
   --scrim: rgba(10, 15, 12, .42); --gold: #E4A70F;
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
@@ -22,7 +24,8 @@
   --accent: #3CC79A; --accent-ink: #062419; --accent-soft: #163B2E;
   --warn: #F2A060; --danger: #F2827A; --ok: #5BD49A;
   --strip: #0A0F0C; --strip-ink: #E6ECE8; --strip-muted: #93A399;
-  --c-white: #1F2522; --c-haldi: #4A3F14; --c-mint: #183F30; --c-rose: #4B2730; --c-sky: #1B3550; --c-lilac: #352C55; --c-sand: #41352A;
+  --c-white: #1F2522; --c-haldi: #4A3028; --c-mint: #183F33; --c-rose: #4A2637; --c-sky: #1C3452; --c-lilac: #372E58; --c-sand: #3F382D;
+  --g-white: #262C3A; --g-haldi: #4C2A3A; --g-mint: #1C3550; --g-rose: #3A2C58; --g-sky: #1B4038; --g-lilac: #4C2840; --g-sand: #4A3028;
   --card-line: rgba(255, 255, 255, .08); --shadow-1: none; --scrim: rgba(0, 0, 0, .6); color-scheme: dark;
 } }
 :root[data-theme="dark"] {
@@ -30,7 +33,8 @@
   --accent: #3CC79A; --accent-ink: #062419; --accent-soft: #163B2E;
   --warn: #F2A060; --danger: #F2827A; --ok: #5BD49A;
   --strip: #0A0F0C; --strip-ink: #E6ECE8; --strip-muted: #93A399;
-  --c-white: #1F2522; --c-haldi: #4A3F14; --c-mint: #183F30; --c-rose: #4B2730; --c-sky: #1B3550; --c-lilac: #352C55; --c-sand: #41352A;
+  --c-white: #1F2522; --c-haldi: #4A3028; --c-mint: #183F33; --c-rose: #4A2637; --c-sky: #1C3452; --c-lilac: #372E58; --c-sand: #3F382D;
+  --g-white: #262C3A; --g-haldi: #4C2A3A; --g-mint: #1C3550; --g-rose: #3A2C58; --g-sky: #1B4038; --g-lilac: #4C2840; --g-sand: #4A3028;
   --card-line: rgba(255, 255, 255, .08); --shadow-1: none; --scrim: rgba(0, 0, 0, .6); color-scheme: dark;
 }
 
@@ -48,8 +52,8 @@ img { max-width: 100%; display: block; }
 .display { font-family: var(--f-display); }
 
 /* card colours — any element with data-color gets --c */
-[data-color="white"] { --c: var(--c-white); } [data-color="haldi"] { --c: var(--c-haldi); } [data-color="mint"] { --c: var(--c-mint); }
-[data-color="rose"] { --c: var(--c-rose); } [data-color="sky"] { --c: var(--c-sky); } [data-color="lilac"] { --c: var(--c-lilac); } [data-color="sand"] { --c: var(--c-sand); }
+[data-color="white"] { --c: var(--c-white); --g: var(--g-white); } [data-color="haldi"] { --c: var(--c-haldi); --g: var(--g-haldi); } [data-color="mint"] { --c: var(--c-mint); --g: var(--g-mint); }
+[data-color="rose"] { --c: var(--c-rose); --g: var(--g-rose); } [data-color="sky"] { --c: var(--c-sky); --g: var(--g-sky); } [data-color="lilac"] { --c: var(--c-lilac); --g: var(--g-lilac); } [data-color="sand"] { --c: var(--c-sand); --g: var(--g-sand); }
 
 /* ---------- app shell ---------- */
 .shell { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); }
@@ -234,3 +238,21 @@ canvas.fx { position: fixed; inset: 0; z-index: var(--z-fx); pointer-events: non
 .nav a:active .ico { transform: scale(.9); }
 .switch i, .switch i::after { will-change: transform; }
 @media (hover: none) { .tile:hover { border-color: var(--card-line); } .icon-btn:hover { background: transparent; } }
+
+/* ---------- live pastel: a slow drifting glow inside note cards (transform only, GPU) ---------- */
+.notes .tile, .notes-today { overflow: hidden; isolation: isolate; }
+.notes .tile::before, .notes-today::before {
+  content: ""; position: absolute; inset: -45%; z-index: -1; pointer-events: none; opacity: .75;
+  background:
+    radial-gradient(closest-side at 30% 30%, var(--g, var(--accent-soft)), transparent 70%),
+    radial-gradient(closest-side at 75% 70%, color-mix(in srgb, var(--g, var(--accent-soft)) 70%, var(--c, transparent)), transparent 70%);
+  animation: live-drift 16s ease-in-out infinite alternate; will-change: transform;
+}
+.notes .masonry-col > :nth-child(2n) .tile::before { animation-duration: 19s; animation-delay: -6s; }
+.notes .masonry-col > :nth-child(3n) .tile::before { animation-duration: 22s; animation-delay: -11s; }
+@keyframes live-drift {
+  0%   { transform: translate3d(-6%, -4%, 0) rotate(0deg) scale(1); }
+  50%  { transform: translate3d(5%, 6%, 0) rotate(20deg) scale(1.08); }
+  100% { transform: translate3d(-3%, 8%, 0) rotate(-12deg) scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) { .notes .tile::before, .notes-today::before { animation: none; } }

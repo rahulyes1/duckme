@@ -23,7 +23,7 @@ type Fixed = 'all' | 'journal' | 'tasks' | 'reminders' | 'locked' | 'archive' | 
 type Filter = Fixed | `label:${string}`;
 
 const COLOR_NAME: Record<CardColor, string> = {
-  white: 'Default', haldi: 'Haldi yellow', mint: 'Mint', rose: 'Rose', sky: 'Sky', lilac: 'Lilac', sand: 'Sand',
+  white: 'Default', haldi: 'Peach', mint: 'Mint', rose: 'Rose', sky: 'Sky', lilac: 'Lilac', sand: 'Sand',
 };
 const DAY = 864e5;
 
@@ -193,7 +193,7 @@ export default function NotesScreen() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="screen">
+    <div className="screen notes">
       <header className="topbar">
         <div className="topbar-row">
           <h1 className="screen-title">Notes</h1>
