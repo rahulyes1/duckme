@@ -9,8 +9,8 @@ import './plan.css';
 
 type View = 'box' | 'wm' | 'order' | 'time';
 const VIEWS: { id: View; label: string }[] = [
+  { id: 'wm', label: 'Priorities' },
   { id: 'box', label: '4-box' },
-  { id: 'wm', label: 'Week & Month' },
   { id: 'order', label: 'My order' },
   { id: 'time', label: 'Timeline' },
 ];
@@ -21,7 +21,7 @@ function loadView(): View {
     const v = localStorage.getItem(VIEW_KEY);
     if (v && VIEWS.some(x => x.id === v)) return v as View;
   } catch { /* storage blocked */ }
-  return 'box';
+  return 'wm';
 }
 
 export default function PlanScreen() {

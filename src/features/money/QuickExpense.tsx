@@ -227,6 +227,13 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
               : <span className="sr-only" id="qe-hint">Use the number pad below or your keyboard.</span>}
           </div>
 
+          <div className="money-qe-pad" role="group" aria-label="Number pad">
+            {PAD.map(k => (
+              <button key={k} type="button" className="money-qe-key num" onClick={() => press(k)}
+                aria-label={k === '.' ? 'Decimal point' : k === '00' ? 'Double zero' : k}>{k}</button>
+            ))}
+          </div>
+
           <div className="money-qe-sec">
             <span className="money-qe-label" id="qe-cat">Category <span>Hold one to make it a favourite</span></span>
             <div className="money-qe-cats" role="group" aria-labelledby="qe-cat">
@@ -287,16 +294,12 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
             )}
           </div>
 
-          <div className="money-qe-pad" role="group" aria-label="Number pad">
-            {PAD.map(k => (
-              <button key={k} type="button" className="money-qe-key num" onClick={() => press(k)}
-                aria-label={k === '.' ? 'Decimal point' : k === '00' ? 'Double zero' : k}>{k}</button>
-            ))}
+          {/* Always visible at the bottom of the sheet, however small the phone. */}
+          <div className="sheet-actions">
+            <button type="button" className="btn primary block money-qe-save" onClick={() => void save()} aria-disabled={value <= 0}>
+              <Check size={20} aria-hidden="true" /> Save{value > 0 ? ` ${inr(value)}` : ''}{cat ? ` · ${cat}` : ''}
+            </button>
           </div>
-
-          <button type="button" className="btn primary block money-qe-save" onClick={() => void save()} aria-disabled={value <= 0}>
-            <Check size={20} aria-hidden="true" /> Save{value > 0 ? ` ${inr(value)}` : ''}{cat ? ` · ${cat}` : ''}
-          </button>
         </div>
       )}
     </Sheet>

@@ -17,15 +17,26 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
   const opener = useRef<Element | null>(null);
   const dragControls = useDragControls();
 
+  // Keep the latest onClose in a ref: the effect below must run ONLY when the sheet opens/closes.
+  // (Depending on onClose re-ran it on every parent render, which yanked focus out of the field
+  // you were typing in — the "forms are buggy" bug.)
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
     opener.current = document.activeElement;
+    const touch = matchMedia('(pointer: coarse)').matches;
     const t = setTimeout(() => {
-      const first = ref.current?.querySelector<HTMLElement>('[autofocus], input, textarea, select, button:not(.sheet-close)');
-      first?.focus({ preventScroll: true });
+      const root = ref.current;
+      if (!root) return;
+      // On phones, don't pop the keyboard open by focusing a text field; only honour an explicit autofocus.
+      const auto = root.querySelector<HTMLElement>('[data-autofocus], [autofocus]');
+      const first = auto ?? (touch ? null : root.querySelector<HTMLElement>('input:not([readonly]), textarea, select, button:not(.sheet-close)'));
+      (first ?? root).focus({ preventScroll: true });
     }, 60);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
+      if (e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); }
       if (e.key === 'Tab' && ref.current) {
         const f = [...ref.current.querySelectorAll<HTMLElement>('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])')].filter(el => !el.hasAttribute('disabled'));
         if (!f.length) return;
@@ -33,13 +44,26 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
         else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
       }
     };
+    // When the phone keyboard opens, keep the focused field visible inside the sheet.
+    const onFocusIn = (e: FocusEvent) => {
+      const el = e.target as HTMLElement;
+      if (!touch || !ref.current?.contains(el) || !el.matches('input, textarea, select')) return;
+      setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+    };
+    // Stop the page behind from scrolling while the sheet is open.
+    const html = document.documentElement;
+    const prevOverflow = html.style.overflow;
+    html.style.overflow = 'hidden';
     document.addEventListener('keydown', onKey, true);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       clearTimeout(t);
+      html.style.overflow = prevOverflow;
       document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('focusin', onFocusIn);
       (opener.current as HTMLElement | null)?.focus?.({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
 
   const wide = typeof window !== 'undefined' && window.innerWidth >= 720;
   // Portal to <body>: a parent with transform/will-change would otherwise turn position:fixed into
@@ -54,6 +78,7 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
             className="sheet"
             role="dialog"
             aria-modal="true"
+            tabIndex={-1}
             aria-label={title}
             initial={wide ? { opacity: 0, scale: 0.96, x: '-50%' } : { y: '100%' }}
             animate={wide ? { opacity: 1, scale: 1, x: '-50%' } : { y: 0 }}
