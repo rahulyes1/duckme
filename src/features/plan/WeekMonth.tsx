@@ -1,14 +1,17 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
-import { CalendarClock, CalendarDays, Check, ChevronDown, Plus, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { CalendarClock, CalendarDays, Check, ChevronDown, X } from 'lucide-react';
 import type { Card, When } from '../../lib/types';
 import { KIND_LABEL, isActive } from '../../lib/types';
 import { useApp } from '../../app-context';
-import { createCard, markDone, updateCard } from '../../lib/actions';
+import { markDone, updateCard, withUndo } from '../../lib/actions';
 import { byRank } from '../../lib/logic';
-import { addDays, buzz, fmtDate, inr, toISO, today } from '../../lib/format';
+import { addDays, buzz, daysLeft, dueTone, fmtDate, fromISO, inr, toISO, today } from '../../lib/format';
 import { DuePill, TYPE_ICON } from '../../ui/CardTile';
 import { WhenPicker, whenLabel } from '../../ui/WhenPicker';
-import { DOW_SHORT, SLOTS, slotOf, weekStart, whenForSlot, type Slot } from './when';
+import { DOW_SHORT, SLOTS, slotOf, weekStart, type Slot } from './when';
+import { SmartAdd } from './SmartAdd';
+import { timeLabel } from './smart';
 
 const titleOf = (c: Card) => c.title || c.body?.split(/\n/)[0]?.slice(0, 60) || c.checklist?.[0]?.text || 'Untitled';
 
@@ -143,30 +146,64 @@ function PlanPanel({ card: c, slot, onPick }: { card: Card; slot: Slot; onPick: 
   );
 }
 
+/** Ring that empties as the deadline gets closer (full = lots of time, empty = due). */
+function DeadlineRing({ card: c }: { card: Card }) {
+  if (!c.due) return null;
+  const left = daysLeft(c.due);
+  const total = Math.max(1, Math.round((fromISO(c.due).getTime() - new Date(c.createdAt).setHours(0, 0, 0, 0)) / 864e5));
+  const frac = Math.max(0, Math.min(1, left / total));
+  const tone = dueTone(c.due);
+  const r = 9, C = 2 * Math.PI * r;
+  return (
+    <svg className={`plan-ring is-${tone}`} width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <circle className="bg" cx="12" cy="12" r={r} />
+      <circle className="fg" cx="12" cy="12" r={r} strokeDasharray={C} strokeDashoffset={C * (1 - frac)} />
+    </svg>
+  );
+}
+
 function PRow({ card: c, slot, open, onToggle, onPick }: {
   card: Card; slot: Slot; open: boolean; onToggle: () => void; onPick: (id: string, unit: When['unit']) => void;
 }) {
   const app = useApp();
+  const reduce = useReducedMotion();
   const Icon = TYPE_ICON[c.type];
   const title = titleOf(c);
-  const [leaving, setLeaving] = useState(false);
+  const [phase, setPhase] = useState<'idle' | 'ticked' | 'leaving'>('idle');
+  const overdue = !!c.due && daysLeft(c.due) < 0;
 
   const done = async () => {
-    setLeaving(true);
-    buzz(12);
+    // Check pop + strike-through first, then slide away.
+    setPhase('ticked');
+    buzz([8, 40, 14]);
+    await new Promise(r => setTimeout(r, reduce ? 0 : 420));
+    setPhase('leaving');
     try {
       const undo = await markDone(c.id);
       app.toast(c.type === 'bill' ? `Paid: ${title}` : `Done: ${title}`, undo);
     } catch {
-      setLeaving(false);
+      setPhase('idle');
       app.toast('Could not mark that done.');
     }
   };
 
+  const moveToTomorrow = async () => {
+    buzz(8);
+    const tm = toISO(addDays(today(), 1));
+    const patch: Partial<Card> = { due: tm };
+    if (c.when?.unit === 'day' && c.when.start < tm) patch.when = { unit: 'day', start: tm };
+    const undo = await withUndo(async () => { await updateCard(c.id, patch); });
+    app.toast(`Moved to tomorrow, ${fmtDate(tm)}`, undo);
+  };
+
   return (
-    <li className={`plan-prow-wrap ${leaving ? 'is-leaving' : ''}`} data-color={c.color}>
+    <motion.li layout={!reduce} className={`plan-prow-wrap is-${phase}`} data-color={c.color}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={reduce ? { duration: 0.01 } : { type: 'spring', stiffness: 460, damping: 26 }}>
       <div className="plan-prow">
-        <button type="button" className="plan-pcheck" aria-label={c.type === 'bill' ? `Mark ${title} paid` : `Mark ${title} done`} onClick={done}>
+        <button type="button" className="plan-pcheck" aria-label={c.type === 'bill' ? `Mark ${title} paid` : `Mark ${title} done`}
+          onClick={done} disabled={phase !== 'idle'}>
           <Check size={18} aria-hidden="true" />
         </button>
         <button type="button" className="plan-pmain" onClick={e => app.openCard(c.id, e.currentTarget.closest('li'))}>
@@ -177,10 +214,12 @@ function PRow({ card: c, slot, open, onToggle, onPick }: {
           </span>
           <span className="pills plan-brow-pills">
             {c.when && <span className="pill accent">{whenLabel(c.when)}</span>}
+            {c.reminder && <span className="pill outline">{timeLabel(c.reminder.slice(11, 16))}</span>}
             {c.due ? <DuePill due={c.due} /> : null}
             {!!c.amount && <span className="pill outline num">{inr(c.amount)}</span>}
           </span>
         </button>
+        <DeadlineRing card={c} />
         <button type="button" className={`plan-pplan ${open ? 'is-open' : ''}`} aria-expanded={open}
           aria-label={`Plan day and deadline for ${title}`} onClick={onToggle}>
           <CalendarClock size={18} aria-hidden="true" />
@@ -188,41 +227,14 @@ function PRow({ card: c, slot, open, onToggle, onPick }: {
           <ChevronDown size={14} aria-hidden="true" className="plan-pchev" />
         </button>
       </div>
+      {overdue && phase === 'idle' && (
+        <div className="plan-overdue">
+          <span>Missed the deadline.</span>
+          <button type="button" className="btn plan-overdue-btn" onClick={() => void moveToTomorrow()}>Move to tomorrow</button>
+        </div>
+      )}
       {open && <PlanPanel card={c} slot={slot} onPick={onPick} />}
-    </li>
-  );
-}
-
-function AddLine({ slot, title, onAdded }: { slot: Slot; title: string; onAdded: (id: string) => void }) {
-  const app = useApp();
-  const [text, setText] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    const t = text.trim();
-    if (!t) return;
-    setText('');
-    try {
-      const c = await createCard({ type: 'task', title: t, when: whenForSlot(slot, today()) });
-      buzz(6);
-      // Open its day + deadline choices straight away.
-      onAdded(c.id);
-    } catch {
-      setText(t);
-      app.toast('Could not add that.');
-    }
-  };
-  const id = `plan-add-${slot}`;
-  return (
-    // Tapping anywhere on the line (the + icon, the padding) puts the cursor in the box.
-    <form className="plan-padd" onSubmit={submit}
-      onClick={e => { const t = e.target as HTMLElement; if (t.tagName !== 'BUTTON' && t.tagName !== 'INPUT') inputRef.current?.focus(); }}>
-      <label htmlFor={id} className="sr-only">Add a priority to {title}</label>
-      <Plus size={18} aria-hidden="true" className="plan-padd-icon" />
-      <input ref={inputRef} id={id} className="plan-padd-input" value={text} onChange={e => setText(e.target.value)}
-        placeholder="Add a priority" enterKeyHint="done" autoComplete="off" />
-      <button type="submit" className="btn primary plan-padd-btn" disabled={!text.trim()}>Add</button>
-    </form>
+    </motion.li>
   );
 }
 
@@ -292,7 +304,7 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
                 </ul>
               </div>
             ))}
-            <AddLine slot={s.id} title={s.title} onAdded={setOpenId} />
+            <SmartAdd slot={s.id} title={s.title} onAdded={(id, planned) => { if (!planned) setOpenId(id); }} />
           </section>
         );
       })}

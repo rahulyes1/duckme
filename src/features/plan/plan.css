@@ -329,3 +329,50 @@
 .plan-mday[data-today] { box-shadow: inset 0 0 0 2px var(--accent); }
 .plan-mday[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); opacity: 1; }
 .plan-dchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+/* ---------- smart add: suggestions, pills, warnings ---------- */
+.plan-smart { display: grid; gap: 8px; margin-top: 4px; }
+.plan-pills { display: flex; flex-wrap: wrap; gap: 6px; min-height: 0; }
+.plan-pills:empty { display: none; }
+.plan-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 4px 0 10px; border-radius: 999px;
+  font-size: 13px; font-weight: 700; background: var(--accent-soft); color: var(--accent); font-variant-numeric: tabular-nums; }
+.plan-pill.is-due { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.plan-pill.is-time { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+.plan-pill button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: transparent; color: inherit; display: grid; place-items: center; }
+.plan-pill button:active { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.plan-chips-k { display: inline-flex; align-items: center; gap: 5px; width: 100%; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--accent); }
+.plan-schip { display: inline-grid; justify-items: start; gap: 0; min-height: 44px; padding: 6px 12px; border-radius: 14px; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: var(--surface); color: var(--ink); touch-action: manipulation; }
+.plan-schip b { font-size: 14px; font-weight: 700; }
+.plan-schip span { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plan-schip:active { background: var(--accent-soft); }
+.plan-schip.is-suggested { border-style: dashed; }
+.plan-warn { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 0; padding: 8px 10px; border-radius: 12px; font-size: 13px;
+  background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--ink); }
+.plan-warn svg { color: var(--warn); flex: none; }
+.plan-warn span { flex: 1 1 160px; min-width: 0; }
+.plan-warn-fix { border: 0; border-radius: 999px; min-height: 36px; padding: 0 12px; background: var(--ink); color: var(--bg); font-weight: 700; font-size: 13px; }
+.plan-shint { margin: 0; font-size: 12.5px; color: var(--muted); max-height: 0; overflow: hidden; opacity: 0; transition: opacity .2s, max-height .2s; }
+.plan-shint.is-on { max-height: 40px; opacity: 1; }
+.plan-shint b { color: var(--ink); }
+
+/* ---------- livelier rows ---------- */
+.plan-ring { flex: none; }
+.plan-ring circle { fill: none; stroke-width: 3; }
+.plan-ring .bg { stroke: color-mix(in srgb, var(--ink) 14%, transparent); }
+.plan-ring .fg { stroke: var(--accent); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset .6s var(--ease-out); }
+.plan-ring.is-urgent .fg { stroke: var(--warn); } .plan-ring.is-late .fg { stroke: var(--danger); }
+.plan-overdue { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px 10px 48px; font-size: 13px; color: var(--danger); font-weight: 600; }
+.plan-overdue-btn { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.plan-prow-wrap.is-ticked .plan-pcheck { color: var(--accent-ink); }
+.plan-prow-wrap.is-ticked .plan-pcheck::before { background: var(--accent); border-color: var(--accent); animation: plan-check-pop .35s var(--spring); }
+.plan-prow-wrap .plan-brow-title { background: linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0 2px; transition: background-size .35s var(--ease-out), color .3s; }
+.plan-prow-wrap.is-ticked .plan-brow-title, .plan-prow-wrap.is-leaving .plan-brow-title { background-size: 100% 2px; color: var(--muted); }
+.plan-prow-wrap.is-leaving { opacity: 0; transform: translateX(40px); transition: opacity .25s var(--ease-in), transform .25s var(--ease-in); }
+@keyframes plan-check-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .plan-ring .fg, .plan-prow-wrap .plan-brow-title, .plan-shint { transition: none; }
+  .plan-prow-wrap.is-ticked .plan-pcheck::before { animation: none; }
+}
