@@ -3,6 +3,7 @@ import type { Card, CardType, InvestInfo, InvestKind } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { addDays, daysBetween, fmtDate, fromISO, inr, toISO, today } from '../../lib/format';
 import { dayToDate, parse } from '../../lib/parse';
+import { DEFAULTS as MONEY_DEFAULTS } from '../money/money-util';
 
 export type Partial0 = Partial<Card> & { type: CardType };
 
@@ -72,4 +73,15 @@ export function buildDraft(text: string, forced: CardType | null, ref: Date = to
   if (partial.repeat === 'monthly') bits.push('repeats monthly');
 
   return { type, partial, empty: !v, summary: bits.join(' · ') };
+}
+
+/** Defaults for a new card picked from the + fan (spec §4: long-press = pick card type). */
+export function newCardDefaults(type: CardType): Partial0 {
+  switch (type) {
+    case 'note': return { type: 'note' };
+    case 'task': return { type: 'task', horizon: 'week' };
+    case 'expense': return MONEY_DEFAULTS.expense();
+    case 'bill': return MONEY_DEFAULTS.bill();
+    case 'invest': return MONEY_DEFAULTS.invest();
+  }
 }

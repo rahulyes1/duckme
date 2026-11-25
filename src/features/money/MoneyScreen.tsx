@@ -18,6 +18,7 @@ import {
   parseAmount, REPEAT_LABEL, shortMonth, spentIn, sum, YEAR_MULT,
 } from './money-util';
 import './money.css';
+import { isActive } from '../../lib/types';
 
 type AddType = Extract<CardType, 'expense' | 'bill' | 'invest'>;
 
@@ -256,11 +257,11 @@ export default function MoneyScreen() {
     const horizon = addDaysISO(todayISO(), 45);
     const upcoming = bills.filter(b => b.due! <= horizon);
 
-    const subs = all.filter(c => c.type === 'bill' && c.autorenew && c.status === 'open')
+    const subs = all.filter(c => c.type === 'bill' && c.autorenew && isActive(c))
       .sort((a, b) => (a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1);
     const subsYear = sum(subs.map(s => (s.amount ?? 0) * YEAR_MULT[s.repeat ?? 'none']));
 
-    const inv = all.filter(c => c.type === 'invest' && c.status === 'open');
+    const inv = all.filter(c => c.type === 'invest' && isActive(c));
     const lump = sum(inv.filter(c => !isMonthly(c.invest?.kind)).map(c => c.amount ?? 0));
     const monthly = sum(inv.filter(c => isMonthly(c.invest?.kind)).map(c => c.amount ?? 0));
     const value = sum(inv.map(c => c.invest?.value ?? (isMonthly(c.invest?.kind) ? 0 : c.amount ?? 0)));

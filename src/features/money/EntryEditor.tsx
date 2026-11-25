@@ -15,6 +15,8 @@ import { ColorPicker, Switch } from '../../ui/bits';
 import { Sheet } from '../../ui/Sheet';
 import { fmtPlain, hasMaturity, isMonthly, paidMessage, parseAmount, REPEAT_LABEL } from './money-util';
 import './money.css';
+import { isActive } from '../../lib/types';
+import { gainLoss } from '../../lib/logic';
 
 const REPEATS: Repeat[] = ['none', 'monthly', 'quarterly', 'yearly'];
 const TYPE_ICON = { expense: IndianRupee, bill: Receipt, invest: TrendingUp, note: StickyNote, task: CheckSquare } as const;
@@ -181,13 +183,16 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
 
   const back = async () => { await flush(); onClose(); };
 
+  const gl = gainLoss(c);
+
   const markPaid = async (el: HTMLElement) => {
     const rect = el.getBoundingClientRect();
     await flush();
     const r = await payBill(id);
     burst(rect);
     toast(paidMessage(c, r.nextDue), r.undo);
-    if (!r.nextDue) onClose();
+    // The paid bill is now done; a repeating bill has a new card for the next due date.
+    onClose();
   };
 
   const doDuplicate = async () => {
@@ -271,7 +276,7 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
               <span className="help" id={`pen-${id}-help`}>Shown as a reminder only. It never changes the order.</span>
             </div>
             <Chips label="Category" options={EXPENSE_CATEGORIES} value={c.category as typeof EXPENSE_CATEGORIES[number]} onChange={v => set({ category: v })} />
-            {c.status === 'open' && (
+            {isActive(c) && (
               <button type="button" className="btn primary block money-markpaid" onClick={e => markPaid(e.currentTarget)}>
                 <CheckCircle2 size={18} aria-hidden="true" /> Mark paid{c.amount ? ` ${inr(c.amount)}` : ''}
               </button>
@@ -285,7 +290,13 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
             <Chips label="Kind" options={INVEST_KINDS} value={kind} onChange={v => setInvest({ kind: v })} />
             {monthly && <DateField id={`next-${id}`} label="Next instalment" value={c.invest?.next} onChange={v => setInvest({ next: v })} />}
             {hasMaturity(kind) && <DateField id={`mat-${id}`} label="Maturity date" value={c.invest?.maturity} onChange={v => setInvest({ maturity: v })} />}
+            {monthly && <AmountField id={`inv-${id}`} label="Total invested so far" value={c.invest?.invested} allowZero onValue={n => setInvest({ invested: n })} />}
             <AmountField id={`val-${id}`} label="Current value" value={c.invest?.value} allowZero onValue={n => setInvest({ value: n })} />
+            {gl && (
+              <p className={`money-gl num ${gl.diff >= 0 ? 'up' : 'down'}`} aria-live="polite">
+                {gl.diff >= 0 ? 'Gain' : 'Loss'}: {inr(Math.abs(gl.diff))} ({Math.abs(gl.pct).toFixed(1)}%)
+              </p>
+            )}
             <p className="money-muted">Values are what you enter. Hisaab doesn't give buy/sell advice.</p>
           </>
         )}

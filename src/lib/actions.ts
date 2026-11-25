@@ -2,7 +2,8 @@
 import { db, getSettings } from './db';
 import type { Card, CardType, Version } from './types';
 import { DEFAULT_COLOR } from './types';
-import { addDaysISO, addMonthsISO, todayISO, uid } from './format';
+import { addDaysISO, todayISO, uid } from './format';
+import { nextDueDate, rankForNewCard } from './logic';
 
 export type Undo = () => Promise<void>;
 
@@ -25,14 +26,15 @@ export function newCard(partial: Partial<Card> & { type: CardType }): Card {
   };
 }
 
+/** Rank for a brand-new card: above every existing card, so your order is never shuffled. */
 export async function nextRank(): Promise<number> {
   const all = await db.cards.toArray();
-  return all.reduce((m, c) => Math.max(m, c.rank || 0), 0) + 1;
+  return rankForNewCard(all.map(c => c.rank));
 }
 
 export async function createCard(partial: Partial<Card> & { type: CardType }): Promise<Card> {
   const c = newCard(partial);
-  if ((c.type === 'task' || c.type === 'bill') && !c.rank) c.rank = await nextRank();
+  if (!partial.rank) c.rank = await nextRank();
   await db.cards.add(c);
   return c;
 }
@@ -78,34 +80,40 @@ export async function restoreVersion(cardId: string, v: Version): Promise<void> 
   await updateCard(cardId, { title: v.title, body: v.body, checklist: v.checklist });
 }
 
-const nextDue = (due: string, repeat: Card['repeat']): string | null => {
-  if (repeat === 'monthly') return addMonthsISO(due, 1);
-  if (repeat === 'quarterly') return addMonthsISO(due, 3);
-  if (repeat === 'yearly') return addMonthsISO(due, 12);
-  return null;
-};
+const nextDue = nextDueDate;
 
 /**
- * Marks a bill paid: creates a linked expense card. Repeating bills roll to the next due date;
- * one-off bills become 'done'.
+ * Marks a bill paid (BUILD_SPEC §5): the bill becomes 'done', a linked expense is created, and if
+ * the bill repeats a NEW bill card is created for the next due date, keeping the same rank so your
+ * order doesn't change. Chain: bill → expense, bill → next bill.
  */
-export async function payBill(id: string): Promise<{ undo: Undo; expense: Card; nextDue: string | null }> {
+export async function payBill(id: string): Promise<{ undo: Undo; expense: Card; nextDue: string | null; nextBill: Card | null }> {
   let expense!: Card;
   let nd: string | null = null;
+  let nextBill: Card | null = null;
   const undo = await withUndo(async () => {
     const bill = await db.cards.get(id);
     if (!bill) return;
     expense = newCard({
       type: 'expense', title: `${bill.title} paid`, amount: bill.amount ?? 0, date: todayISO(),
       category: bill.category ?? (bill.autorenew ? 'Entertainment' : 'Bills'), mode: 'UPI', links: [bill.id],
+      rank: await nextRank(),
     });
     await db.cards.add(expense);
     nd = bill.due ? nextDue(bill.due, bill.repeat) : null;
     const links = [...bill.links, expense.id];
-    if (nd) await db.cards.update(id, { due: nd, links, updatedAt: Date.now() });
-    else await db.cards.update(id, { status: 'done', doneAt: Date.now(), links, updatedAt: Date.now() });
+    if (nd) {
+      const now = Date.now();
+      nextBill = {
+        ...bill, id: uid(), due: nd, status: 'open', links: [bill.id], pinned: bill.pinned,
+        createdAt: now, updatedAt: now, doneAt: undefined, trashedAt: undefined,
+      };
+      await db.cards.add(nextBill);
+      links.push(nextBill.id);
+    }
+    await db.cards.update(id, { status: 'done', doneAt: Date.now(), links, pinned: false, updatedAt: Date.now() });
   });
-  return { undo, expense, nextDue: nd };
+  return { undo, expense, nextDue: nd, nextBill };
 }
 
 export async function markDone(id: string): Promise<Undo> {
@@ -122,18 +130,22 @@ export async function markDone(id: string): Promise<Undo> {
   });
 }
 
-/** Pushes the due date (or next SIP date) by `days`. */
-export async function delay(id: string, days = 7): Promise<{ undo: Undo; newDate: string | null }> {
+/**
+ * Pushes the due date (or next SIP date) by `days` — 7 or 1 from Settings when not given — and
+ * marks the card 'delayed'. It stays in the grid with a "Delayed" chip; its rank does not change.
+ */
+export async function delay(id: string, days?: number): Promise<{ undo: Undo; newDate: string | null }> {
   let newDate: string | null = null;
+  const step = days ?? (await getSettings()).delayDays ?? 7;
   const undo = await withUndo(async () => {
     const c = await db.cards.get(id);
     if (!c) return;
     if (c.type === 'invest' && c.invest?.next) {
-      newDate = addDaysISO(c.invest.next, days);
+      newDate = addDaysISO(c.invest.next, step);
       await db.cards.update(id, { invest: { ...c.invest, next: newDate }, updatedAt: Date.now() });
     } else {
-      newDate = addDaysISO(c.due ?? todayISO(), days);
-      await db.cards.update(id, { due: newDate, updatedAt: Date.now() });
+      newDate = addDaysISO(c.due ?? todayISO(), step);
+      await db.cards.update(id, { due: newDate, status: 'delayed', updatedAt: Date.now() });
     }
   });
   return { undo, newDate };
@@ -160,7 +172,7 @@ export async function deleteForever(id: string): Promise<void> {
 export async function duplicate(id: string): Promise<Card | null> {
   const c = await db.cards.get(id);
   if (!c) return null;
-  const copy = { ...c, id: uid(), title: c.title ? `${c.title} (copy)` : '', links: [], pinned: false, createdAt: Date.now(), updatedAt: Date.now() };
+  const copy = { ...c, id: uid(), title: c.title ? `${c.title} (copy)` : '', links: [], pinned: false, rank: await nextRank(), createdAt: Date.now(), updatedAt: Date.now() };
   await db.cards.add(copy);
   return copy;
 }
@@ -178,7 +190,6 @@ export async function convert(id: string, type: CardType, fill: Partial<Card> = 
     }
     if (type === 'expense') { patch.date = fill.date ?? todayISO(); patch.mode = c.mode ?? 'UPI'; patch.category = fill.category ?? c.category ?? 'Other'; }
     if (type === 'task' && c.horizon === 'none') patch.horizon = 'week';
-    if ((type === 'task' || type === 'bill') && !c.rank) patch.rank = await nextRank();
     await db.cards.update(id, patch);
   });
 }

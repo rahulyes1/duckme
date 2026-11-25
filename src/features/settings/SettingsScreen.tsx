@@ -377,6 +377,18 @@ export default function SettingsScreen() {
           <span className="help">Used for the before/after salary split. If a month is shorter, the last day is used.</span>
         </div>
         <div className="field">
+          <span className="label" id="delay-lbl">Swipe left delays by</span>
+          <div className="set-seg" role="radiogroup" aria-labelledby="delay-lbl">
+            {([[7, '1 week'], [1, '1 day']] as const).map(([v, label]) => (
+              <button key={v} type="button" role="radio" aria-checked={(settings.delayDays ?? 7) === v} className="set-seg-btn"
+                onClick={() => saveSettings({ delayDays: v })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="help">Delay moves the due date and marks the card Delayed. It never changes your order.</span>
+        </div>
+        <div className="field">
           <span className="label" id="theme-lbl">Theme</span>
           <ThemePicker value={settings.theme} />
         </div>

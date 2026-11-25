@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Search, Sparkles, X } from 'lucide-react';
+import { ListOrdered, Plus, Search, Sparkles, X } from 'lucide-react';
 import type { Card, CardType } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
@@ -7,17 +7,19 @@ import { matchesQuery, useCards, useSettings } from '../../lib/hooks';
 import { saveSettings } from '../../lib/db';
 import { buzz, prefersReducedMotion, today } from '../../lib/format';
 import { EmptyState } from '../../ui/bits';
+import { Masonry } from '../../ui/Masonry';
 import { SwipeCard } from './SwipeCard';
+import { byRank } from '../../lib/logic';
+import { newCardDefaults } from './draft';
 import { SalaryStrip } from './SalaryStrip';
 import { Fab } from './Fab';
 import { QuickAdd } from './QuickAdd';
 import './home.css';
+import { isActive } from '../../lib/types';
 
-type Filter = 'all' | 'notes' | 'tasks' | 'bills' | 'money' | 'invest';
-const FILTERS: [Filter, string][] = [['all', 'All'], ['notes', 'Notes'], ['tasks', 'Tasks'], ['bills', 'Bills'], ['money', 'Money'], ['invest', 'Invest']];
-const FILTER_TYPE: Record<Exclude<Filter, 'all'>, CardType> = { notes: 'note', tasks: 'task', bills: 'bill', money: 'expense', invest: 'invest' };
-
-const newestFirst = (a: Card, b: Card) => b.createdAt - a.createdAt;
+type Filter = 'all' | 'notes' | 'tasks' | 'bills' | 'expenses' | 'invest';
+const FILTERS: [Filter, string][] = [['all', 'All'], ['notes', 'Notes'], ['tasks', 'Tasks'], ['bills', 'Bills'], ['expenses', 'Expenses'], ['invest', 'Invest']];
+const FILTER_TYPE: Record<Exclude<Filter, 'all'>, CardType> = { notes: 'note', tasks: 'task', bills: 'bill', expenses: 'expense', invest: 'invest' };
 
 export default function HomeScreen() {
   const app = useApp();
@@ -34,7 +36,7 @@ export default function HomeScreen() {
 
   const isHidden = useCallback((c: Card) => !!c.locked && !app.isUnlocked(c.id), [app]);
 
-  const open = useMemo(() => (cards ?? []).filter(c => c.status === 'open'), [cards]);
+  const open = useMemo(() => (cards ?? []).filter(c => isActive(c)), [cards]);
   const shown = useMemo(() => {
     const query = q.trim();
     return open
@@ -45,10 +47,22 @@ export default function HomeScreen() {
         // Locked notes only match on their title, never on hidden text.
         return matchesQuery(isHidden(c) ? { ...withKind, body: '', checklist: undefined, category: undefined } : withKind, query);
       })
-      .sort(newestFirst);
+      // Your order is the ONLY order (spec §7): due dates, penalties and salary side never move cards.
+      .sort(byRank);
   }, [open, filter, q, isHidden]);
   const pinned = shown.filter(c => c.pinned);
   const others = shown.filter(c => !c.pinned);
+
+  /** + tap: a blank note straight into the editor (spec §4). */
+  const quickNote = useCallback((el?: Element | null) => {
+    setFanOpen(false);
+    void app.createAndOpen({ type: 'note' }, el ?? document.querySelector('.home-fab'));
+  }, [app]);
+  /** Hold +, then pick a type: opens a new card of that type in its editor. */
+  const newOfType = useCallback((t: CardType) => {
+    setFanOpen(false);
+    void app.createAndOpen(newCardDefaults(t), document.querySelector('.home-fab'));
+  }, [app]);
 
   const closeSheet = useCallback(() => setSheet(s => ({ ...s, open: false })), []);
   const closeFan = useCallback(() => setFanOpen(false), []);
@@ -71,11 +85,13 @@ export default function HomeScreen() {
   const dateLabel = today().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 
   const grid = (list: Card[]) => (
-    <div className="masonry home-grid" key={filter}>
-      {list.map(c => (
-        <SwipeCard key={c.id} card={c} settings={settings} hidden={isHidden(c)} isNew={c.id === newId} onSwiped={retireHint} />
-      ))}
-    </div>
+    <Masonry
+      key={filter}
+      className="home-grid"
+      items={list}
+      keyOf={c => c.id}
+      render={c => <SwipeCard card={c} settings={settings} hidden={isHidden(c)} isNew={c.id === newId} onSwiped={retireHint} />}
+    />
   );
 
   let content: JSX.Element | null = null;
@@ -85,9 +101,9 @@ export default function HomeScreen() {
         <EmptyState
           icon={<Sparkles size={40} aria-hidden="true" />}
           title="Your hisaab starts here"
-          action={<button type="button" className="btn primary" onClick={() => openSheet(null)}><Plus size={18} aria-hidden="true" />Add your first card</button>}
+          action={<button type="button" className="btn primary" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Write your first note</button>}
         >
-          Type it the way you would say it: <b>bijli 2400 15th</b>, <b>chai 40</b>, <b>PUC renew karna kal</b>. Hisaab works out if it is a note, task, bill, expense or investment.
+          Tap + for a quick note. Hold + to pick a task, bill, expense or investment, or choose <b>Type it</b> and write it the way you would say it: <b>bijli 2400 15th</b>.
         </EmptyState>
       );
     } else if (!shown.length) {
@@ -128,6 +144,7 @@ export default function HomeScreen() {
           {q && (
             <button type="button" className="icon-btn" aria-label="Clear search" onClick={() => setQ('')}><X size={20} aria-hidden="true" /></button>
           )}
+          <a className="icon-btn" href="#plan" aria-label="Reorder cards" title="Reorder: drag cards into your order"><ListOrdered size={20} aria-hidden="true" /></a>
         </div>
         <div className="chips home-chips" role="group" aria-label="Filter cards">
           {FILTERS.map(([k, l]) => (
@@ -138,7 +155,7 @@ export default function HomeScreen() {
 
       {showHint && (
         <div className="home-hint" role="note">
-          <span>Swipe right to mark paid or done. Swipe left to delay a week, keep going to kill.</span>
+          <span>Swipe right to mark paid or done. Swipe left to delay {settings.delayDays === 1 ? 'a day' : 'a week'}, keep going to kill.</span>
           <button type="button" className="btn ghost" onClick={retireHint}>Got it</button>
         </div>
       )}
@@ -149,9 +166,10 @@ export default function HomeScreen() {
         <Fab
           fanOpen={fanOpen}
           active={fanOpen || sheet.open}
-          onTap={() => openSheet(null)}
+          onTap={() => quickNote()}
           onHold={() => setFanOpen(true)}
-          onPick={t => openSheet(t)}
+          onPick={newOfType}
+          onTypeIt={() => openSheet(null)}
           onCloseFan={closeFan}
         />
         <SalaryStrip cards={open} salaryDay={settings.salaryDay} />

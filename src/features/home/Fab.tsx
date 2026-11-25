@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Keyboard, Plus } from 'lucide-react';
 import type { CardColor, CardType } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { TYPE_ICON } from '../../ui/CardTile';
@@ -17,11 +17,13 @@ interface Props {
   onTap: () => void;
   onHold: () => void;
   onPick: (t: CardType) => void;
+  /** Opens the Hinglish quick-add sheet ("bijli 2400 15th"). */
+  onTypeIt: () => void;
   onCloseFan: () => void;
 }
 
-/** Floating +: tap = quick add, hold = fan of the five card types. */
-export function Fab({ fanOpen, active, onTap, onHold, onPick, onCloseFan }: Props) {
+/** Floating +: tap = quick note, hold = fan of the five card types plus "Type it" (Hinglish quick add). */
+export function Fab({ fanOpen, active, onTap, onHold, onPick, onTypeIt, onCloseFan }: Props) {
   const reduce = useReducedMotion();
   const fanRef = useRef<HTMLDivElement>(null);
   const lp = useLongPress(() => { buzz(18); onHold(); });
@@ -50,6 +52,20 @@ export function Fab({ fanOpen, active, onTap, onHold, onPick, onCloseFan }: Prop
 
       <div ref={fanRef} className="home-fan" role="group" aria-label="Pick a card type">
         <AnimatePresence>
+          {fanOpen && (
+            <motion.button
+              key="typeit"
+              type="button"
+              className="home-pick"
+              onClick={onTypeIt}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.6 }}
+              animate={{ opacity: 1, y: 0, scale: 1, transition: reduce ? { duration: 0.1 } : { type: 'spring', stiffness: 520, damping: 24, delay: FAN.length * 0.04 } }}
+              exit={{ opacity: 0, y: reduce ? 0 : 16, scale: reduce ? 1 : 0.9, transition: { duration: 0.12 } }}
+            >
+              <span>Type it</span>
+              <i data-color="lilac"><Keyboard size={20} aria-hidden="true" /></i>
+            </motion.button>
+          )}
           {fanOpen && FAN.map((t, i) => {
             const Icon = TYPE_ICON[t];
             return (
@@ -74,9 +90,9 @@ export function Fab({ fanOpen, active, onTap, onHold, onPick, onCloseFan }: Prop
       <button
         type="button"
         className={`home-fab ${active ? 'is-open' : ''}`}
-        aria-label={fanOpen ? 'Close type picker' : 'Add card. Hold to pick a type'}
+        aria-label={fanOpen ? 'Close type picker' : 'New note. Hold to pick a type'}
         aria-expanded={fanOpen}
-        title="Tap to add, hold to pick a type"
+        title="Tap for a note, hold to pick a type"
         {...lp.handlers}
         onPointerCancel={lp.handlers.onPointerUp}
         onClick={() => {

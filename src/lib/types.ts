@@ -1,6 +1,8 @@
 /** The one table. Every view (home grid, notes, money, plan, timeline) is a filter on Card[]. */
 export type CardType = 'note' | 'task' | 'bill' | 'expense' | 'invest';
-export type Status = 'open' | 'done' | 'archived' | 'killed' | 'trashed';
+export type Status = 'open' | 'delayed' | 'done' | 'archived' | 'killed' | 'trashed';
+/** Open and delayed cards are both still "live": they show in the grid and count in totals. */
+export const isActive = (c: { status: Status }): boolean => c.status === 'open' || c.status === 'delayed';
 export type CardColor = 'white' | 'haldi' | 'mint' | 'rose' | 'sky' | 'lilac' | 'sand';
 export type Horizon = 'week' | 'month' | 'year' | 'none';
 export type Repeat = 'none' | 'monthly' | 'quarterly' | 'yearly';
@@ -16,6 +18,8 @@ export interface InvestInfo {
   kind: InvestKind;
   /** Current value, typed by the user (no live prices in v1). */
   value?: number;
+  /** Total put in so far (all SIP instalments, or the FD amount). Used for gain/loss. */
+  invested?: number;
   /** Next instalment date for SIP/RD (YYYY-MM-DD). */
   next?: string;
   /** Maturity date for FD/RD/PPF (YYYY-MM-DD). */
@@ -97,6 +101,8 @@ export interface Settings {
   consentAt?: number;
   /** Swipe hint shown once. */
   seenSwipeHint?: boolean;
+  /** Swipe left / Delay moves the date by this many days: 7 (default) or 1. */
+  delayDays: 1 | 7;
 }
 
 export const CARD_COLORS: CardColor[] = ['white', 'haldi', 'mint', 'rose', 'sky', 'lilac', 'sand'];

@@ -1,6 +1,7 @@
 /** Pure helpers for the Money screen and entry editor. No writes here. */
 import type { Card, InvestKind, Repeat } from '../../lib/types';
 import { addDaysISO, addMonths, fmtDate, inr, toISO, today, todayISO } from '../../lib/format';
+import { isActive } from '../../lib/types';
 
 export const monthKey = (d: Date): string => toISO(d).slice(0, 7);
 export const monthStart = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), 1);
@@ -18,7 +19,7 @@ export const expensesIn = (cards: Card[], key: string): Card[] =>
 export const spentIn = (cards: Card[], key: string): number => sum(expensesIn(cards, key).map(c => c.amount ?? 0));
 
 export const openBills = (cards: Card[]): Card[] =>
-  cards.filter(c => c.type === 'bill' && c.status === 'open' && !!c.due)
+  cards.filter(c => c.type === 'bill' && isActive(c) && !!c.due)
     .sort((a, b) => (a.due! < b.due! ? -1 : a.due! > b.due! ? 1 : a.rank - b.rank));
 
 export const YEAR_MULT: Record<Repeat, number> = { monthly: 12, quarterly: 4, yearly: 1, none: 1 };
@@ -57,7 +58,7 @@ export const fmtPlain = (n: number | undefined): string =>
 export function paidMessage(bill: Card | undefined, nextDue: string | null): string {
   const what = bill?.title || 'Bill';
   const amt = bill?.amount ? ` ${inr(bill.amount)}` : '';
-  return nextDue ? `${what} paid${amt}. Next due ${fmtDate(nextDue)}.` : `${what} paid${amt}.`;
+  return nextDue ? `${what} paid${amt}. Next bill due ${fmtDate(nextDue)}.` : `${what} paid${amt}.`;
 }
 
 /** Last six months ending at `end` (oldest first). */

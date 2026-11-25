@@ -35,22 +35,23 @@ export async function loadSampleData(): Promise<void> {
   let rank = base.reduce((m, c) => Math.max(m, c.rank || 0), 0);
   const r = () => ++rank;
   const S = [SAMPLE_LABEL];
-  const mk = (p: Partial<Card> & { type: CardType }) => newCard({ ...p, labels: [...(p.labels ?? []), ...S] });
+  // Every card gets a rank in the order listed: that is the order Home shows them in.
+  const mk = (p: Partial<Card> & { type: CardType }) => newCard({ rank: r(), ...p, labels: [...(p.labels ?? []), ...S] });
 
   // Credit card bill sits a couple of days before salary so the "last safe day" is visible.
   const ccDue = addDays(salary, -3) > t ? addDays(salary, -3) : addDays(t, 4);
 
   const cards: Card[] = [
     mk({ type: 'task', title: 'Renew PUC for the bike', due: toISO(addDays(t, 3)), horizon: 'week', color: 'haldi', pinned: true,
-      penalty: 'Fine up to ₹10,000 without PUC', rank: r() }),
+      penalty: 'Fine up to ₹10,000 without PUC' }),
     mk({ type: 'bill', title: 'Credit card bill', amount: 18450, due: toISO(ccDue), repeat: 'monthly', color: 'rose', pinned: true,
-      penalty: 'Late fee ₹900 + GST', lastSafe: true, category: 'Bills', rank: r() }),
+      penalty: 'Late fee ₹900 + GST', lastSafe: true, category: 'Bills' }),
     mk({ type: 'task', title: 'File belated ITR', due: toISO(dayOfMonth(1, 31)), horizon: 'month', color: 'mint',
-      penalty: 'Late fee up to ₹5,000 (sec 234F)', rank: r() }),
+      penalty: 'Late fee up to ₹5,000 (sec 234F)' }),
     mk({ type: 'bill', title: 'Job portal premium', amount: 1500, due: toISO(addDays(t, 9)), repeat: 'yearly', autorenew: true,
-      color: 'lilac', penalty: 'Cancel before the renewal date or it renews', category: 'Entertainment', rank: r() }),
-    mk({ type: 'bill', title: 'Rent', amount: 18000, due: toISO(nextDay(5)), repeat: 'monthly', color: 'sand', category: 'Rent', rank: r() }),
-    mk({ type: 'bill', title: 'Bijli bill', amount: 2400, due: toISO(nextDay(15)), repeat: 'monthly', color: 'white', category: 'Bills', rank: r() }),
+      color: 'lilac', penalty: 'Cancel before the renewal date or it renews', category: 'Entertainment' }),
+    mk({ type: 'bill', title: 'Rent', amount: 18000, due: toISO(nextDay(5)), repeat: 'monthly', color: 'sand', category: 'Rent' }),
+    mk({ type: 'bill', title: 'Bijli bill', amount: 2400, due: toISO(nextDay(15)), repeat: 'monthly', color: 'white', category: 'Bills' }),
     mk({ type: 'note', title: 'Cousin’s wedding checklist', color: 'lilac', checklist: [
       { id: uid(), text: 'Gift ₹5,000', done: false },
       { id: uid(), text: 'Train tickets ₹2,400', done: true },
@@ -62,9 +63,9 @@ export async function loadSampleData(): Promise<void> {
     mk({ type: 'note', title: 'Weekend trek to Rajmachi', color: 'mint', labels: ['Ideas'],
       body: 'Leave Friday night. Carry torch, rain jacket, ORS.' }),
     mk({ type: 'invest', title: 'Flexi-cap fund SIP', amount: 5000, color: 'mint', repeat: 'monthly',
-      invest: { kind: 'SIP', value: 142300, next: toISO(nextDay(10)) } }),
+      invest: { kind: 'SIP', value: 142300, invested: 125000, next: toISO(nextDay(10)) } }),
     mk({ type: 'invest', title: 'Bank FD', amount: 100000, color: 'sky',
-      invest: { kind: 'FD', value: 100000, maturity: toISO(addMonths(t, 4)) } }),
+      invest: { kind: 'FD', value: 104200, invested: 100000, maturity: toISO(addMonths(t, 4)) } }),
   ];
 
   // Spending over this and the previous 5 months, so the Money trend has a shape.

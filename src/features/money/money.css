@@ -122,3 +122,6 @@
 @media (prefers-reduced-motion: reduce) {
   .money-bar i, .money-mini { transition: none; }
 }
+
+.money-gl { font-weight: 700; margin: -4px 0 0; }
+.money-gl.up { color: var(--ok); } .money-gl.down { color: var(--danger); }

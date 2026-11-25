@@ -1,6 +1,7 @@
 /** Timeline maths: dated events from cards, and buckets per zoom level. Pure. */
 import type { Card } from '../../lib/types';
 import { addDays, addMonths, addMonthsISO, fmtDate, nextSalary, toISO, today } from '../../lib/format';
+import { isActive } from '../../lib/types';
 
 export const LEVELS = ['Day', 'Week', 'Month', 'Year'] as const;
 export type Level = 0 | 1 | 2 | 3;
@@ -38,7 +39,7 @@ export function buildEvents(cards: Card[], ref: Date = today()): TEvent[] {
   };
 
   for (const c of cards) {
-    if (c.status !== 'open') continue;
+    if (!isActive(c)) continue;
     const title = c.title || 'Untitled';
 
     if (c.type === 'expense') {

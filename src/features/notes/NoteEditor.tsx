@@ -25,6 +25,7 @@ import {
   CHIP_ACTION, chipCard, chipLabel, chipTitle, convertFill, deleteForeverWithUndo, emptyItem, itemsToText, readImages,
   relTime, textToItems,
 } from './notes-lib';
+import { isActive } from '../../lib/types';
 
 type SheetKind = null | 'more' | 'labels' | 'reminder' | 'color' | 'pin' | 'versions';
 
@@ -287,7 +288,7 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
           </div>
         )}
 
-        {card.status !== 'open' && (
+        {!isActive(card) && (
           <div className="notes-status"><Icon size={14} aria-hidden="true" /> {card.status === 'archived' ? 'In archive' : card.status === 'done' ? 'Done' : card.status === 'trashed' ? 'In trash' : 'Closed'}</div>
         )}
 
@@ -500,7 +501,7 @@ function TaskFields({ card, save, onDone }: { card: Card; save: (p: Partial<Card
         <input id={`pn-${card.id}`} className="input" type="text" value={penalty} placeholder="e.g. Late fee ₹500" onChange={e => onPenalty(e.target.value)} />
         <span className="help">Shown on the card as a hint. It never changes the order.</span>
       </div>
-      {card.status === 'open' && (
+      {isActive(card) && (
         <button type="button" className="btn primary block" onClick={onDone}>
           <CheckCircle2 size={20} aria-hidden="true" /> Mark done
         </button>

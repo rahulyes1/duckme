@@ -12,6 +12,7 @@ import { CARD_COLORS } from '../../lib/types';
 import { CardTile } from '../../ui/CardTile';
 import { EmptyState } from '../../ui/bits';
 import { deleteForeverWithUndo, emptyItem, pref, readImages } from './notes-lib';
+import { isActive } from '../../lib/types';
 
 type View = 'grid' | 'list';
 type Fixed = 'all' | 'tasks' | 'reminders' | 'locked' | 'archive' | 'trash';
@@ -52,14 +53,14 @@ export default function NotesScreen() {
 
   const list = (() => {
     let l: Card[];
-    const open = pool.filter(c => c.status === 'open');
+    const open = pool.filter(c => isActive(c));
     if (filter === 'all') l = open.filter(c => c.type === 'note');
     else if (filter === 'tasks') l = open.filter(c => c.type === 'task');
     else if (filter === 'reminders') l = open.filter(c => !!c.reminder);
     else if (filter === 'locked') l = open.filter(c => c.locked);
     else if (filter === 'archive') l = pool.filter(c => c.status === 'archived');
     else if (filter === 'trash') l = pool.filter(c => c.status === 'trashed');
-    else { const name = filter.slice(6); l = pool.filter(c => (c.status === 'open' || c.status === 'archived') && c.labels.includes(name)); }
+    else { const name = filter.slice(6); l = pool.filter(c => (isActive(c) || c.status === 'archived') && c.labels.includes(name)); }
     if (color) l = l.filter(c => c.color === color);
     if (q.trim()) l = l.filter(c => (hiddenOf(c) ? matchesQuery({ ...c, body: '', checklist: undefined }, q) : matchesQuery(c, q)));
     if (filter === 'reminders') l.sort((a, b) => (a.reminder ?? '').localeCompare(b.reminder ?? ''));

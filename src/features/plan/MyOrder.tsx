@@ -13,11 +13,11 @@ import { applyOrder } from '../../lib/actions';
 import { buzz, inr, salarySide } from '../../lib/format';
 import { DuePill, TYPE_ICON } from '../../ui/CardTile';
 import { EmptyState, Switch } from '../../ui/bits';
+import { isActive } from '../../lib/types';
 
 const verticalOnly: Modifier = ({ transform }) => ({ ...transform, x: 0 });
 
-const byRank = (a: Card, b: Card) =>
-  (a.rank || Number.MAX_SAFE_INTEGER) - (b.rank || Number.MAX_SAFE_INTEGER) || a.createdAt - b.createdAt;
+import { byRank } from '../../lib/logic';
 
 interface RowProps {
   card: Card;
@@ -35,7 +35,7 @@ function Row({ card: c, index, settings, popKey, onKeyMove }: RowProps) {
     transition,
   };
   const Icon = TYPE_ICON[c.type];
-  const title = c.title || 'Untitled';
+  const title = c.title || c.body?.split(/\n/)[0]?.slice(0, 60) || c.checklist?.[0]?.text || 'Untitled';
 
   const onKeyDown = (e: RKeyboardEvent<HTMLButtonElement>) => {
     // Arrow keys move the row straight away (as in the mockup); Space/Enter still starts a dnd-kit keyboard drag.
@@ -66,6 +66,7 @@ function Row({ card: c, index, settings, popKey, onKeyMove }: RowProps) {
         <span className="plan-t">{title}</span>
         <span className="pills plan-pills">
           <span className="pill outline"><Icon size={11} aria-hidden="true" />{KIND_LABEL[c.type]}</span>
+          {c.status === 'delayed' && <span className="pill outline">Delayed</span>}
           {c.due && <DuePill due={c.due} />}
           {c.type === 'bill' && c.due && <span className="pill hint">{salarySide(c.due, settings.salaryDay) === 'before' ? 'Before salary' : 'After salary'}</span>}
           {c.penalty && <span className="pill pen hint">{c.penalty}</span>}
@@ -84,7 +85,7 @@ export function MyOrder({ cards, settings }: { cards: Card[]; settings: Settings
   const [focusId, setFocusId] = useState<string | null>(null);
   const [said, setSaid] = useState('');
 
-  const live = useMemo(() => cards.filter(c => c.status === 'open' && (c.type === 'task' || c.type === 'bill')).sort(byRank), [cards]);
+  const live = useMemo(() => cards.filter(c => isActive(c)).sort(byRank), [cards]);
   useEffect(() => { setOptimistic(null); }, [cards]);
 
   const list = useMemo(() => {
@@ -145,10 +146,10 @@ export function MyOrder({ cards, settings }: { cards: Card[]; settings: Settings
     return (
       <EmptyState
         icon={<ListOrdered size={40} aria-hidden="true" />}
-        title="No tasks or bills to order"
+        title="No cards to order yet"
         action={<button type="button" className="btn primary" onClick={() => app.go('home')}>Add one on Home</button>}
       >
-        Add a task or a bill and it shows up here. You decide what comes first.
+        Every card you add shows up here. You decide what comes first, and Home follows this order.
       </EmptyState>
     );
   }
@@ -156,7 +157,7 @@ export function MyOrder({ cards, settings }: { cards: Card[]; settings: Settings
   return (
     <section aria-label="My order" className={hints ? '' : 'hide-hints'}>
       <div className="plan-note">
-        <p>Drag to set your order. This is the only order Hisaab uses.</p>
+        <p>Drag to set your order. Home shows cards in exactly this order; dates and penalties never move them.</p>
         <Switch checked={hints} onChange={setHints} label="Hints" />
       </div>
       <DndContext

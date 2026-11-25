@@ -2,7 +2,22 @@ import { Bell, CheckSquare, IndianRupee, Lock, Pin, Receipt, StickyNote, Trendin
 import type { Card, Settings } from '../lib/types';
 import { KIND_LABEL, HORIZON_LABEL } from '../lib/types';
 import { addDaysISO, daysLeft, dueLabel, dueTone, fmtDate, fmtDateY, inr, salarySide } from '../lib/format';
+import { gainLoss } from '../lib/logic';
 import { lineAmount } from '../lib/parse';
+import { isActive } from '../lib/types';
+
+const HORIZON_BADGE = { week: 'W', month: 'M', year: 'Y', none: '' } as const;
+
+function GainLoss({ card }: { card: Card }) {
+  const g = gainLoss(card);
+  if (!g) return null;
+  const up = g.diff >= 0;
+  return (
+    <div className={`meta gl ${up ? 'up' : 'down'}`}>
+      {up ? '+' : '−'}{inr(Math.abs(g.diff))} ({up ? '+' : '−'}{Math.abs(g.pct).toFixed(1)}%) {up ? 'gain' : 'loss'}
+    </div>
+  );
+}
 
 export const TYPE_ICON = {
   note: StickyNote, task: CheckSquare, bill: Receipt, expense: IndianRupee, invest: TrendingUp,
@@ -64,7 +79,7 @@ interface Props {
 export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: Props) {
   const Icon = TYPE_ICON[c.type];
   const kind = c.type === 'invest' && c.invest ? c.invest.kind : KIND_LABEL[c.type];
-  const hasRing = c.type === 'bill' && !!c.due && c.status === 'open';
+  const hasRing = c.type === 'bill' && !!c.due && isActive(c);
   const pills: JSX.Element[] = [];
 
   if (c.type === 'bill' && c.due) {
@@ -72,9 +87,10 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
     pills.push(<span key="s" className="pill hint">{salarySide(c.due, settings.salaryDay) === 'before' ? 'Before salary' : 'After salary'}</span>);
     if (c.lastSafe) pills.push(<span key="l" className="pill outline hint">Last safe day {fmtDate(addDaysISO(c.due, 3))}</span>);
   }
+  if (c.status === 'delayed') pills.push(<span key="dl" className="pill outline">Delayed</span>);
   if (c.autorenew) pills.push(<span key="a" className="pill solid">Auto-renews</span>);
   if (c.type === 'task') {
-    if (c.horizon !== 'none') pills.push(<span key="h" className="pill solid">{HORIZON_LABEL[c.horizon]}</span>);
+    if (c.horizon !== 'none') pills.push(<span key="h" className="pill solid" title={HORIZON_LABEL[c.horizon]} aria-label={HORIZON_LABEL[c.horizon]}>{HORIZON_BADGE[c.horizon]}</span>);
     if (c.due) pills.push(<DuePill key="d" due={c.due} />);
   }
   if (c.penalty && (c.type === 'bill' || c.type === 'task')) pills.push(<span key="p" className="pill pen hint">{c.penalty}</span>);
@@ -144,6 +160,7 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
               </>
             )
           )}
+          {c.type === 'invest' && <GainLoss card={c} />}
         </>
       )}
 

@@ -42,10 +42,15 @@ export const addMonthsISO = (s: string, n: number) => toISO(addMonths(fromISO(s)
 export const daysBetween = (a: Date, b: Date): number => Math.round((b.getTime() - a.getTime()) / 864e5);
 export const daysLeft = (iso: string): number => daysBetween(today(), fromISO(iso));
 
-export const fmtDate = (iso: string): string =>
-  fromISO(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-export const fmtDateY = (iso: string): string =>
-  fromISO(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+/** DD-MM-YYYY everywhere (BUILD_SPEC). Takes "YYYY-MM-DD" (or a longer ISO string). */
+export const fmtDate = (iso: string): string => {
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${d}-${m}-${y}`;
+};
+/** DD-MM for tight spaces like the salary strip. */
+export const fmtDayMonth = (iso: string): string => fmtDate(iso).slice(0, 5);
+/** Same as fmtDate; kept as a separate name for places that always want the year. */
+export const fmtDateY = fmtDate;
 export const fmtMonth = (d: Date): string => d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
 export const dueLabel = (iso: string): string => {

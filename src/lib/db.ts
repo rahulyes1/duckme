@@ -13,6 +13,19 @@ export class HisaabDB extends Dexie {
       versions: '++id, cardId, at',
       settings: 'key',
     });
+    // v2: every card gets a rank (the ONLY sort order). Cards that already had one keep
+    // their relative order; the rest follow, newest first.
+    this.version(2).stores({
+      cards: 'id, type, status, pinned, due, date, updatedAt, rank, *labels',
+    }).upgrade(async tx => {
+      const all = await tx.table<Card, string>('cards').toArray();
+      const ranked = all.filter(c => c.rank > 0).sort((a, b) => a.rank - b.rank);
+      const rest = all.filter(c => !(c.rank > 0)).sort((a, b) => b.createdAt - a.createdAt);
+      const order = [...ranked, ...rest];
+      for (let i = 0; i < order.length; i++) {
+        await tx.table('cards').update(order[i].id, { rank: i + 1 });
+      }
+    });
   }
 }
 
@@ -24,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   budgets: {},
   labels: [],
+  delayDays: 7,
 };
 
 export async function getSettings(): Promise<Settings> {

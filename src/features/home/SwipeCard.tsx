@@ -24,7 +24,7 @@ const T = (ms: number) => (prefersReducedMotion() ? 0 : ms);
 
 /**
  * CardTile with swipe actions (ported from the mockup):
- * right = Paid / Done / Archive, short left = Delay 1 week (only with a date), long left (>80%) = Kill.
+ * right = Paid / Done / Archive, short left = Delay (1 week or 1 day, from Settings) (only with a date), long left (>80%) = Kill.
  * Tap (no swipe) opens the editor; Enter on the focused tile also opens it.
  */
 export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
@@ -37,7 +37,9 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
   const [vis, setVis] = useState<{ dir: Dir; zone: Zone }>({ dir: 'r', zone: null });
 
   const hasDue = !!(card.due || card.invest?.next);
-  const repeats = (card.type === 'bill' || card.type === 'task') && !!card.due && !!card.repeat && card.repeat !== 'none';
+  // A paid repeating bill becomes a NEW card (spec §5), so only repeating tasks stay in place.
+  const repeats = card.type === 'task' && !!card.due && !!card.repeat && card.repeat !== 'none';
+  const delayText = settings.delayDays === 1 ? '1 day' : '1 week';
   const rightLabel = card.type === 'bill' ? 'Paid' : card.type === 'task' ? 'Done' : 'Archive';
 
   const onPointerDown = (e: RPointerEvent<HTMLDivElement>) => {
@@ -115,7 +117,7 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
       app.burst(rect);
       buzz([12, 40, 12]);
       const { undo, nextDue } = await payBill(card.id);
-      app.toast(`Paid ${inr(card.amount)}. Logged as an expense.${nextDue ? ` Next due ${fmtDate(nextDue)}.` : ''}`, undo);
+      app.toast(`Paid ${inr(card.amount)}. Logged as an expense.${nextDue ? ` Next bill due ${fmtDate(nextDue)}.` : ''}`, undo);
     } else {
       const undo = await markDone(card.id);
       if (card.type === 'task') buzz(15);
@@ -131,9 +133,9 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
   };
 
   const doDelay = async () => {
-    const { undo, newDate } = await delay(card.id, 7);
+    const { undo, newDate } = await delay(card.id, settings.delayDays);
     const side = card.type === 'bill' && newDate ? ` · ${salarySide(newDate, settings.salaryDay)} salary` : '';
-    app.toast(newDate ? `Moved to ${fmtDate(newDate)}${side}.` : 'Delayed a week.', undo);
+    app.toast(newDate ? `Moved to ${fmtDate(newDate)}${side}.` : `Delayed ${delayText}.`, undo);
     onSwiped?.();
     if (!prefersReducedMotion()) {
       mover.current?.animate(
@@ -177,7 +179,7 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
 
   const RightIcon = card.type === 'bill' || card.type === 'task' ? Check : Archive;
   const Icon = vis.dir === 'r' ? RightIcon : vis.zone === 'kill' ? X : CalendarClock;
-  const label = vis.dir === 'r' ? rightLabel : vis.zone === 'kill' ? 'Kill' : hasDue ? 'Delay 1 week' : 'Keep going to kill';
+  const label = vis.dir === 'r' ? rightLabel : vis.zone === 'kill' ? 'Kill' : hasDue ? `Delay ${delayText}` : 'Keep going to kill';
 
   return (
     <div ref={wrap} className={`home-sw ${isNew ? 'home-newpop' : ''}`} data-id={card.id}>
