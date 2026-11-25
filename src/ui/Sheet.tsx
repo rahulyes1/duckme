@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useDragControls } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
 export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
+  const dragControls = useDragControls();
 
   useEffect(() => {
     if (!open) return;
@@ -56,11 +57,15 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
             exit={wide ? { opacity: 0, scale: 0.97, x: '-50%', transition: { duration: 0.15 } } : { y: '100%', transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
             transition={{ type: 'spring', stiffness: 420, damping: 38 }}
             drag={wide ? false : 'y'}
+            // Drag-to-close starts ONLY from the grab bar. Before, any finger wobble on a button inside
+            // the sheet started a drag and swallowed the tap (the "switches don't work" bug).
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, info) => { if (info.offset.y > 120 || info.velocity.y > 600) onClose(); }}
           >
-            <div className="grab" aria-hidden="true" />
+            <div className="grab-zone" aria-hidden="true" onPointerDown={e => dragControls.start(e)}><div className="grab" /></div>
             {hideTitle ? <h2 className="sr-only">{title}</h2> : <h2>{title}</h2>}
             {children}
           </motion.div>

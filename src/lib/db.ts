@@ -1,10 +1,24 @@
 import Dexie, { type Table } from 'dexie';
 import type { Card, Settings, Version } from './types';
 
+/** A hard delete, remembered so the sync engine can delete the same row in the cloud. */
+export interface Deletion {
+  id: string;
+  table: 'cards' | 'versions';
+  at: number;
+}
+
+/**
+ * Sync flag: while the sync engine writes rows it pulled from the cloud, the hooks below must not
+ * bump updatedAt or log deletions (that would echo the change back up).
+ */
+export const syncState = { applyingRemote: false };
+
 export class HisaabDB extends Dexie {
   cards!: Table<Card, string>;
   versions!: Table<Version, number>;
   settings!: Table<Settings, string>;
+  deletions!: Table<Deletion, string>;
 
   constructor() {
     super('hisaab');
@@ -25,6 +39,22 @@ export class HisaabDB extends Dexie {
       for (let i = 0; i < order.length; i++) {
         await tx.table('cards').update(order[i].id, { rank: i + 1 });
       }
+    });
+    // v3: deletion log for cloud sync; index the new planning fields.
+    this.version(3).stores({
+      cards: 'id, type, status, pinned, due, date, updatedAt, rank, quadrant, journalDate, *labels',
+      deletions: 'id, at',
+    });
+
+    // Every local change stamps updatedAt (sync uses it: newest write wins).
+    this.cards.hook('updating', (mods: Partial<Card>) => {
+      if (syncState.applyingRemote || 'updatedAt' in mods) return undefined;
+      return { updatedAt: Date.now() };
+    });
+    // Every local hard delete is logged so it can be deleted in the cloud too.
+    this.cards.hook('deleting', (primKey: string, _obj, tx) => {
+      if (syncState.applyingRemote) return;
+      tx.on('complete', () => { void this.deletions.put({ id: primKey, table: 'cards', at: Date.now() }); });
     });
   }
 }

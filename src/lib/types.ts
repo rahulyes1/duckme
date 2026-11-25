@@ -8,6 +8,24 @@ export type Horizon = 'week' | 'month' | 'year' | 'none';
 export type Repeat = 'none' | 'monthly' | 'quarterly' | 'yearly';
 export type InvestKind = 'SIP' | 'FD' | 'RD' | 'PPF' | 'MF' | 'Stock' | 'Gold' | 'NPS' | 'Other';
 
+/** The 4-box priorities (urgent × important), named for one person's day. */
+export type Quadrant = 'do' | 'schedule' | 'quick' | 'later';
+export const QUADRANTS: { id: Quadrant; title: string; hint: string }[] = [
+  { id: 'do', title: 'Do now', hint: 'Urgent and important' },
+  { id: 'schedule', title: 'Plan it', hint: 'Important, not urgent' },
+  { id: 'quick', title: 'Quick wins', hint: 'Urgent, not important' },
+  { id: 'later', title: 'Later / drop', hint: 'Neither' },
+];
+
+/**
+ * "When will I do this?" — a planning slot, separate from a hard deadline (`due`).
+ * day: start = that date. week: start = the Monday. month: start = the 1st.
+ */
+export interface When {
+  unit: 'day' | 'week' | 'month';
+  start: string;
+}
+
 export interface ChecklistItem {
   id: string;
   text: string;
@@ -65,6 +83,13 @@ export interface Card {
   /** Locked notes need the PIN to view. */
   locked?: boolean;
 
+  /** 4-box priority. Unset = not placed on the board yet. */
+  quadrant?: Quadrant;
+  /** Planned day / week / month (weekly and monthly priorities). */
+  when?: When;
+  /** Set on the daily journal note ("Today page"): one note per date, YYYY-MM-DD. */
+  journalDate?: string;
+
   status: Status;
   /** Linked cards, e.g. note → bill → expense chain. */
   links: string[];
@@ -103,6 +128,14 @@ export interface Settings {
   seenSwipeHint?: boolean;
   /** Swipe left / Delay moves the date by this many days: 7 (default) or 1. */
   delayDays: 1 | 7;
+  /** Monthly take-home salary in ₹ (for cash-flow and safe-to-spend). */
+  salaryAmount?: number;
+  /** Your first name, for the greeting. This is a one-person app. */
+  userName?: string;
+  /** Expense categories you use most, shown first in quick entry. */
+  favCategories?: string[];
+  /** Last successful cloud sync (ms). Set by the sync engine. */
+  lastSyncAt?: number;
 }
 
 export const CARD_COLORS: CardColor[] = ['white', 'haldi', 'mint', 'rose', 'sky', 'lilac', 'sand'];

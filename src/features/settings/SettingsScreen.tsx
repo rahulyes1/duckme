@@ -11,6 +11,7 @@ import { removeSampleData, SAMPLE_LABEL } from '../../lib/seed';
 import type { Card, Settings } from '../../lib/types';
 import { useInstallPrompt } from './pwa';
 import './settings.css';
+import AccountSection from './AccountSection';
 
 const APP_VERSION = '0.1.0';
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -366,6 +367,8 @@ export default function SettingsScreen() {
           </button>
         </div>
       )}
+
+      <AccountSection />
 
       <Section id="set-general" title="General" icon={null}>
         <div className="field">

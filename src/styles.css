@@ -182,7 +182,8 @@ img { max-width: 100%; display: block; }
   max-height: 92dvh; overflow-y: auto; padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
   box-shadow: 0 -10px 30px rgba(0, 0, 0, .2); }
 @media (min-width: 720px) { .sheet { left: 50%; right: auto; width: 560px; transform: translateX(-50%); bottom: auto; top: 10dvh; border-radius: 24px; } }
-.sheet .grab { width: 40px; height: 4px; border-radius: 9px; background: var(--line); margin: 4px auto 12px; }
+.sheet .grab-zone { margin: -8px -16px 4px; padding: 10px 0 12px; touch-action: none; cursor: grab; }
+.sheet .grab { width: 40px; height: 4px; border-radius: 9px; background: var(--line); margin: 0 auto; }
 .sheet h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 12px; }
 
 .editor { position: fixed; inset: 0; z-index: var(--z-editor); background: var(--c, var(--surface)); overflow: hidden; }
@@ -196,7 +197,9 @@ img { max-width: 100%; display: block; }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 84px); z-index: var(--z-toast);
   width: min(440px, calc(100vw - 32px)); background: var(--ink); color: var(--bg); border-radius: 14px; padding: 10px 10px 10px 16px;
-  display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; box-shadow: var(--shadow-3); }
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; box-shadow: var(--shadow-3);
+  pointer-events: none; }
+.toast button { pointer-events: auto; }
 .toast button { border: 0; background: transparent; color: inherit; font-weight: 700; min-height: 40px; padding: 0 10px; text-decoration: underline; text-underline-offset: 3px; flex: none; }
 @media (min-width: 1024px) { .toast { bottom: 28px; } }
 
@@ -206,3 +209,11 @@ img { max-width: 100%; display: block; }
 canvas.fx { position: fixed; inset: 0; z-index: var(--z-fx); pointer-events: none; width: 100vw; height: 100vh; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+/* ---------- tap feedback on phones (no hover there, and tap highlight is off) ---------- */
+.chip, .switch, .icon-btn, .tile, .btn, .nav a, .set-seg-btn, .home-pick { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.chip:active, .icon-btn:active, .switch:active, .set-seg-btn:active, .home-pick:active { transform: scale(.94); transition: transform 60ms; }
+.tile:active { transform: scale(.985); transition: transform 80ms; }
+.nav a:active .ico { transform: scale(.9); }
+.switch i, .switch i::after { will-change: transform; }
+@media (hover: none) { .tile:hover { border-color: var(--card-line); } .icon-btn:hover { background: transparent; } }
