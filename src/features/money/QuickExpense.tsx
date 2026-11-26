@@ -22,6 +22,7 @@ import { catIcon } from './parts';
 import { balanceText, buildSplit, knownPeople, myShare, type SplitDraft } from './split';
 import { EMPTY_SPLIT, SplitPicker } from './splitPicker';
 import { CaptureBar, type Fill } from './CaptureBar';
+import { looksDuplicate } from '../../lib/capture';
 
 type Day = 'today' | 'yesterday' | 'pick';
 const PAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '.'];
@@ -110,6 +111,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       const before = cashFlow(cards, salary, settings.salaryDay, ref);
       const catBefore = spentByCategory(cards, date.slice(0, 7))[category] ?? 0;
       let created!: Card;
+      const dup = looksDuplicate(cards, { amount: value, category, title: note.trim(), date }, Date.now());
       const undo = await withUndo(async () => {
         created = await createCard({ type: 'expense', title: note.trim() || category, amount: value, date, category, mode, ...(sp?.split ? { split: sp.split } : {}) });
       });
@@ -125,7 +127,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
           : sp?.split
             ? `Saved ${inr(value)} · ${splitSummary(value, sp.split)}`
             : `Saved ${inr(value)} · ${category}`;
-      toast(msg, undo);
+      toast(dup ? `Saved. Looks like the ${inr(value)} you logged a few minutes ago — tap Undo if it's a repeat.` : msg, undo);
       buzz(crossed ? [30, 60, 30] : 15);
 
       const safe = salary > 0;
@@ -164,6 +166,17 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     const what = [f.title, f.amount ? inr(f.amount) : ''].filter(Boolean).join(' · ');
     toast(f.from === 'sms' ? `Filled from SMS: ${what}. Check and Save.` : f.from === 'voice' ? `Heard: ${what}. Check and Save.` : `${what}. Tap Save.`);
   };
+
+  // Opened from a shared bank SMS: fill the form (after the reset above has run).
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = sessionStorage.getItem('hisaab.prefill');
+      if (!raw) return;
+      sessionStorage.removeItem('hisaab.prefill');
+      fill({ ...(JSON.parse(raw) as Fill), from: 'sms' });
+    } catch { /* storage blocked */ }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const another = () => { setSaved(null); setTimeout(() => amtRef.current?.focus(), 30); };
 

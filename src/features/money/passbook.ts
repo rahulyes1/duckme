@@ -6,7 +6,7 @@
 import type { Card } from '../../lib/types';
 import { isActive } from '../../lib/types';
 import { salaryCycle } from './cashflow';
-import { isLive } from './money-util';
+import { isLive, isMonthly } from './money-util';
 
 export interface PassLine {
   id: string;
@@ -30,6 +30,9 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
     .filter(c => c.type === 'bill' && isActive(c) && c.due && c.due < cyc.end && (c.amount ?? 0) > 0)
     .sort((a, b) => (a.due! < b.due! ? -1 : 1));
 
+  const sips = cards
+    .filter(c => c.type === 'invest' && isActive(c) && isMonthly(c.invest?.kind) && c.invest?.next && c.invest.next >= cyc.start && c.invest.next < cyc.end && (c.amount ?? 0) > 0)
+    .map(c => ({ c, due: c.invest!.next! }));
   const has = salary > 0;
   let bal = has ? salary : 0;
   const asc: PassLine[] = [];
@@ -41,15 +44,16 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
       sub: [c.category, c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
     });
   }
-  for (const b of dues) {
-    bal -= b.amount!;
-    asc.push({
-      id: b.id, date: b.due!, title: b.title || 'Bill', sub: b.penalty ? `Due · ${b.penalty}` : 'Due',
-      amount: -b.amount!, balance: has ? bal : null, kind: 'due', card: b,
-    });
+  // Bills and SIP/RD instalments still due, soonest first, so the projected balance runs in date order.
+  const upcoming = [
+    ...dues.map(b => ({ c: b, date: b.due!, title: b.title || 'Bill', sub: b.penalty ? `Due · ${b.penalty}` : 'Due', id: b.id })),
+    ...sips.map(({ c, due }) => ({ c, date: due, title: c.title || 'SIP', sub: `${c.invest?.kind ?? 'SIP'} instalment`, id: `sip-${c.id}` })),
+  ].sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
+  for (const u of upcoming) {
+    bal -= u.c.amount!;
+    asc.push({ id: u.id, date: u.date, title: u.title, sub: u.sub, amount: -u.c.amount!, balance: has ? bal : null, kind: 'due', card: u.c });
   }
-  // Show newest first, with what's still due on top.
-  const due = asc.filter(l => l.kind === 'due').reverse();
+  const due = asc.filter(l => l.kind === 'due');
   const done = asc.filter(l => l.kind !== 'due').reverse();
   return { lines: [...due, ...done], cycle: { start: cyc.start, end: cyc.end } };
 }

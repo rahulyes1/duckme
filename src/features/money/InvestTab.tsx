@@ -1,5 +1,5 @@
 import { CalendarClock, Plus, TrendingUp } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { daysLeft, fmtDate, inr, todayISO } from '../../lib/format';
 import { gainLoss, netWorth } from '../../lib/logic';
 import type { Card } from '../../lib/types';
@@ -7,6 +7,7 @@ import { isActive } from '../../lib/types';
 import { EmptyState, Money } from '../../ui/bits';
 import { hasMaturity, isMonthly, sum } from './money-util';
 import { MiniRow } from './parts';
+import { refreshInvestValues } from './prices';
 
 const glText = (c: Card): string => {
   const gl = gainLoss(c);
@@ -15,6 +16,9 @@ const glText = (c: Card): string => {
 };
 
 export default function InvestTab({ cards, onAdd }: { cards: Card[]; onAdd: (el: HTMLElement) => void }) {
+  // Funds, gold and FD/RD interest update themselves once a day when you open this tab.
+  const [synced, setSynced] = useState<number | null>(null);
+  useEffect(() => { void refreshInvestValues(cards).then(setSynced); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const d = useMemo(() => {
     const inv = cards.filter(c => c.type === 'invest' && isActive(c));
     const nw = netWorth(cards);
@@ -54,6 +58,7 @@ export default function InvestTab({ cards, onAdd }: { cards: Card[]; onAdd: (el:
       <section className="money-card money-wide" aria-labelledby="i-list">
         <div className="money-h-row">
           <h2 id="i-list" className="money-h">Investments</h2>
+          {synced ? <span className="money-muted num">Updated {synced} from live prices</span> : null}
           <button type="button" className="btn ghost" onClick={e => onAdd(e.currentTarget)}><Plus size={16} aria-hidden="true" /> Add</button>
         </div>
         {[...d.byKind.entries()].map(([kind, list]) => (
@@ -67,6 +72,8 @@ export default function InvestTab({ cards, onAdd }: { cards: Card[]; onAdd: (el:
                   isMonthly(k) && c.invest?.next ? `next ${fmtDate(c.invest.next)}` : '',
                   hasMaturity(k) && c.invest?.maturity ? `matures ${fmtDate(c.invest.maturity)}` : '',
                   glText(c),
+                  c.invest?.schemeCode && c.invest.navDate ? `NAV ${fmtDate(c.invest.navDate)}` : '',
+                  c.invest?.grams ? `${c.invest.grams} g · ${c.invest.purity ?? 24}K · live price` : '',
                 ].filter(Boolean).join(' · ');
                 return <MiniRow key={c.id} c={c} right={c.invest?.value !== undefined ? inr(c.invest.value) : 'Add value'} sub={bits} />;
               })}

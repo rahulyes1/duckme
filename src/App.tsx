@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { parseBankSms } from './lib/capture';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { QuickSearch, openQuickSearch } from './ui/QuickSearch';
 import { Search } from 'lucide-react';
@@ -147,6 +148,16 @@ export default function App() {
     if (!s) return;
     clearIncomingShare();
     if (s.kind === 'share') {
+      const sms = parseBankSms([s.title, s.text].filter(Boolean).join(' '));
+      if (sms) {
+        try {
+          sessionStorage.setItem('hisaab.prefill', JSON.stringify({ amount: sms.amount, category: sms.category, mode: sms.mode, title: sms.merchant, date: sms.date }));
+          sessionStorage.setItem('hisaab.quickSpend', '1');
+        } catch { /* storage blocked */ }
+        location.hash = 'money';
+        window.dispatchEvent(new Event('hisaab:spend'));
+        return;
+      }
       const partial = shareToNote(s);
       if (!partial) return;
       location.hash = 'notes';

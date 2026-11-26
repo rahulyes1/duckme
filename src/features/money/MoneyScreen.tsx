@@ -8,6 +8,7 @@ import type { CardType } from '../../lib/types';
 import BillsTab from './BillsTab';
 import ExpensesTab from './ExpensesTab';
 import InvestTab from './InvestTab';
+import { DepositSlip } from './DepositSlip';
 import GoalsTab from './GoalsTab';
 import { DEFAULTS, isLive } from './money-util';
 import OverviewTab from './OverviewTab';
@@ -93,7 +94,8 @@ export default function MoneyScreen() {
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const setTab = (t: Tab) => { setTabState(t); writePref(TAB_KEY, t); };
-  const add = (t: AddType, el?: HTMLElement | null) => { void createAndOpen(DEFAULTS[t](), el); };
+  const [slip, setSlip] = useState(false);
+  const add = (t: AddType, el?: HTMLElement | null) => { if (t === 'invest') { setSlip(true); return; } void createAndOpen(DEFAULTS[t](), el); };
 
   // Scroll to the top when switching tabs so the new tab starts at its beginning.
   const first = useRef(true);
@@ -155,6 +157,7 @@ export default function MoneyScreen() {
       </div>
 
       <QuickExpense open={spend} onClose={closeSpend} />
+      <DepositSlip open={slip} onClose={() => setSlip(false)} />
     </div>
   );
 }

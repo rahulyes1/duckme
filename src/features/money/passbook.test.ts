@@ -34,3 +34,12 @@ describe('passbook', () => {
     expect(lines.some(l => l.kind === 'salary')).toBe(false);
   });
 });
+
+describe('passbook SIPs', () => {
+  it('SIP instalments due appear in pencil, in date order with bills', () => {
+    const sip = base('Flexi cap', { type: 'invest', amount: 5000, invest: { kind: 'SIP', next: '2026-11-27' } });
+    const bill = base('Card bill', { type: 'bill', due: '2026-11-28', amount: 18450 });
+    const { lines } = passbook([sip, bill], 65000, 1, REF);
+    expect(lines.slice(0, 2).map(l => [l.title, l.kind, l.balance])).toEqual([['Flexi cap', 'due', 60000], ['Card bill', 'due', 41550]]);
+  });
+});

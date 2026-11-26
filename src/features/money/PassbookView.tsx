@@ -3,10 +3,13 @@
  * with a running balance. Styles in passbook.css.
  */
 import { useMemo, useState } from 'react';
-import { Check, Pencil, Plus } from 'lucide-react';
+import { Check, MoreHorizontal, PenLine as PenIcon, Pencil, Plus } from 'lucide-react';
 import { useApp } from '../../app-context';
-import { fmtDate, inr, today } from '../../lib/format';
+import { fmtDate, inr, today, todayISO } from '../../lib/format';
 import { useCountUp } from '../../lib/hooks';
+import { createCard, withUndo } from '../../lib/actions';
+import { looksDuplicate, parsePenLine } from '../../lib/capture';
+import { buzz } from '../../lib/format';
 import type { Card, Settings } from '../../lib/types';
 import type { CashFlow } from './cashflow';
 import { passbook, type PassLine } from './passbook';
@@ -56,7 +59,7 @@ function Line({ l, onPay }: { l: PassLine; onPay?: (c: Card, el: HTMLElement) =>
           {l.balance !== null && <small>{l.kind === 'due' ? 'then ' : ''}{inr(l.balance)}</small>}
         </span>
       </button>
-      {l.kind === 'due' && l.card && onPay && (
+      {l.kind === 'due' && l.card?.type === 'bill' && onPay && (
         <button type="button" className="pb-pay" aria-label={`Mark ${l.title} paid`} onClick={e => onPay(l.card!, e.currentTarget)}><Check size={16} aria-hidden="true" /></button>
       )}
     </li>
@@ -65,12 +68,55 @@ function Line({ l, onPay }: { l: PassLine; onPay?: (c: Card, el: HTMLElement) =>
 
 const FIRST = 7;
 
+const dayLabel = (iso: string) => {
+  const t = today(), d = new Date(iso + 'T00:00:00');
+  const diff = Math.round((t.getTime() - d.getTime()) / 86400000);
+  return diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+};
+
+/** Write a spend straight into the passbook: "250 auto cash yday" → Enter. */
+export function PenLine({ cards, onMore }: { cards: Card[]; onMore?: (el: HTMLElement) => void }) {
+  const { toast } = useApp();
+  const [text, setText] = useState('');
+  const p = useMemo(() => (text.trim() ? parsePenLine(text, today(), cards) : null), [text, cards]);
+  const ready = !!p?.amount;
+
+  const save = async () => {
+    if (!p?.amount) return;
+    const category = p.category ?? 'Other', title = p.title || category;
+    const dup = looksDuplicate(cards, { amount: p.amount, category, title, date: p.date }, Date.now());
+    const undo = await withUndo(async () => { await createCard({ type: 'expense', title, amount: p.amount!, date: p.date, category, mode: p.mode ?? 'UPI' }); });
+    buzz(10);
+    setText('');
+    toast(dup ? `Written. Same as one a few minutes ago — Undo if it's a repeat.` : `Written: ${title} ${inr(p.amount)}${p.date !== todayISO() ? ` · ${dayLabel(p.date)}` : ''}`, undo);
+  };
+
+  return (
+    <form className="pb-pen" onSubmit={e => { e.preventDefault(); void save(); }}>
+      <PenIcon size={16} aria-hidden="true" className="pb-pen-ic" />
+      <label htmlFor="pb-pen-in" className="sr-only">Write a spend</label>
+      <input id="pb-pen-in" className="pb-pen-in" value={text} autoComplete="off" enterKeyHint="done"
+        placeholder="Write a spend… 250 auto cash yday" onChange={e => setText(e.target.value)} />
+      {onMore && !text && <button type="button" className="pb-pen-more" aria-label="Open the number pad" onClick={e => onMore(e.currentTarget)}><MoreHorizontal size={18} aria-hidden="true" /></button>}
+      {ready && <button type="submit" className="pb-pen-go" aria-label="Write it"><Check size={18} aria-hidden="true" /></button>}
+      {p && (
+        <div className="pb-pen-chips num" aria-live="polite">
+          {p.amount ? <span className="is-amt">{inr(p.amount)}</span> : <span className="is-need">add an amount</span>}
+          <span>{p.category ?? 'Other'}</span>
+          <span>{p.mode ?? 'UPI'}</span>
+          <span>{dayLabel(p.date)}</span>
+          {p.title && <span className="is-title">{p.title}</span>}
+        </div>
+      )}
+    </form>
+  );
+}
+
 /** This cycle, line by line, with the running balance — newest first, bills still due on top. */
-export function PassbookList({ cards, settings }: { cards: Card[]; settings: Settings }) {
+export function PassbookList({ cards, settings, onSpend }: { cards: Card[]; settings: Settings; onSpend?: (el: HTMLElement) => void }) {
   const pay = usePayBill();
   const [all, setAll] = useState(false);
   const { lines, cycle } = useMemo(() => passbook(cards, settings.salaryAmount ?? 0, settings.salaryDay, today()), [cards, settings.salaryAmount, settings.salaryDay]);
-  if (!lines.length) return null;
   const shown = all ? lines : lines.slice(0, FIRST);
   const label = new Date(cycle.start + 'T00:00:00').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
   return (
@@ -79,9 +125,12 @@ export function PassbookList({ cards, settings }: { cards: Card[]; settings: Set
         <h2 id="pb-h">Passbook</h2>
         <small>{label} · {settings.salaryAmount ? 'running balance' : 'set salary for balance'}</small>
       </div>
-      <ul className="pb-ledger">
-        {shown.map(l => <Line key={l.id} l={l} onPay={(c, el) => void pay(c, el)} />)}
-      </ul>
+      <div className="pb-ledger">
+        <PenLine cards={cards} onMore={onSpend} />
+        <ul className="pb-lines">
+          {shown.map(l => <Line key={l.id} l={l} onPay={(c, el) => void pay(c, el)} />)}
+        </ul>
+      </div>
       {lines.length > FIRST && (
         <button type="button" className="btn ghost pb-more" onClick={() => setAll(a => !a)}>{all ? 'Show less' : `Show full passbook (${lines.length})`}</button>
       )}

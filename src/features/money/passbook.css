@@ -97,3 +97,51 @@
   .money .money-layout > .pb-book { grid-column: 2; grid-row: span 3; align-self: start; }
   .money .pb-book-h { margin-top: 0; }
 }
+
+/* ---------- deposit slip ---------- */
+.ds-kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ds-kind { display: grid; justify-items: start; gap: 2px; padding: 12px; border-radius: 14px; border: 1px solid var(--card-line); background: var(--surface-2); color: var(--ink); text-align: left; animation: pb-in .3s var(--ease-out) both; }
+.ds-kind svg { color: var(--accent); margin-bottom: 4px; }
+.ds-kind b { font-family: var(--f-display); font-size: 17px; }
+.ds-kind small { font-size: 12px; color: var(--muted); }
+.ds-form { display: grid; gap: 12px; }
+.ds-back { justify-self: start; border: 0; background: none; color: var(--accent); font-weight: 700; font-size: 15px; padding: 4px 0; }
+.ds-search { position: relative; display: flex; align-items: center; }
+.ds-search svg { position: absolute; left: 12px; color: var(--muted); }
+.ds-search .input { padding-left: 36px; }
+.ds-results { list-style: none; margin: 6px 0 0; padding: 4px; border-radius: 12px; border: 1px solid var(--card-line); max-height: 240px; overflow-y: auto; }
+.ds-results button { width: 100%; text-align: left; border: 0; background: none; color: var(--ink); padding: 10px; border-radius: 8px; font-size: 14px; }
+.ds-results button:hover, .ds-results button:focus-visible { background: var(--surface-2); }
+.ds-fund { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); }
+.ds-fund-name { flex: 1; font-weight: 600; font-size: 14px; }
+.ds-lbl { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.ds-worth { display: grid; gap: 2px; padding: 14px 16px 12px 30px; border-radius: 6px 14px 14px 6px; color: var(--paper-ink); position: relative;
+  background-color: var(--paper); background-image: repeating-linear-gradient(transparent 0 23px, var(--paper-rule) 23px 24px); animation: pb-in .3s var(--ease-out) both; }
+.ds-worth::before { content: ""; position: absolute; left: 14px; top: 0; bottom: 0; width: 3px; border-left: 1px solid var(--paper-margin); border-right: 1px solid var(--paper-margin); }
+.ds-worth .pb-big { font-size: 38px; margin: 2px 0; }
+.ds-worth small { color: var(--paper-muted); font-size: 13px; }
+
+/* ---------- pen line: write a spend into the passbook ---------- */
+.pb-lines { list-style: none; margin: 0; padding: 0; }
+.pb-pen { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 8px 10px 8px 14px; border-bottom: 1px solid var(--card-line);
+  background: repeating-linear-gradient(transparent 0 37px, color-mix(in srgb, var(--accent) 25%, transparent) 37px 38px); }
+.pb-pen-ic { color: var(--accent); flex: none; }
+.pb-pen-in { flex: 1; min-width: 0; height: 40px; border: 0; background: transparent; outline: 0; color: var(--ink);
+  font-family: var(--f-display); font-size: 19px; }
+.pb-pen-in::placeholder { color: color-mix(in srgb, var(--ink) 38%, transparent); font-size: 16px; }
+.pb-pen-go, .pb-pen-more { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 0; display: grid; place-items: center; }
+.pb-pen-go { background: var(--accent); color: var(--accent-ink); animation: pb-in .2s var(--ease-out) both; }
+.pb-pen-more { background: transparent; color: var(--muted); }
+.pb-pen-chips { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 4px 24px; }
+.pb-pen-chips span { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); animation: pb-in .2s var(--ease-out) both; }
+.pb-pen-chips .is-amt { background: var(--accent-soft); color: var(--ink); font-family: var(--f-display); font-size: 14px; }
+.pb-pen-chips .is-need { color: var(--warn); }
+.pb-pen-chips .is-title { color: var(--ink); }
+
+/* ---------- pencil: what's still due is written lightly until you ink it ---------- */
+.pb-row.is-due { background: transparent; }
+.pb-row.is-due .pb-p b, .pb-row.is-due .pb-amt b, .pb-row.is-due .pb-date b { color: color-mix(in srgb, var(--ink) 48%, transparent); font-style: italic; }
+.pb-row.is-due .pb-p span { color: color-mix(in srgb, var(--warn) 80%, var(--muted)); }
+.pb-row.is-due .pb-main { background-image: linear-gradient(to right, color-mix(in srgb, var(--ink) 22%, transparent) 50%, transparent 0);
+  background-size: 8px 1px; background-repeat: repeat-x; background-position: 0 100%; }
+.pb-row.is-due .pb-pay { border-style: dashed; }

@@ -96,3 +96,38 @@ describe('usualSpends vs monthly payments', () => {
     expect(usualSpends(cards, REF)).toEqual([]);
   });
 });
+
+import { daySweep, looksDuplicate, parsePenLine } from './capture';
+
+describe('parsePenLine', () => {
+  const ref = new Date(2026, 10, 27, 20); // Fri 27-11-2026
+  it('amount, word, mode and day', () => {
+    expect(parsePenLine('250 auto cash yday', ref)).toEqual({ amount: 250, title: 'Auto', category: 'Travel', mode: 'Cash', date: '2026-11-26' });
+  });
+  it('kal = yesterday, parso = day before, weekday = last one', () => {
+    expect(parsePenLine('chai 20 kal', ref).date).toBe('2026-11-26');
+    expect(parsePenLine('chai 20 parso', ref).date).toBe('2026-11-25');
+    expect(parsePenLine('movie 500 on monday', ref).date).toBe('2026-11-23');
+    expect(parsePenLine('lunch 180 on 24th', ref).date).toBe('2026-11-24');
+    expect(parsePenLine('lunch 180', ref).date).toBe('2026-11-27');
+  });
+  it('learns category and mode from your history', () => {
+    const past = [ex('p', '2026-11-20', 300, 'Sharma ji', 9, { category: 'Groceries', mode: 'Cash' })];
+    expect(parsePenLine('sharma ji 450', ref, past)).toMatchObject({ amount: 450, category: 'Groceries', mode: 'Cash' });
+  });
+});
+
+describe('daySweep + duplicates', () => {
+  const now = new Date(2026, 10, 26, 21);
+  it('usual spends not logged today', () => {
+    const cards = [ex('1', '2026-11-20', 20, 'Chai', 9), ex('2', '2026-11-22', 20, 'Chai', 9), ex('3', '2026-11-24', 20, 'Chai', 9), ex('4', '2026-11-26', 180, 'Lunch', 13)];
+    const s = daySweep(cards, now);
+    expect(s.total).toBe(180);
+    expect(s.missed.map(m => m.title)).toEqual(['Chai']);
+  });
+  it('same amount + category within 10 minutes', () => {
+    const c = { ...ex('d', '2026-11-26', 250, 'Swiggy'), createdAt: 1_000_000 };
+    expect(looksDuplicate([c], { amount: 250, category: 'Food', date: '2026-11-26' }, 1_000_000 + 5 * 60_000)?.id).toBe('d');
+    expect(looksDuplicate([c], { amount: 250, category: 'Food', date: '2026-11-26' }, 1_000_000 + 20 * 60_000)).toBeNull();
+  });
+});

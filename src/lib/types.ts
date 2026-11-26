@@ -42,6 +42,21 @@ export interface InvestInfo {
   next?: string;
   /** Maturity date for FD/RD/PPF (YYYY-MM-DD). */
   maturity?: string;
+  /** Start / first instalment date (YYYY-MM-DD) for FD, RD, SIP, lump sum. */
+  start?: string;
+  /** Yearly interest % for FD/RD/PPF. */
+  rate?: number;
+  /** Mutual fund: mfapi.in scheme code + name, units held, last NAV and its date. Value = units × NAV, refreshed daily. */
+  schemeCode?: number;
+  schemeName?: string;
+  units?: number;
+  nav?: number;
+  navDate?: string;
+  /** Gold: grams and purity; valued from the live 24K price (approx., plus retail markup). */
+  grams?: number;
+  purity?: 24 | 22 | 18;
+  /** When value was last refreshed automatically (ms). */
+  autoAt?: number;
 }
 
 export interface AutopayInfo {

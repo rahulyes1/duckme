@@ -119,7 +119,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
         <PaperHero flow={flow} onSpend={onSpend} onEditSalary={() => setEditSalary(true)} />
       )}
 
-      <PassbookList cards={cards} settings={settings} />
+      <PassbookList cards={cards} settings={settings} onSpend={onSpend} />
 
       {payday && <RecapCard cards={cards} settings={settings} />}
       {payday && <PaydayCard cards={cards} settings={settings} flow={flow} />}

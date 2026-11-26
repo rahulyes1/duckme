@@ -178,3 +178,76 @@ export function recurringCandidates(cards: Card[], now: Date): Recurring[] {
   }
   return out.sort((a, b) => b.amount - a.amount);
 }
+
+/* ---------------- the pen line: "250 auto cash yday" ---------------- */
+
+export interface PenLine extends Spoken { date: string }
+
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+/**
+ * One typed line in the passbook → a spend. Understands day words (today/aaj, yday/yesterday/kal, a weekday,
+ * "on 24th"), and learns category + mode from your own past spends with the same name.
+ */
+export function parsePenLine(text: string, ref: Date, history: Card[] = []): PenLine {
+  let t = ` ${text.toLowerCase()} `;
+  let date = toISO(ref);
+  const day = (n: number) => toISO(new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - n));
+  const dm = t.match(/\s(yday|yest(?:erday)?|kal|parso|today|aaj)\s/);
+  if (dm) {
+    date = dm[1] === 'parso' ? day(2) : /^(today|aaj)$/.test(dm[1]) ? day(0) : day(1);
+    t = t.replace(dm[0], ' ');
+  } else {
+    const wd = t.match(/\s(?:on |last )?(sun|mon|tue|wed|thu|fri|sat)[a-z]*\s/);
+    if (wd) {
+      const idx = WEEKDAYS.findIndex(w => w.startsWith(wd[1]));
+      const back = (ref.getDay() - idx + 7) % 7 || 7;
+      date = day(back === 7 && idx === ref.getDay() ? 0 : back);
+      t = t.replace(wd[0], ' ');
+    } else {
+      const on = t.match(/\son (\d{1,2})(?:st|nd|rd|th)?\s/);
+      if (on && +on[1] >= 1 && +on[1] <= 31) {
+        const d = new Date(ref.getFullYear(), ref.getMonth(), +on[1]);
+        if (d > ref) d.setMonth(d.getMonth() - 1);
+        date = toISO(d);
+        t = t.replace(on[0], ' ');
+      }
+    }
+  }
+  const s = parseSpoken(t);
+  // Learn from history: the last spend with the same name decides category and mode when the words don't.
+  if (s.title) {
+    const key = norm(s.title);
+    const past = history
+      .filter(c => c.type === 'expense' && c.status !== 'trashed' && norm(c.title || '') === key)
+      .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];
+    if (past) {
+      if (!s.category && past.category) s.category = past.category;
+      if (!s.mode && past.mode) s.mode = past.mode;
+    }
+  }
+  return { ...s, date };
+}
+
+/* ---------------- close the khata (evening sweep) ---------------- */
+
+export interface DaySweep { total: number; count: number; missed: Usual[]; lastAt: number | null }
+
+/** Today so far: total, count, usual spends you normally log by now but haven't, and when you last logged one. */
+export function daySweep(cards: Card[], now: Date): DaySweep {
+  const t = toISO(now);
+  const today = cards.filter(c => c.type === 'expense' && c.status !== 'trashed' && c.status !== 'killed' && c.date === t);
+  const logged = new Set(today.map(c => norm(c.title || '')));
+  const missed = usualSpends(cards, now).filter(u => !logged.has(norm(u.title)));
+  const lastAt = today.reduce<number | null>((m, c) => (c.createdAt && (!m || c.createdAt > m) ? c.createdAt : m), null);
+  return { total: today.reduce((s, c) => s + (c.amount ?? 0), 0), count: today.length, missed, lastAt };
+}
+
+/* ---------------- duplicate guard ---------------- */
+
+/** A spend that looks like one you just logged: same amount and category (or title) within 10 minutes. */
+export function looksDuplicate(cards: Card[], s: { amount: number; category?: string | null; title?: string; date: string }, now: number): Card | null {
+  return cards.find(c => c.type === 'expense' && c.status !== 'trashed' && c.date === s.date && c.amount === s.amount
+    && (c.category === s.category || (!!s.title && norm(c.title || '') === norm(s.title)))
+    && now - (c.createdAt || 0) < 10 * 60 * 1000) ?? null;
+}

@@ -12,6 +12,7 @@ import { SwipeCard } from './SwipeCard';
 import { byRank } from '../../lib/logic';
 import { newCardDefaults } from './draft';
 import { TodayHero } from './TodayHero';
+import { CloseDay } from './CloseDay';
 import { Fab } from './Fab';
 import { QuickAdd } from './QuickAdd';
 import './home.css';
@@ -152,6 +153,7 @@ export default function HomeScreen() {
       </header>
 
       {cards !== undefined && open.length > 0 && !q && filter === 'all' && <TodayHero cards={cards} settings={settings} />}
+      {cards !== undefined && !q && filter === 'all' && <CloseDay cards={cards} />}
 
       {showHint && (
         <div className="home-hint" role="note">
