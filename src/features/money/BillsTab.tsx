@@ -9,6 +9,7 @@ import { monthKey, monthStart, openBills, REPEAT_LABEL, sum, YEAR_MULT } from '.
 import { BillRow, MiniRow } from './parts';
 import { AutopayRegister } from './autopay-ui';
 import { StaffSection } from './staff-ui';
+import { RecurringSuggest } from './RecurringSuggest';
 
 const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const KIND_WORD: Record<DueKind, [string, string]> = { bill: ['bill', 'bills'], sip: ['instalment', 'instalments'], maturity: ['maturity', 'maturities'] };
@@ -82,6 +83,7 @@ export default function BillsTab({ cards, settings }: { cards: Card[]; settings:
       </div>
 
       <div className="money-layout">
+        <RecurringSuggest cards={cards} />
         <section className="money-card money-wide" aria-labelledby="b-cal">
           <div className="money-h-row">
             <h2 id="b-cal" className="money-h">Due in {fmtMonth(month)}</h2>

@@ -298,3 +298,28 @@
   .money-flow > .money-wf { grid-column: 2; margin-top: 0; }
   .money-rv-ask { grid-column: 1 / -1; }
 }
+
+/* ---------- quick capture: paste SMS / speak / usual spends ---------- */
+.qe-cap { display: grid; gap: 8px; }
+.qe-cap-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.qe-cap-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 12px; border: 0;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-weight: 600; font-size: 14px; }
+.qe-cap-btn.is-on { background: var(--danger); color: #fff; animation: qe-pulse 1.2s ease-in-out infinite; }
+@keyframes qe-pulse { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 25%, transparent); } }
+.qe-heard { margin: 0; font-size: 14px; color: var(--muted); font-style: italic; }
+.qe-paste { display: grid; gap: 4px; }
+.qe-paste textarea { resize: vertical; min-height: 76px; font-size: 14px; }
+.qe-usual { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; color: var(--muted); }
+.qe-usual::-webkit-scrollbar { display: none; }
+.qe-usual .chip { flex: none; gap: 6px; color: var(--ink); }
+.qe-usual .chip b { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .qe-cap-btn.is-on { animation: none; } }
+
+/* ---------- looks regular ---------- */
+.rs { border-color: color-mix(in srgb, var(--accent) 25%, var(--card-line)); }
+.rs-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.rs-row { display: flex; align-items: center; gap: 8px; padding: 8px 4px 8px 12px; border-radius: var(--r-md); background: var(--surface-2); animation: money-panel-in .35s var(--ease-out) both; }
+.rs-txt { display: grid; flex: 1; min-width: 0; }
+.rs-txt small { font-size: 13px; color: var(--muted); }
+.rs-go { min-height: 38px; padding: 0 14px; font-size: 14px; }
+.qe-paste-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }

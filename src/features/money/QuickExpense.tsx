@@ -21,6 +21,7 @@ import { monthKey } from './money-util';
 import { catIcon } from './parts';
 import { balanceText, buildSplit, knownPeople, myShare, type SplitDraft } from './split';
 import { EMPTY_SPLIT, SplitPicker } from './splitPicker';
+import { CaptureBar, type Fill } from './CaptureBar';
 
 type Day = 'today' | 'yesterday' | 'pick';
 const PAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '.'];
@@ -136,6 +137,22 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     return () => clearTimeout(t);
   }, [saved]);
 
+  /** Fill the form from a pasted SMS, your voice, or a usual-spend chip. You still check and tap Save. */
+  const fill = (f: Fill) => {
+    if (f.amount) setAmt(String(f.amount));
+    if (f.category) setCat(f.category);
+    if (f.mode) setMode(f.mode);
+    if (f.title) { setNote(f.title); setNoteOpen(true); }
+    if (f.date) {
+      const t = todayISO(), y = addDaysISO(t, -1);
+      if (f.date === t) setDay('today'); else if (f.date === y) setDay('yesterday'); else { setDay('pick'); setPicked(f.date); }
+    }
+    setErr('');
+    buzz(8);
+    const what = [f.title, f.amount ? inr(f.amount) : ''].filter(Boolean).join(' · ');
+    toast(f.from === 'sms' ? `Filled from SMS: ${what}. Check and Save.` : f.from === 'voice' ? `Heard: ${what}. Check and Save.` : `${what}. Tap Save.`);
+  };
+
   const another = () => { setSaved(null); setTimeout(() => amtRef.current?.focus(), 30); };
 
   // Hardware keyboard: digits, dot, backspace, Enter. Text fields keep their own typing.
@@ -222,6 +239,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
         </div>
       ) : (
         <div className="money-qe">
+          <CaptureBar cards={cards ?? []} onFill={fill} onError={msg => setErr(msg)} />
           <div className="money-qe-display">
             <label htmlFor="qe-amt" className="money-k">Amount spent</label>
             <div className="money-qe-amt">
