@@ -121,3 +121,17 @@
 .set-theme-pv b { display: block; height: 4px; width: 80%; border-radius: 3px; }
 .set-theme-l { display: flex; align-items: center; gap: 6px; padding: 0 4px 4px; font-size: 13px; font-weight: 600; }
 .set-theme-ok { margin-left: auto; color: var(--accent); }
+
+/* ---------- reminders ---------- */
+.set-rem-ask { display: grid; gap: 12px; justify-items: start; }
+.set-toggle { display: flex; align-items: center; gap: 14px; min-height: 52px; cursor: pointer; position: relative; }
+.set-toggle-txt { display: grid; flex: 1; min-width: 0; }
+.set-toggle-txt b { font-weight: 600; }
+.set-toggle-txt small { font-size: 13px; color: var(--muted); }
+.set-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.set-switch { flex: none; width: 48px; height: 28px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 18%, transparent); position: relative; transition: background .2s; }
+.set-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .22s var(--spring); }
+.set-toggle input:checked + .set-switch { background: var(--accent); }
+.set-toggle input:checked + .set-switch::after { transform: translateX(20px); }
+.set-toggle input:focus-visible + .set-switch { outline: 2px solid var(--accent); outline-offset: 2px; }

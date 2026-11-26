@@ -88,3 +88,5 @@
 @media (prefers-reduced-motion: reduce) {
   .money-sm-vs .money-bar i, .money-rv-stat .money-bar i { transition: none; }
 }
+
+.money-rv-ask { gap: 8px; }

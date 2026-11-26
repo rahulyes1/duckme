@@ -378,3 +378,5 @@
 }
 
 .plan-ahead { display: flex; margin: 4px auto 8px; color: var(--accent); }
+
+@media (min-width: 1280px) { .plan-wm { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; } }

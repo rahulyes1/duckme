@@ -135,3 +135,12 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
 .hero-tip { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0 0; padding: 10px 12px; border-radius: 14px; font-size: 14px; line-height: 1.4;
   background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); animation: hero-in .5s var(--ease-out) .5s both; }
 .hero-tip svg { flex: none; margin-top: 2px; color: var(--accent); }
+
+@media (min-width: 1100px) {
+  .home { display: grid; grid-template-columns: minmax(0, 1fr) 340px; column-gap: 28px; align-items: start; }
+  .home > * { grid-column: 1; }
+  .home > .topbar { grid-column: 1 / -1; }
+  .home > .hero { grid-column: 2; grid-row: 2 / span 40; position: sticky; top: 16px; margin-top: 10px; }
+  .home > .hero .hero-big { font-size: 46px; }
+  .home > .hero .hero-line { height: 64px; }
+}

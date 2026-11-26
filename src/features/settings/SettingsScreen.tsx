@@ -13,6 +13,7 @@ import type { Card, Settings } from '../../lib/types';
 import { useInstallPrompt } from './pwa';
 import './settings.css';
 import AccountSection from './AccountSection';
+import RemindersSection from './RemindersSection';
 
 const APP_VERSION = '0.1.0';
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -428,6 +429,8 @@ export default function SettingsScreen() {
       <Profile settings={settings} cards={cards} />
 
       <AccountSection />
+
+      <RemindersSection settings={settings} />
 
       <Section id="set-general" title="General" icon={null}>
         <div className="field">

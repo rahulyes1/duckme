@@ -290,3 +290,11 @@
   background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 .ins.k-up i, .ins.k-pace i, .ins.k-bills i { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
 .ins.k-big i, .ins.k-weekend i { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+
+@media (min-width: 1024px) {
+  .money-flow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); column-gap: 28px; align-items: start; }
+  .money-flow > .money-h-row, .money-flow > .money-muted { grid-column: 1 / -1; }
+  .money-flow > .money-safe { grid-column: 1; margin: 0; }
+  .money-flow > .money-wf { grid-column: 2; margin-top: 0; }
+  .money-rv-ask { grid-column: 1 / -1; }
+}

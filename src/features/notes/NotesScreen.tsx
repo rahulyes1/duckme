@@ -180,7 +180,7 @@ export default function NotesScreen() {
   };
 
   const grid = (items: Card[]) => (view === 'grid'
-    ? <Masonry items={items} keyOf={c => c.id} render={tile} />
+    ? <Masonry items={items} keyOf={c => c.id} render={tile} center />
     : <div className="notes-list">{items.map(tile)}</div>);
 
   const loading = cards === undefined;

@@ -325,3 +325,10 @@ body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); botto
 
 /* Shown for a split second the very first time a screen is opened */
 .screen-loading { min-height: 60vh; }
+
+@media (min-width: 1024px) {
+  .nav .brand { display: flex; align-items: center; gap: 10px; }
+  .nav a { transition: background .15s, color .15s; }
+  .nav a:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .screen { padding-left: 28px; padding-right: 28px; }
+}

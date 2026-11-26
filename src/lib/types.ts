@@ -195,6 +195,8 @@ export interface Settings {
   goals?: Goal[];
   /** Loans you are repaying by EMI. */
   loans?: Loan[];
+  /** Phone reminders: bills due tomorrow/today/overdue, and salary day. */
+  reminders?: { bills: boolean; salary: boolean; hour: number };
 }
 
 export interface Goal { id: string; name: string; emoji?: string; target: number; saved: number; /** YYYY-MM-DD */ by?: string; createdAt: number }

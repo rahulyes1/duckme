@@ -1,5 +1,6 @@
-import { AlertTriangle, ArrowRight, CalendarClock, Coffee, Lightbulb, Pencil, Sparkles, TrendingDown, TrendingUp, Wallet, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarClock, PartyPopper, Coffee, Lightbulb, Pencil, Sparkles, TrendingDown, TrendingUp, Wallet, Zap } from 'lucide-react';
 import { spendingInsights, type InsightKind } from './insights';
+import { RecapCard, RecapSheet } from './RecapCard';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
 import { fmtDate, inr, today } from '../../lib/format';
@@ -112,6 +113,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
   }, [cards, salary, settings.salaryDay, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { flow } = d;
+  const [recapOpen, setRecapOpen] = useState(false);
   const insights = useMemo(() => spendingInsights(cards, ref), [cards]); // eslint-disable-line react-hooks/exhaustive-deps
   const daysTxt = flow.cycle.daysLeft === 1 ? '1 day' : `${flow.cycle.daysLeft} days`;
   const gl = d.nw.value - d.nw.invested;
@@ -146,8 +148,20 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
         </section>
       )}
 
+      {payday && <RecapCard cards={cards} settings={settings} />}
+      {payday && <PaydayCard cards={cards} settings={settings} flow={flow} />}
+
+      {weekOpen
+        ? <WeekCard cards={cards} settings={settings} safePerDay={salary ? flow.safeToday : 0} onClose={isSunday(ref) ? undefined : () => setWeekOpen(false)} />
+        : (
+          <div className="money-wide money-rv-ask">
+            {!payday && <button type="button" className="btn ghost" onClick={() => setRecapOpen(true)}><PartyPopper size={16} aria-hidden="true" /> Last month</button>}
+            <button type="button" className="btn" onClick={() => setWeekOpen(true)}><Sparkles size={16} aria-hidden="true" /> Review my week</button>
+          </div>
+        )}
+
       {insights.length > 0 && (
-        <section className="money-card money-wide" aria-labelledby="m-ins">
+        <section className="money-card" aria-labelledby="m-ins">
           <h2 id="m-ins" className="money-h"><Lightbulb size={18} aria-hidden="true" /> Insights</h2>
           <ul className="ins-list">
             {insights.map((x, i) => {
@@ -157,16 +171,6 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
           </ul>
         </section>
       )}
-
-      {payday && <PaydayCard cards={cards} settings={settings} flow={flow} />}
-
-      {weekOpen
-        ? <WeekCard cards={cards} settings={settings} safePerDay={salary ? flow.safeToday : 0} onClose={isSunday(ref) ? undefined : () => setWeekOpen(false)} />
-        : (
-          <div className="money-wide money-rv-ask">
-            <button type="button" className="btn" onClick={() => setWeekOpen(true)}><Sparkles size={16} aria-hidden="true" /> Review my week</button>
-          </div>
-        )}
 
       <section className="money-card" aria-labelledby="m-top">
         <div className="money-h-row">
@@ -211,6 +215,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
         ) : <p className="money-muted">Add SIPs, FDs or PPF to see your net worth here.</p>}
         <p className="money-note">Values are what you enter. Hisaab doesn't give buy/sell advice.</p>
       </section>
+      <RecapSheet open={recapOpen} onClose={() => setRecapOpen(false)} cards={cards} settings={settings} />
     </div>
   );
 }

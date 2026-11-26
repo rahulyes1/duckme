@@ -1,0 +1,27 @@
+/* Month-end recap. Tokens only. */
+.rc-card { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface) 60%);
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--card-line)); }
+.rc { display: grid; gap: 14px; }
+.rc-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.rc-hero > div { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-2); animation: rc-in .45s var(--ease-out) both; }
+.rc-hero > div + div { animation-delay: 80ms; }
+.rc-big { font-family: var(--f-display); font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+.rc-big.is-good { color: var(--ok); }
+.rc-big.is-bad { color: var(--danger); }
+.rc-delta { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.rc-delta.is-up { color: var(--warn); }
+.rc-delta.is-down { color: var(--ok); }
+.rc-cats { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.rc-cats li { display: grid; gap: 4px; animation: rc-in .45s var(--ease-out) both; }
+.rc-cat-top { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; }
+.rc-cat-top span { display: inline-flex; align-items: center; gap: 6px; }
+.rc-bar { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 10%, transparent); overflow: hidden; }
+.rc-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left; animation: rc-grow .7s var(--ease-out) both; }
+.rc-facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.rc-facts li { display: grid; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); }
+.rc-facts b { font-family: var(--f-display); font-size: 20px; }
+.rc-facts span { font-size: 13px; color: var(--muted); }
+.rc-share { justify-self: start; }
+@keyframes rc-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes rc-grow { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .rc-hero > div, .rc-cats li, .rc-bar i { animation: none; } }

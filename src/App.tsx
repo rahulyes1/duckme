@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { startReminderLoop } from './lib/notify';
 import { CalendarRange, Home, Settings2, StickyNote, Wallet } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -157,6 +158,7 @@ export default function App() {
   }, [settings?.consentAt, api]);
 
   // Must stay above the early returns below (hooks run in the same order every render).
+  useEffect(() => (settings?.consentAt ? startReminderLoop() : undefined), [settings?.consentAt]);
   useEffect(() => {
     const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
     const t = w.requestIdleCallback ? w.requestIdleCallback(prefetchScreens) : window.setTimeout(prefetchScreens, 1500);
