@@ -8,7 +8,7 @@
   --strip: #16201B; --strip-ink: #EAF1EC; --strip-muted: #A9BBB0;
   --c-white: #FFFFFF; --c-haldi: #FFE3D6; --c-mint: #D3F4E6; --c-rose: #FCDDE8; --c-sky: #D9EBFF; --c-lilac: #E8E0FF; --c-sand: #F4ECDF;
   /* second pastel per colour, for the slow 'live' glow inside note cards */
-  --g-white: #EEF2FF; --g-haldi: #FFD3E0; --g-mint: #D6ECFF; --g-rose: #E6DBFF; --g-sky: #DDF5EC; --g-lilac: #FFDCEB; --g-sand: #FFE3D6;
+  --g-white: #F1F0EC; --g-haldi: #FFD3E0; --g-mint: #D6ECFF; --g-rose: #E6DBFF; --g-sky: #DDF5EC; --g-lilac: #FFDCEB; --g-sand: #FFE3D6;
   --card-line: rgba(27, 33, 29, .10); --shadow-1: 0 1px 2px rgba(20, 30, 25, .06); --shadow-3: 0 18px 40px -12px rgba(10, 20, 15, .35);
   --scrim: rgba(10, 15, 12, .42); --gold: #E4A70F;
   --rule: rgba(20, 30, 25, .06); --margin-line: rgba(179, 38, 30, .16); --ink-line: rgba(11, 115, 86, .5); --grain: .05;
@@ -26,7 +26,7 @@
   --warn: #F2A060; --danger: #F2827A; --ok: #5BD49A;
   --strip: #141518; --strip-ink: #ECEAE6; --strip-muted: #9A9893;
   --c-white: #2A2C31; --c-haldi: #4A3530; --c-mint: #1E3F37; --c-rose: #47293A; --c-sky: #213750; --c-lilac: #38305A; --c-sand: #3E3830;
-  --g-white: #33374A; --g-haldi: #55303F; --g-mint: #22395A; --g-rose: #3C3060; --g-sky: #1F453C; --g-lilac: #522C48; --g-sand: #523830;
+  --g-white: #34353A; --g-haldi: #55303F; --g-mint: #22395A; --g-rose: #3C3060; --g-sky: #1F453C; --g-lilac: #522C48; --g-sand: #523830;
   --card-line: rgba(255, 255, 255, .08); --shadow-1: none; --scrim: rgba(0, 0, 0, .6);
   --rule: rgba(255, 255, 255, .035); --margin-line: rgba(242, 130, 122, .16); --ink-line: rgba(60, 199, 154, .55); --grain: .07;
   color-scheme: dark;
@@ -37,7 +37,7 @@
   --warn: #F2A060; --danger: #F2827A; --ok: #5BD49A;
   --strip: #141518; --strip-ink: #ECEAE6; --strip-muted: #9A9893;
   --c-white: #2A2C31; --c-haldi: #4A3530; --c-mint: #1E3F37; --c-rose: #47293A; --c-sky: #213750; --c-lilac: #38305A; --c-sand: #3E3830;
-  --g-white: #33374A; --g-haldi: #55303F; --g-mint: #22395A; --g-rose: #3C3060; --g-sky: #1F453C; --g-lilac: #522C48; --g-sand: #523830;
+  --g-white: #34353A; --g-haldi: #55303F; --g-mint: #22395A; --g-rose: #3C3060; --g-sky: #1F453C; --g-lilac: #522C48; --g-sand: #523830;
   --card-line: rgba(255, 255, 255, .08); --shadow-1: none; --scrim: rgba(0, 0, 0, .6);
   --rule: rgba(255, 255, 255, .035); --margin-line: rgba(242, 130, 122, .16); --ink-line: rgba(60, 199, 154, .55); --grain: .07;
   color-scheme: dark;

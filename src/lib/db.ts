@@ -46,6 +46,13 @@ export class HisaabDB extends Dexie {
       deletions: 'id, at',
     });
 
+    // v4: notes are plain graphite by default; existing lavender / blue notes switch to it once.
+    this.version(4).stores({}).upgrade(async tx => {
+      await tx.table<Card, string>('cards')
+        .filter(c => c.type === 'note' && (c.color === 'lilac' || c.color === 'sky'))
+        .modify({ color: 'white', updatedAt: Date.now() });
+    });
+
     // Every local change stamps updatedAt (sync uses it: newest write wins).
     this.cards.hook('updating', (mods: Partial<Card>, _key, obj: Card) => {
       if (syncState.applyingRemote || 'updatedAt' in mods) return undefined;

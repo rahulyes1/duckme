@@ -17,8 +17,8 @@ describe('builtinTemplates', () => {
   it('placeholder lines never add stray amounts to the list total (dates are not read as ₹)', () => {
     for (const t of list) for (const i of t.items) expect([null, 0]).toContain(lineAmount(i));
   });
-  it('uses pastel colours only (no haldi)', () => {
-    for (const t of list) expect(['lilac', 'sky', 'mint']).toContain(t.color);
+  it('uses graphite or mint only (no yellow, no blue/lavender)', () => {
+    for (const t of list) expect(['white', 'mint']).toContain(t.color);
   });
 });
 

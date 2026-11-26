@@ -29,7 +29,7 @@ export function builtinTemplates(salaryDay: number, todayIso: string): BuiltinTe
   const itrYear = t.getMonth() > 6 ? t.getFullYear() + 1 : t.getFullYear();
   return [
     {
-      id: 'month', name: 'Month start', hint: 'Rent, EMI, card bill, SIP… with pay-by dates', color: 'lilac',
+      id: 'month', name: 'Month start', hint: 'Rent, EMI, card bill, SIP… with pay-by dates', color: 'white',
       title: `Month start · salary ${fmtDate(pay)}`,
       items: [
         `SIP ₹0 · on ${by(2)}`,
@@ -42,7 +42,7 @@ export function builtinTemplates(salaryDay: number, todayIso: string): BuiltinTe
       ],
     },
     {
-      id: 'tax', name: 'Tax season', hint: `Proofs, Form 16, ITR due 31-07-${itrYear}`, color: 'sky',
+      id: 'tax', name: 'Tax season', hint: `Proofs, Form 16, ITR due 31-07-${itrYear}`, color: 'white',
       title: `Tax season · ITR due 31-07-${itrYear}`,
       items: [
         '80C proofs: PPF, ELSS, LIC, tuition fees, home loan principal',
@@ -62,7 +62,7 @@ export function builtinTemplates(salaryDay: number, todayIso: string): BuiltinTe
       ],
     },
     {
-      id: 'festival', name: 'Diwali gifts', hint: 'Gift budget per person', color: 'lilac',
+      id: 'festival', name: 'Diwali gifts', hint: 'Gift budget per person', color: 'white',
       title: 'Diwali gifts · budget',
       items: [
         'Parents ₹0', 'Siblings ₹0', 'Maid and staff bonus ₹0', 'Office team ₹0', 'Sweets and dry fruits ₹0', 'Diyas and decoration ₹0',

@@ -52,13 +52,13 @@ export async function loadSampleData(): Promise<void> {
       color: 'lilac', penalty: 'Cancel before the renewal date or it renews', category: 'Entertainment' }),
     mk({ type: 'bill', title: 'Rent', amount: 18000, due: toISO(nextDay(5)), repeat: 'monthly', color: 'sand', category: 'Rent' }),
     mk({ type: 'bill', title: 'Bijli bill', amount: 2400, due: toISO(nextDay(15)), repeat: 'monthly', color: 'white', category: 'Bills' }),
-    mk({ type: 'note', title: 'Cousin’s wedding checklist', color: 'lilac', checklist: [
+    mk({ type: 'note', title: 'Cousin’s wedding checklist', color: 'white', checklist: [
       { id: uid(), text: 'Gift ₹5,000', done: false },
       { id: uid(), text: 'Train tickets ₹2,400', done: true },
       { id: uid(), text: 'Kurta stitching ₹1,800', done: false },
       { id: uid(), text: 'Book a cab to the station', done: false },
     ] }),
-    mk({ type: 'note', title: 'Ask landlord for rent receipts', color: 'sky',
+    mk({ type: 'note', title: 'Ask landlord for rent receipts', color: 'white',
       body: 'Needed for the HRA claim. Get all 12 months signed, with his PAN if rent is above ₹1 lakh a year.' }),
     mk({ type: 'note', title: 'Weekend trek to Rajmachi', color: 'mint', labels: ['Ideas'],
       body: 'Leave Friday night. Carry torch, rain jacket, ORS.' }),

@@ -198,7 +198,7 @@ export const KIND_LABEL: Record<CardType, string> = {
   note: 'Note', task: 'Task', bill: 'Bill', expense: 'Expense', invest: 'Investment',
 };
 export const DEFAULT_COLOR: Record<CardType, CardColor> = {
-  note: 'lilac', task: 'white', bill: 'rose', expense: 'white', invest: 'mint',
+  note: 'white', task: 'white', bill: 'rose', expense: 'white', invest: 'mint',
 };
 export const HORIZON_LABEL: Record<Horizon, string> = {
   week: 'This week', month: 'This month', year: 'This year', none: 'No horizon',
