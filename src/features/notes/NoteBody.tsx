@@ -2,12 +2,26 @@ import type { KeyboardEvent, MouseEvent } from 'react';
 import { Check } from 'lucide-react';
 import './notes.css';
 import { parseNote, type Block, type Span } from './md-lite';
+import { calcByLine, fmtCalc, type CalcResult } from './calc';
 
 function Spans({ spans }: { spans: Span[] }) {
   return <>{spans.map((s, i) => (s.bold ? <strong key={i}>{s.text}</strong> : <span key={i}>{s.text}</span>))}</>;
 }
 
 const plain = (spans: Span[]) => spans.map(s => s.text).join('');
+
+/**
+ * The value of a calc line, shown after its text: "= ₹82,000" lines get the result in the accent colour,
+ * variable lines ("sip = 5k") get their value faintly. Keyed by value so a new value fades in.
+ */
+const calcKey = (r?: CalcResult) => (r ? `${r.kind}${r.value}` : 'none');
+
+function Calc({ r }: { r?: CalcResult }) {
+  if (!r) return null;
+  if (r.kind === 'result') return <span className="notes-calc is-result num">{fmtCalc(r.value)}</span>;
+  if (r.literal) return null;
+  return <span className="notes-calc is-var num">{fmtCalc(r.value)}</span>;
+}
 
 interface Props {
   text: string;
@@ -30,12 +44,13 @@ interface Props {
  */
 export function NoteBody({ text, variant = 'tile', onToggle, onEdit, className = '' }: Props) {
   const blocks = parseNote(text);
+  const calc = calcByLine(text);
   if (variant === 'tile') {
     // Trim trailing blank lines so the tile does not grow.
     while (blocks.length && blocks[blocks.length - 1].kind === 'blank') blocks.pop();
     return (
       <span className={`body notes-md notes-md-tile ${className}`}>
-        {blocks.map(b => <TileLine key={b.line} b={b} />)}
+        {blocks.map(b => <TileLine key={b.line} b={b} c={calc.get(b.line)} />)}
       </span>
     );
   }
@@ -49,37 +64,37 @@ export function NoteBody({ text, variant = 'tile', onToggle, onEdit, className =
       className={`notes-md notes-md-read ${className}`}
       onClick={e => onEdit?.(lineOf(e))}
     >
-      {blocks.map(b => <ReadLine key={b.line} b={b} onToggle={onToggle} />)}
+      {blocks.map(b => <ReadLine key={b.line} b={b} c={calc.get(b.line)} onToggle={onToggle} />)}
     </div>
   );
 }
 
-function TileLine({ b }: { b: Block }) {
+function TileLine({ b, c }: { b: Block; c?: CalcResult }) {
   switch (b.kind) {
     case 'blank': return <span className="notes-md-gap" aria-hidden="true" />;
     case 'hr': return <span className="notes-md-hr" role="separator" />;
-    case 'h': return <span className={`notes-md-h notes-md-h${b.level}`}><Spans spans={b.spans} /></span>;
-    case 'li': return <span className="notes-md-li"><span className="notes-md-dot" aria-hidden="true" /><span><Spans spans={b.spans} /></span></span>;
+    case 'h': return <span className={`notes-md-h notes-md-h${b.level}`}><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></span>;
+    case 'li': return <span className="notes-md-li"><span className="notes-md-dot" aria-hidden="true" /><span><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></span></span>;
     case 'todo': return (
       <span className={`notes-md-todo ${b.done ? 'is-done' : ''}`}>
         <span className="notes-md-tbox" aria-hidden="true">{b.done && <Check size={10} strokeWidth={3.5} />}</span>
         <span className="sr-only">{b.done ? 'Done: ' : 'To do: '}</span>
-        <span className="notes-md-ttext"><Spans spans={b.spans} /></span>
+        <span className="notes-md-ttext"><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></span>
       </span>
     );
-    case 'p': return <span className="notes-md-p"><Spans spans={b.spans} /></span>;
+    case 'p': return <span className="notes-md-p"><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></span>;
   }
 }
 
-function ReadLine({ b, onToggle }: { b: Block; onToggle?: (line: number) => void }) {
+function ReadLine({ b, c, onToggle }: { b: Block; c?: CalcResult; onToggle?: (line: number) => void }) {
   switch (b.kind) {
     case 'blank': return <div className="notes-md-gap" data-line={b.line} aria-hidden="true" />;
     case 'hr': return <div className="notes-md-hr" data-line={b.line} role="separator" />;
     case 'h': {
       const H = b.level === 1 ? 'h3' : 'h4';
-      return <H className={`notes-md-h notes-md-h${b.level}`} data-line={b.line}><Spans spans={b.spans} /></H>;
+      return <H className={`notes-md-h notes-md-h${b.level}`} data-line={b.line}><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></H>;
     }
-    case 'li': return <div className="notes-md-li" data-line={b.line}><span className="notes-md-dot" aria-hidden="true" /><span><Spans spans={b.spans} /></span></div>;
+    case 'li': return <div className="notes-md-li" data-line={b.line}><span className="notes-md-dot" aria-hidden="true" /><span><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></span></div>;
     case 'todo': return (
       <div className={`notes-md-todo is-read ${b.done ? 'is-done' : ''}`} data-line={b.line}>
         <button
@@ -92,9 +107,9 @@ function ReadLine({ b, onToggle }: { b: Block; onToggle?: (line: number) => void
         >
           <span className="notes-md-tbox" aria-hidden="true">{b.done && <Check size={14} strokeWidth={3.5} />}</span>
         </button>
-        <span className="notes-md-ttext"><Spans spans={b.spans} /></span>
+        <span className="notes-md-ttext"><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></span>
       </div>
     );
-    case 'p': return <p className="notes-md-p" data-line={b.line}><Spans spans={b.spans} /></p>;
+    case 'p': return <p className="notes-md-p" data-line={b.line}><Spans spans={b.spans} /><Calc key={calcKey(c)} r={c} /></p>;
   }
 }

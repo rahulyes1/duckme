@@ -203,7 +203,7 @@ export const HORIZON_LABEL: Record<Horizon, string> = {
   week: 'This week', month: 'This month', year: 'This year', none: 'No horizon',
 };
 export const EXPENSE_CATEGORIES = [
-  'Food', 'Groceries', 'Travel', 'Fuel', 'Shopping', 'Bills', 'Rent', 'Health', 'Education', 'Entertainment', 'Family', 'Other',
+  'Food', 'Groceries', 'Travel', 'Fuel', 'Shopping', 'Bills', 'Rent', 'Staff', 'Health', 'Education', 'Entertainment', 'Family', 'Other',
 ] as const;
 export const PAY_MODES = ['UPI', 'Card', 'Cash', 'Net banking', 'Auto-debit'] as const;
 export const INVEST_KINDS: InvestKind[] = ['SIP', 'FD', 'RD', 'PPF', 'MF', 'Stock', 'Gold', 'NPS', 'Other'];

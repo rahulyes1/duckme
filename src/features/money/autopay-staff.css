@@ -1,0 +1,124 @@
+/* Autopay register (money-ap-) and household staff ledger (money-st-). Tokens only; both themes come from :root. */
+
+/* ---------- autopay: editor fields ---------- */
+.money-ap-fields { display: grid; gap: 10px; }
+.money-ap-reveal { display: grid; gap: 14px; padding: 12px; border-radius: var(--r-md); background: color-mix(in srgb, var(--c-sky) 60%, var(--surface));
+  border: 1px solid var(--line); animation: money-ap-in .2s var(--ease-out) both; }
+.money-ap-reveal .chip { display: inline-flex; align-items: center; gap: 6px; }
+.money-ap-addchip { border-style: dashed; }
+.money-ap-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.money-ap-inline .input, .money-ap-inline .money-rupee-input { flex: 1 1 160px; min-width: 0; }
+.money-ap-inline .btn { min-height: 48px; }
+
+/* ---------- autopay: register ---------- */
+.money-ap-manage { min-height: 44px; }
+.money-ap-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+@media (min-width: 900px) { .money-ap-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+.money-ap-acc { border-radius: var(--r-md); border: 1px solid var(--card-line, var(--line)); padding: 12px; display: grid; gap: 8px;
+  background: color-mix(in srgb, var(--c-mint) 45%, var(--surface)); animation: money-ap-in .24s var(--ease-out) both; }
+.money-ap-acc.is-short { background: color-mix(in srgb, var(--danger) 9%, var(--surface)); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.money-ap-acc.is-unknown { background: color-mix(in srgb, var(--c-sand) 70%, var(--surface)); }
+.money-ap-acc-top { display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.money-ap-acc-name { display: flex; gap: 10px; align-items: center; min-width: 0; flex: 1 1 200px; }
+.money-ap-acc-name > span:last-child { display: grid; min-width: 0; }
+.money-ap-bal { min-height: 48px; display: grid; justify-items: end; gap: 0; padding: 4px 10px; border-radius: var(--r-sm); border: 1px dashed var(--line);
+  background: var(--surface); color: var(--ink); text-align: right; }
+.money-ap-bal:hover { border-color: color-mix(in srgb, var(--ink) 30%, transparent); }
+.money-ap-bal-v { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 16px; }
+.money-ap-bal-v svg { color: var(--muted); }
+.money-ap-balform { flex: 1 1 100%; display: grid; gap: 4px; }
+.money-ap-balform .err { font-size: 13px; color: var(--danger); font-weight: 600; }
+
+.money-ap-status { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; font-weight: 600; }
+.money-ap-status svg { flex: none; }
+.money-ap-status.ok { color: var(--ok); }
+.money-ap-status.short { color: var(--danger); font-weight: 700; }
+.money-ap-status.unknown { color: var(--warn); }
+.money-card > .money-ap-status.short { margin: 0 0 8px; }
+
+.money-ap-debits { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.money-ap-debit { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 0; border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--ink); text-align: left; }
+.money-ap-debit:hover { background: var(--surface); }
+.money-ap-date { flex: none; min-width: 48px; font-weight: 700; font-size: 14px; color: var(--muted); }
+.money-ap-dname { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; overflow-wrap: anywhere; }
+.money-ap-dname svg { flex: none; color: var(--muted); }
+.money-ap-flag { display: flex; align-items: center; gap: 6px; margin: 2px 8px 4px; font-size: 14px; font-weight: 600; color: var(--danger); }
+.money-ap-flag svg { flex: none; }
+.money-ap-npci { display: flex; align-items: flex-start; gap: 6px; }
+.money-ap-npci svg { flex: none; margin-top: 2px; }
+
+/* accounts sheet */
+.money-ap-accs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+.money-ap-accrow { display: grid; gap: 8px; padding: 12px; border-radius: var(--r-md); background: var(--surface-2); }
+.money-ap-accrow .err, .money-ap-addform .err { font-size: 13px; color: var(--danger); font-weight: 600; }
+.money-ap-accgrid { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 480px) { .money-ap-accgrid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); } }
+.money-ap-accbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.money-ap-accbtns .btn { min-height: 44px; }
+.money-ap-accbtns .btn:disabled { opacity: .5; }
+.money-ap-addform { display: grid; gap: 10px; margin-top: 8px; }
+.money-ap-addform .btn { min-height: 48px; }
+
+/* ---------- staff ---------- */
+.money-st-add { min-height: 44px; }
+.money-st-festnote { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 10px 12px; border-radius: 999px; width: fit-content; max-width: 100%;
+  background: color-mix(in srgb, var(--c-haldi) 80%, var(--surface)); font-weight: 600; font-size: 14px; color: var(--ink); }
+.money-st-festnote svg { color: var(--warn); flex: none; }
+.money-st-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 10px; }
+@media (min-width: 900px) { .money-st-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+.money-st-row { display: grid; gap: 10px; padding: 12px; border-radius: var(--r-md); border: 1px solid var(--card-line, var(--line));
+  background: var(--c, var(--c-sand)); animation: money-ap-in .24s var(--ease-out) both; }
+.money-st-head { display: flex; align-items: center; gap: 6px; }
+.money-st-main { flex: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; gap: 12px; border: 0; padding: 4px; border-radius: var(--r-sm);
+  background: transparent; color: var(--ink); text-align: left; }
+.money-st-main:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.money-st-facts { display: flex; flex-wrap: wrap; gap: 4px; }
+.money-st-facts .pill { display: inline-flex; align-items: center; gap: 4px; }
+.money-st-adv { background: color-mix(in srgb, var(--warn) 16%, var(--surface)); color: var(--ink); font-weight: 700; }
+.money-st-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.money-st-actions .btn { min-height: 44px; }
+.money-st-actions .money-st-paybtn { min-height: 52px; min-width: 120px; font-size: 17px; font-weight: 700; }
+@media (max-width: 479px) { .money-st-paybtn { flex: 1 1 100%; } .money-st-actions .btn:not(.money-st-paybtn) { flex: 1 1 0; padding: 0 8px; } }
+
+/* pay / advance / leave / add sheets */
+.money-st-pay { display: grid; gap: 14px; }
+.money-st-pay .err { font-size: 13px; color: var(--danger); font-weight: 600; }
+.money-st-base { margin: 0; }
+.money-st-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 520px) { .money-st-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.money-st-days { display: flex; align-items: center; gap: 6px; }
+.money-st-days .input { flex: 1; min-width: 0; text-align: center; font-weight: 700; }
+.money-st-days .icon-btn { border: 1px solid var(--line); background: var(--surface); }
+.money-st-days .icon-btn:disabled { opacity: .4; }
+.money-st-fest { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; width: fit-content;
+  background: color-mix(in srgb, var(--c-haldi) 80%, var(--surface)); color: var(--ink); }
+.money-st-fest svg { color: var(--warn); }
+.money-st-break { margin: 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-2); display: grid; gap: 6px; }
+.money-st-break > div { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.money-st-break dt { color: var(--muted); }
+.money-st-break dd { margin: 0; font-weight: 600; }
+.money-st-net { padding-top: 8px; margin-top: 2px; border-top: 1px solid var(--line); }
+.money-st-net dt { color: var(--ink); font-weight: 700; }
+.money-st-net dd { font-family: var(--f-display); font-size: 22px; font-weight: 700; }
+.money-st-confirm { min-height: 52px; font-size: 16px; }
+.money-st-confirm:disabled { opacity: .6; }
+
+/* editor ledger */
+.money-st-ledger { display: grid; gap: 12px; padding: 12px; border-radius: var(--r-md); background: color-mix(in srgb, var(--surface) 75%, transparent); border: 1px solid var(--line); }
+.money-st-ledger .sec-label { display: flex; align-items: center; gap: 6px; margin: 0; }
+.money-st-owed { margin: 0; }
+.money-st-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.money-st-log li { display: flex; align-items: baseline; gap: 10px; min-height: 40px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+.money-st-log li:last-child { border-bottom: 0; }
+.money-st-logk { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.money-st-log li.k-paid .money-st-logk { color: var(--ok); }
+.money-st-log li.k-advance .money-st-logk { color: var(--warn); }
+
+/* keep chip/button presses steady inside these blocks (see money.css touch fixes) */
+.money-ap .chip:active, .money-st .chip:active, .money-st-pay .chip:active { transform: none; }
+
+@keyframes money-ap-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .money-ap-reveal, .money-ap-acc, .money-st-row { animation: none; }
+}

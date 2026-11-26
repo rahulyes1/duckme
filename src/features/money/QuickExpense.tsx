@@ -3,7 +3,7 @@
  * Stays open after saving so you can add another.
  */
 import { motion } from 'framer-motion';
-import { CalendarDays, Check, ChevronDown, ChevronUp, Delete, PencilLine, Plus, Star } from 'lucide-react';
+import { CalendarDays, Check, ChevronDown, ChevronUp, Delete, PencilLine, Plus, Star, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
 import { createCard, withUndo } from '../../lib/actions';
@@ -19,6 +19,8 @@ import {
 } from './cashflow';
 import { monthKey } from './money-util';
 import { catIcon } from './parts';
+import { balanceText, buildSplit, knownPeople, myShare, type SplitDraft } from './split';
+import { EMPTY_SPLIT, SplitPicker } from './splitPicker';
 
 type Day = 'today' | 'yesterday' | 'pick';
 const PAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '.'];
@@ -49,6 +51,9 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
   const [all, setAll] = useState(false);
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState<Saved | null>(null);
+  const [splitOn, setSplitOn] = useState(false);
+  const [splitDraft, setSplitDraft] = useState<SplitDraft>(EMPTY_SPLIT);
+  const [splitErr, setSplitErr] = useState('');
   const [shown, setShown] = useState(0);
   const busy = useRef(false);
   const amtRef = useRef<HTMLInputElement>(null);
@@ -56,6 +61,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
 
   const reset = useCallback(() => {
     setAmt(''); setCat(null); setNote(''); setNoteOpen(false); setErr(''); setDay('today'); setPicked(todayISO()); setAll(false);
+    setSplitOn(false); setSplitDraft(EMPTY_SPLIT); setSplitErr('');
   }, []);
   useEffect(() => { if (open) { reset(); setMode('UPI'); setSaved(null); } }, [open, reset]);
 
@@ -65,6 +71,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     [cards, settings.favCategories, month],
   );
   const favs = settings.favCategories ?? [];
+  const splitNames = useMemo(() => knownPeople(settings.splitPeople, cards ?? []), [settings.splitPeople, cards]);
   let visible = all ? order : order.slice(0, FIRST);
   if (!all && cat && !visible.includes(cat)) visible = [...order.slice(0, FIRST - 1), cat];
 
@@ -80,6 +87,8 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     if (busy.current || !cards) return;
     if (value <= 0) { setErr('Type an amount first'); amtRef.current?.focus(); return; }
     if (!date) { setErr('Pick a date'); return; }
+    const sp = splitOn ? buildSplit(value, splitDraft) : null;
+    if (sp?.error) { setSplitErr(sp.error); return; }
     busy.current = true;
     try {
       const category = cat ?? 'Other';
@@ -89,7 +98,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       const catBefore = spentByCategory(cards, date.slice(0, 7))[category] ?? 0;
       let created!: Card;
       const undo = await withUndo(async () => {
-        created = await createCard({ type: 'expense', title: note.trim() || category, amount: value, date, category, mode });
+        created = await createCard({ type: 'expense', title: note.trim() || category, amount: value, date, category, mode, ...(sp?.split ? { split: sp.split } : {}) });
       });
       const after = cashFlow([...cards, created], salary, settings.salaryDay, ref);
 
@@ -100,7 +109,9 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
         ? `${category} budget crossed: ${inr(st.over)} over ${inr(budget)}`
         : crossed === 'warn'
           ? `${category} budget ${st.pct}% used: ${inr(st.left)} left`
-          : `Saved ${inr(value)} · ${category}`;
+          : sp?.split
+            ? `Saved ${inr(value)} · ${splitSummary(value, sp.split)}`
+            : `Saved ${inr(value)} · ${category}`;
       toast(msg, undo);
       buzz(crossed ? [30, 60, 30] : 15);
 
@@ -266,6 +277,20 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
           </div>
 
           <div className="money-qe-sec">
+            <span className="money-qe-label" id="qe-split">Shared with flatmates or friends?</span>
+            <div className="chips money-qe-chips" role="group" aria-labelledby="qe-split">
+              <button type="button" className="chip" aria-pressed={splitOn} aria-expanded={splitOn}
+                onClick={() => { setSplitOn(o => !o); setSplitErr(''); }}>
+                <Users size={16} aria-hidden="true" /> Split
+              </button>
+            </div>
+            {splitOn && (
+              <SplitPicker amount={value} draft={splitDraft} known={splitNames} saved={settings.splitPeople} error={splitErr}
+                onChange={dft => { setSplitDraft(dft); setSplitErr(''); }} />
+            )}
+          </div>
+
+          <div className="money-qe-sec">
             <span className="money-qe-label" id="qe-when">When</span>
             <div className="chips money-qe-chips" role="group" aria-labelledby="qe-when">
               <button type="button" className="chip" aria-pressed={day === 'today'} onClick={() => setDay('today')}>Today</button>
@@ -304,4 +329,14 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       )}
     </Sheet>
   );
+}
+
+/** "Rohan owes you ₹400" for one person, or "split with 3" for more. */
+function splitSummary(amount: number, split: NonNullable<Card['split']>): string {
+  if (split.people.length === 1) {
+    const p = split.people[0];
+    const net = split.paidBy === 'me' ? p.share : -myShare(amount, split);
+    return balanceText({ name: p.name, net });
+  }
+  return `split with ${split.people.length}`;
 }

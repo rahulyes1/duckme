@@ -81,6 +81,10 @@ export default function MoneyScreen() {
   const [tab, setTabState] = useState<Tab>(() => readPref(TAB_KEY, TABS, 'overview'));
   const [spend, setSpend] = useState(false);
   const closeSpend = useCallback(() => setSpend(false), []);
+  // "New expense" home-screen shortcut: App sets this flag, then routes here.
+  useEffect(() => {
+    try { if (sessionStorage.getItem('hisaab.quickSpend')) { sessionStorage.removeItem('hisaab.quickSpend'); setSpend(true); } } catch { /* storage blocked */ }
+  }, []);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const setTab = (t: Tab) => { setTabState(t); writePref(TAB_KEY, t); };

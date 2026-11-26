@@ -16,6 +16,8 @@ import { Sheet } from '../../ui/Sheet';
 import { fmtPlain, hasMaturity, isMonthly, paidMessage, parseAmount, REPEAT_LABEL } from './money-util';
 import './money.css';
 import { isActive } from '../../lib/types';
+import { AutopayFields } from './autopay-ui';
+import { StaffLedger, StaffPaySheet } from './staff-ui';
 import { gainLoss } from '../../lib/logic';
 
 const REPEATS: Repeat[] = ['none', 'monthly', 'quarterly', 'yearly'];
@@ -147,7 +149,7 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
    *  update that arrives mid-write can't flip a switch or chip back for a moment. */
   const inflight = useRef<Partial<Card>>({});
   const timer = useRef<number>();
-  const [sheet, setSheet] = useState<'color' | 'more' | null>(null);
+  const [sheet, setSheet] = useState<'color' | 'more' | 'staffpay' | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
 
   // Keep the draft in step with the database, but never overwrite edits not yet saved.
@@ -293,10 +295,13 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
                 aria-describedby={`pen-${id}-help`} onChange={e => set({ penalty: e.target.value || undefined })} />
               <span className="help" id={`pen-${id}-help`}>Shown as a reminder only. It never changes the order.</span>
             </div>
+            <AutopayFields card={c} settings={settings} onChange={v => set({ autopay: v })} />
             <Chips label="Category" options={EXPENSE_CATEGORIES} value={c.category as typeof EXPENSE_CATEGORIES[number]} onChange={v => set({ category: v })} />
+            {c.staff && <StaffLedger card={c} onChange={v => set({ staff: v })} />}
             {isActive(c) && (
-              <button type="button" className="btn primary block money-markpaid" onClick={e => markPaid(e.currentTarget)}>
-                <CheckCircle2 size={18} aria-hidden="true" /> Mark paid{c.amount ? ` ${inr(c.amount)}` : ''}
+              <button type="button" className="btn primary block money-markpaid"
+                onClick={e => { if (c.staff) { void flush(); setSheet('staffpay'); } else void markPaid(e.currentTarget); }}>
+                <CheckCircle2 size={18} aria-hidden="true" /> {c.staff ? 'Pay' : 'Mark paid'}{c.amount ? ` ${inr(c.amount)}` : ''}
               </button>
             )}
             {c.status === 'done' && <p className="money-muted"><CheckCircle2 size={14} aria-hidden="true" /> Paid{c.doneAt ? ` on ${fmtDate(toISO(new Date(c.doneAt)))}` : ''}.</p>}
@@ -315,6 +320,7 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
                 {gl.diff >= 0 ? 'Gain' : 'Loss'}: {inr(Math.abs(gl.diff))} ({Math.abs(gl.pct).toFixed(1)}%)
               </p>
             )}
+            {monthly && <AutopayFields card={c} settings={settings} onChange={v => set({ autopay: v })} />}
             <p className="money-muted">Values are what you enter. Hisaab doesn't give buy/sell advice.</p>
           </>
         )}
@@ -331,6 +337,7 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
       <Sheet open={sheet === 'color'} onClose={closeSheet} title="Card colour">
         <ColorPicker value={c.color} onChange={(v: CardColor) => { set({ color: v }); }} />
       </Sheet>
+      {c.staff && <StaffPaySheet card={c} open={sheet === 'staffpay'} onClose={closeSheet} onPaid={onClose} />}
       <Sheet open={sheet === 'more'} onClose={closeSheet} title="More">
         <div className="money-more">
           <button type="button" className="btn block" onClick={doDuplicate}><Copy size={18} aria-hidden="true" /> Duplicate</button>

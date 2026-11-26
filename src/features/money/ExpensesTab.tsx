@@ -10,6 +10,8 @@ import BudgetSheet from './BudgetSheet';
 import { filterExpenses, groupByDay, spentByCategory } from './cashflow';
 import { expensesIn, lastMonths, longMonth, monthKey, monthStart, spentIn, sum } from './money-util';
 import { catIcon, CategoryBar, Trend } from './parts';
+import { SmallSpendsCard } from './smallSpends';
+import { SplitsCard } from './splitCard';
 
 function ExpenseRow({ c }: { c: Card }) {
   const { openCard, toast } = useApp();
@@ -24,7 +26,7 @@ function ExpenseRow({ c }: { c: Card }) {
         <span className="money-ico" aria-hidden="true"><Icon size={18} /></span>
         <span className="money-mini-text">
           <span className="money-row-title">{c.title || c.category || 'Expense'}</span>
-          <span className="money-sub">{c.category ?? 'Other'} · {c.mode ?? 'UPI'}</span>
+          <span className="money-sub">{c.category ?? 'Other'} · {c.mode ?? 'UPI'}{c.split ? ` · Split with ${c.split.people.length}` : ''}</span>
         </span>
         <span className="money-row-amt num">{inr(c.amount)}</span>
       </button>
@@ -108,6 +110,9 @@ export default function ExpensesTab({ cards, settings }: { cards: Card[]; settin
           <h2 id="e-trend" className="money-h">Six-month trend</h2>
           <Trend months={d.months} values={d.trend} selected={key} />
         </section>
+
+        <SplitsCard cards={cards} settings={settings} />
+        <SmallSpendsCard cards={cards} month={key} monthDate={month} />
 
         <section className="money-card money-wide" aria-labelledby="e-list">
           <h2 id="e-list" className="money-h">Expenses in {longMonth(month)}</h2>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'framer-motion';
 import {
-  Archive, Bell, BookOpen, CheckSquare, ImagePlus, LayoutGrid, List, Lock, Palette, Search, StickyNote, Trash2, Undo2, X,
+  Archive, Bell, BookOpen, CheckSquare, ImagePlus, LayoutGrid, LayoutTemplate, List, Lock, Palette, Search, StickyNote, Trash2, Undo2, X,
 } from 'lucide-react';
 import './notes.css';
 import { useApp } from '../../app-context';
@@ -17,6 +17,8 @@ import { isActive } from '../../lib/types';
 import { JOURNAL_LABEL } from './journal';
 import { SwipeTile } from './SwipeTile';
 import { TodayBanner } from './TodayBanner';
+import { TemplatesSheet } from './TemplatesSheet';
+import { TEMPLATE_LABEL, isTemplate } from './templates';
 
 type View = 'grid' | 'list';
 type Fixed = 'all' | 'journal' | 'tasks' | 'reminders' | 'locked' | 'archive' | 'trash';
@@ -37,15 +39,19 @@ export default function NotesScreen() {
   const [color, setColor] = useState<CardColor | null>(null);
   const [showColors, setShowColors] = useState(false);
   const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
-  const pool = useMemo(() => (cards ?? []).filter(c => c.type === 'note' || c.type === 'task'), [cards]);
+  const all = useMemo(() => (cards ?? []).filter(c => c.type === 'note' || c.type === 'task'), [cards]);
+  // Your saved templates are notes too, but they live only in the Templates sheet.
+  const pool = useMemo(() => all.filter(c => !isTemplate(c)), [all]);
 
   const labels = useMemo(() => {
     const s = new Set(settings.labels);
     for (const c of pool) if (c.status !== 'trashed') c.labels.forEach(l => s.add(l));
     s.delete(JOURNAL_LABEL); // has its own chip
+    s.delete(TEMPLATE_LABEL); // lives in the Templates sheet
     return [...s].sort((a, b) => a.localeCompare(b));
   }, [pool, settings.labels]);
 
@@ -253,6 +259,11 @@ export default function NotesScreen() {
           <button type="button" className="icon-btn" aria-label="New note with image" onClick={() => fileRef.current?.click()}>
             <ImagePlus size={20} aria-hidden="true" />
           </button>
+          {newType === 'note' && (
+            <button type="button" className="icon-btn" aria-label="Templates" aria-haspopup="dialog" onClick={() => setShowTemplates(true)}>
+              <LayoutTemplate size={20} aria-hidden="true" />
+            </button>
+          )}
           <input ref={fileRef} type="file" accept="image/*" multiple hidden aria-label="Choose images" onChange={e => newImage(e.target.files)} />
         </div>
       )}
@@ -293,6 +304,7 @@ export default function NotesScreen() {
           </LayoutGroup>
         </motion.div>
       )}
+      <TemplatesSheet open={showTemplates} onClose={() => setShowTemplates(false)} cards={all} anchor={barRef.current} />
       {swipeHint && canCreate && list.length > 0 && <p className="notes-swipe-hint">Swipe a note sideways to archive it.</p>}
     </div>
     </MotionConfig>

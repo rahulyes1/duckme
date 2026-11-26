@@ -32,4 +32,16 @@ describe('NoteBody renderer', () => {
     expect(out).toContain('aria-checked="false"');
     expect(out).toContain('aria-checked="true"');
   });
+  it('shows calc results after "=" lines and faint values for variables', () => {
+    const out = html('rent = 18000\nsip = 5k\nleft = 1L - rent - sip =\n- tea 20 + 30 =');
+    expect(out).toContain('notes-calc is-result');
+    expect(out).toContain('₹77,000');
+    expect(out).toContain('₹50');
+    expect(out).toContain('notes-calc is-var');
+    expect(out).not.toMatch(/notes-calc is-var[^>]*>₹18,000/);
+    expect(out).not.toMatch(/<(button|a|input)\b/);
+  });
+  it('shows nothing for a broken calc line', () => {
+    expect(html('total = rent + =')).not.toContain('notes-calc');
+  });
 });

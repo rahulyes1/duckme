@@ -1,9 +1,11 @@
 /** Small building blocks shared by the Money tabs. */
 import {
   AlertTriangle, Bus, Check, Clapperboard, Fuel, GraduationCap, HeartPulse, House, Receipt, Repeat2, Shapes, ShoppingBag,
-  ShoppingBasket, Users, UtensilsCrossed, type LucideIcon,
+  ShoppingBasket, UserRound, Users, UtensilsCrossed, type LucideIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 import { useApp } from '../../app-context';
+import { StaffPaySheet } from './staff-ui';
 import { payBill } from '../../lib/actions';
 import { addDaysISO, fmtDate, inr, inrShort, salarySide } from '../../lib/format';
 import type { Card } from '../../lib/types';
@@ -14,7 +16,7 @@ import { longMonth, monthKey, paidMessage, REPEAT_LABEL, shortMonth, sum } from 
 
 export const CAT_ICON: Record<string, LucideIcon> = {
   Food: UtensilsCrossed, Groceries: ShoppingBasket, Travel: Bus, Fuel, Shopping: ShoppingBag, Bills: Receipt, Rent: House,
-  Health: HeartPulse, Education: GraduationCap, Entertainment: Clapperboard, Family: Users, Other: Shapes,
+  Staff: UserRound, Health: HeartPulse, Education: GraduationCap, Entertainment: Clapperboard, Family: Users, Other: Shapes,
 };
 export const catIcon = (c: string | undefined): LucideIcon => CAT_ICON[c ?? 'Other'] ?? Shapes;
 
@@ -32,6 +34,7 @@ export function usePayBill() {
 export function BillRow({ c, salaryDay, showSide = true }: { c: Card; salaryDay: number; showSide?: boolean }) {
   const { openCard } = useApp();
   const pay = usePayBill();
+  const [staffOpen, setStaffOpen] = useState(false);
   const side = salarySide(c.due!, salaryDay);
   return (
     <li className="money-row money-bill" data-color={c.color}>
@@ -49,9 +52,11 @@ export function BillRow({ c, salaryDay, showSide = true }: { c: Card; salaryDay:
           {c.penalty && <span className="pill pen"><AlertTriangle size={11} aria-hidden="true" />{c.penalty}</span>}
         </span>
       </button>
-      <button type="button" className="btn money-paid" aria-label={`Mark ${c.title || 'bill'} paid`} onClick={e => pay(c, e.currentTarget)}>
-        <Check size={16} aria-hidden="true" /> Paid
+      <button type="button" className="btn money-paid" aria-label={`${c.staff ? 'Pay' : 'Mark'} ${c.title || 'bill'}${c.staff ? '' : ' paid'}`}
+        onClick={e => { if (c.staff) setStaffOpen(true); else void pay(c, e.currentTarget); }}>
+        <Check size={16} aria-hidden="true" /> {c.staff ? 'Pay' : 'Paid'}
       </button>
+      {c.staff && <StaffPaySheet card={c} open={staffOpen} onClose={() => setStaffOpen(false)} />}
     </li>
   );
 }

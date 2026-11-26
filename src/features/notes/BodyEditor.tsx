@@ -1,10 +1,11 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type MutableRefObject } from 'react';
-import { CalendarDays, Bold, CheckSquare, Heading, List, Minus } from 'lucide-react';
+import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MutableRefObject } from 'react';
+import { CalendarDays, Bold, Calculator, CheckSquare, Heading, List, Minus } from 'lucide-react';
 import { fmtDate, todayISO } from '../../lib/format';
 import {
   applyCommand, continueList, filterCommands, slashQuery, toggleTodoLine, type Edit, type SlashId,
 } from './md-lite';
 import { NoteBody } from './NoteBody';
+import { calcLines, fmtCalc } from './calc';
 
 const CMD_ICON: Record<SlashId, typeof Bold> = {
   h: Heading, li: List, todo: CheckSquare, hr: Minus, date: CalendarDays, bold: Bold,
@@ -58,6 +59,7 @@ export function BodyEditor({ id, value, onChange, placeholder, label, mode, onMo
   const prev = useRef(value);
   prev.current = value;
   const listId = `${id}-cmds`;
+  const results = useMemo(() => calcLines(value).filter(r => r.kind === 'result'), [value]);
 
   // auto-grow + apply a pending caret position after React wrote the new value
   useLayoutEffect(() => {
@@ -166,7 +168,20 @@ export function BodyEditor({ id, value, onChange, placeholder, label, mode, onMo
           if (!slashQuery(el.value, el.selectionStart ?? 0)) setSlash(null);
         }}
       />
-      <span id={`${id}-hint`} className="sr-only">Type / at the start of a line for headings, lists, checkboxes, dividers, the date and bold.</span>
+      <span id={`${id}-hint`} className="sr-only">Type / at the start of a line for headings, lists, checkboxes, dividers, the date and bold. End a sum with = to see the total, like: rent + sip =</span>
+      {results.length > 0 && (
+        <section className="notes-calc-strip" aria-label="Calculations">
+          <Calculator size={16} aria-hidden="true" className="notes-calc-ico" />
+          <ul>
+            {results.map(r => (
+              <li key={r.line}>
+                <span className="notes-calc-l">{r.label}</span>
+                <span key={r.value} className="notes-calc is-result num">{fmtCalc(r.value)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {slash && cmds.length > 0 && (
         <ul id={listId} role="listbox" aria-label="Formatting" className="notes-slash" style={{ top: slash.top + 4 }}>
           {cmds.map((c, i) => {

@@ -128,7 +128,7 @@ describe('quick categories', () => {
     expect(used).toEqual(['Travel', 'Groceries']);
     const q = quickCategories(['Fuel', 'Travel', 'Nope'], used);
     expect(q.slice(0, 4)).toEqual(['Fuel', 'Travel', 'Groceries', 'Food']);
-    expect(q).toHaveLength(12);
+    expect(q).toHaveLength(13); // every category once (incl. Staff)
   });
   it('toggleFav adds and removes', () => {
     expect(toggleFav(undefined, 'Food')).toEqual(['Food']);

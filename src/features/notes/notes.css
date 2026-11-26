@@ -291,3 +291,59 @@
 
 /* taps: no double-tap-zoom delay on non-button tap targets (checkbox labels, slash menu options) */
 .notes-check, .notes-check input, .notes-row, .notes-slash-opt { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* =====================================================================
+   ₹ calc lines: inline results, faint variable values, editor strip
+   ===================================================================== */
+.notes-calc { display: inline-block; margin-left: .35em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.notes-calc.is-result { color: var(--accent); font-weight: 700; animation: notes-calc-in .22s var(--ease-out); }
+.notes-calc.is-var { color: color-mix(in srgb, var(--ink) 52%, transparent); font-size: .9em; font-weight: 500; }
+@keyframes notes-calc-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+.notes-calc-strip { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0 2px; padding: 10px 12px; border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); }
+.notes-calc-ico { flex: none; margin-top: 3px; color: var(--accent); }
+.notes-calc-strip ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; flex: 1; min-width: 0; }
+.notes-calc-strip li { display: flex; align-items: baseline; gap: 8px; font-size: 15px; line-height: 1.4; }
+.notes-calc-l { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: color-mix(in srgb, var(--ink) 72%, transparent); }
+.notes-calc-strip .notes-calc { margin-left: 0; }
+
+/* =====================================================================
+   Templates sheet
+   ===================================================================== */
+.notes-tpl-grid { list-style: none; margin: 0 0 4px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.notes-tpl { width: 100%; min-height: 104px; display: grid; align-content: start; gap: 4px; padding: 12px; border-radius: var(--r-md); text-align: left;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); background: var(--c, var(--surface)); color: var(--ink);
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .16s var(--ease-out); }
+.notes-tpl:hover { transform: translateY(-1px); }
+.notes-tpl:active { transform: scale(.98); }
+.notes-tpl-ico { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 4px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--accent); }
+.notes-tpl-name { font-weight: 700; font-size: 16px; }
+.notes-tpl-hint { font-size: 13px; line-height: 1.35; color: color-mix(in srgb, var(--ink) 72%, transparent); }
+.notes-tpl-h { margin-top: 18px; }
+.notes-tpl-row { display: flex; align-items: center; gap: 4px; }
+.notes-tpl-yours .notes-tpl-use { flex: 1; min-width: 0; }
+.notes-tpl-rowt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notes-tpl-dot { flex: none; width: 18px; height: 18px; border-radius: 6px; background: var(--c, var(--surface)); border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); }
+
+/* =====================================================================
+   Today page: "Last time" lines
+   ===================================================================== */
+.notes-resurface { list-style: none; margin: 6px 0 0; padding: 6px 0 0; display: grid; gap: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); }
+.notes-resurface-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 12px;
+  background: transparent; color: var(--ink); text-align: left; font-size: 14px; line-height: 1.35;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; animation: notes-calc-in .24s var(--ease-out) both; }
+.notes-resurface li + li .notes-resurface-row { animation-delay: .06s; }
+.notes-resurface-row:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.notes-resurface-ico { flex: none; color: var(--accent); }
+.notes-resurface-t { flex: 1; min-width: 0; }
+.notes-resurface-t b { font-weight: 700; }
+.notes-resurface-go { flex: none; color: color-mix(in srgb, var(--ink) 60%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .notes-calc.is-result, .notes-resurface-row { animation: none; }
+  .notes-tpl { transition: none; }
+  .notes-tpl:hover, .notes-tpl:active { transform: none; }
+}

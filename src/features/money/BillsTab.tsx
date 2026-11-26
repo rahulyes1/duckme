@@ -7,6 +7,8 @@ import { isActive } from '../../lib/types';
 import { bucketByDay, dueItemsInRange, monthGrid, salaryDate, type DueItem, type DueKind } from './cashflow';
 import { monthKey, monthStart, openBills, REPEAT_LABEL, sum, YEAR_MULT } from './money-util';
 import { BillRow, MiniRow } from './parts';
+import { AutopayRegister } from './autopay-ui';
+import { StaffSection } from './staff-ui';
 
 const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const KIND_WORD: Record<DueKind, [string, string]> = { bill: ['bill', 'bills'], sip: ['instalment', 'instalments'], maturity: ['maturity', 'maturities'] };
@@ -134,6 +136,10 @@ export default function BillsTab({ cards, settings }: { cards: Card[]; settings:
               : <p className="money-muted">Nothing due on this day.</p>}
           </div>
         </section>
+
+        <AutopayRegister cards={cards} settings={settings} />
+
+        <StaffSection cards={cards} />
 
         <section className="money-card money-wide" aria-labelledby="b-split">
           <h2 id="b-split" className="money-h">Bills around salary</h2>

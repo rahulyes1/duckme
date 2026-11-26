@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, ChevronRight } from 'lucide-react';
+import { BookOpen, ChevronRight, History } from 'lucide-react';
 import { useApp } from '../../app-context';
 import type { Card } from '../../lib/types';
 import { fmtDate, todayISO } from '../../lib/format';
 import { journalFor, journalPreview, weekOf, weekdayName, weekdayShort } from './journal';
 import { ensureJournal } from './journal-store';
+import { useCards } from '../../lib/hooks';
+import { resurface } from './resurface';
 
 /**
  * The Today page entry at the top of Notes: today's date and weekday, a one-line preview,
@@ -17,6 +19,9 @@ export function TodayBanner({ cards }: { cards: Card[] }) {
   const entry = journalFor(cards, today);
   const week = weekOf(today);
   const [busy, setBusy] = useState(false);
+  // "Last time" lines look at every card (bills and expenses too), not just the notes pool.
+  const all = useCards();
+  const lines = useMemo(() => (all ? resurface(all, today) : []), [all, today]);
 
   const openDay = async (iso: string, el: HTMLElement) => {
     if (busy) return;
@@ -70,6 +75,19 @@ export function TodayBanner({ cards }: { cards: Card[] }) {
           );
         })}
       </div>
+      {lines.length > 0 && (
+        <ul className="notes-resurface" aria-label="Last time">
+          {lines.map(l => (
+            <li key={`${l.kind}-${l.cardId}`}>
+              <button type="button" className="notes-resurface-row" onClick={e => app.openCard(l.cardId, e.currentTarget)}>
+                <History size={16} aria-hidden="true" className="notes-resurface-ico" />
+                <span className="notes-resurface-t"><b>{l.lead}:</b> <span className="num">{l.text}</span></span>
+                <ChevronRight size={16} aria-hidden="true" className="notes-resurface-go" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </motion.section>
   );
 }

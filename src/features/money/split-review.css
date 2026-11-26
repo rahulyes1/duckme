@@ -1,0 +1,90 @@
+/* Splits (money-sp-), small spends (money-sm-), money review (money-rv-). Tokens only, both themes. */
+
+/* ---------- split editor (quick expense) ---------- */
+.money-sp-edit { display: grid; gap: 10px; padding: 12px; border-radius: var(--r-md); background: var(--c-sky); border: 1px solid var(--card-line); }
+.money-sp-chips .chip { min-height: 44px; }
+.money-sp-chips .chip[aria-pressed="false"] { background: var(--surface); }
+.money-sp-add { display: grid; gap: 8px; }
+.money-sp-add-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.money-sp-shares { display: grid; gap: 8px; }
+.money-sp-share { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 150px); align-items: center; gap: 10px; }
+.money-sp-who { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.money-sp-mine { justify-self: end; font-weight: 700; font-size: 16px; padding-right: 14px; font-variant-numeric: tabular-nums; }
+.money-sp-input .input { min-height: 44px; text-align: right; font-variant-numeric: tabular-nums; background: var(--surface); }
+.money-sp-hint { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin: 0; font-size: 13px; color: var(--muted); }
+
+/* ---------- splits card + sheet ---------- */
+.money-sp .money-list { margin-top: 8px; }
+.money-sp-row { min-height: 56px; }
+.money-sp-avatar { flex: none; width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center;
+  background: var(--c-lilac); color: var(--ink); font-weight: 700; font-family: var(--f-display); }
+.money-sp-sheet { display: grid; gap: 12px; }
+.money-sp-net { margin: 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-2); font-family: var(--f-display);
+  font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.money-sp-net.is-owed { background: var(--c-mint); }
+.money-sp-net.is-owe { background: var(--c-haldi); }
+.money-sp-items { margin: 0; }
+.money-sp-items.is-old { opacity: .75; margin-top: 6px; }
+.money-sp-plus { color: var(--ok); }
+.money-sp-minus { color: var(--warn); }
+.money-sp-upi { display: grid; gap: 10px; padding: 12px; border-radius: var(--r-md); background: var(--c-sand); }
+.money-sp-upi .money-muted { margin: 0; }
+.money-sp-upi .btn { justify-self: start; }
+.sheet-actions > a.btn { flex: 1; min-height: 52px; text-decoration: none; }
+
+/* ---------- small spends ---------- */
+.money-sm { background: color-mix(in srgb, var(--c-haldi) 45%, var(--surface)); }
+.money-sm-lead { margin: 0 0 10px; font-size: 16px; }
+.money-sm-vs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.money-sm-vs-prev .money-bar i { background: color-mix(in srgb, var(--ink) 35%, transparent); }
+.money-sm-top { margin-top: 14px; }
+.money-sm-cats { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.money-sm-cats li { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--surface);
+  border: 1px solid var(--card-line); font-size: 14px; font-weight: 600; }
+.money-sm-cats .money-muted { margin: 0; }
+.money-sm-rep { margin-top: 14px; }
+.money-sm-again { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 6px 6px 10px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--card-line); }
+.money-sm-btn { flex: none; min-width: 104px; padding: 0 14px; font-variant-numeric: tabular-nums; }
+.money-sm-btn.is-done { background: var(--accent-soft); border-color: transparent; color: var(--ink); }
+.money-sm-tick { display: inline-grid; place-items: center; color: var(--ok); }
+
+/* ---------- money review ---------- */
+.money-rv-payday { background: color-mix(in srgb, var(--c-mint) 55%, var(--surface)); }
+.money-rv-week { background: color-mix(in srgb, var(--c-lilac) 50%, var(--surface)); }
+.money-rv-steps { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.money-rv-step { padding: 8px 12px 10px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--card-line); }
+.money-rv-check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.money-rv-check input { flex: none; width: 24px; height: 24px; margin: 10px; accent-color: var(--accent); }
+.money-rv-check label { flex: 1; font-weight: 600; font-size: 16px; padding: 10px 0; cursor: pointer; }
+.money-rv-step.is-done .money-rv-check label { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.money-rv-body { padding-left: 44px; }
+.money-rv-body .money-muted { margin: 0; }
+.money-rv-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.money-rv-link { width: 100%; min-height: 44px; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t a" "s a"; column-gap: 10px;
+  align-items: center; text-align: left; padding: 6px 10px; border: 0; border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); }
+.money-rv-link:hover { background: color-mix(in srgb, var(--ink) 8%, var(--surface-2)); }
+.money-rv-link-t { grid-area: t; font-weight: 600; overflow-wrap: anywhere; }
+.money-rv-link .money-sub { grid-area: s; }
+.money-rv-link-a { grid-area: a; font-weight: 700; }
+.money-rv-inline { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+.money-rv-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 6px; }
+.money-rv-stat { padding: 12px 14px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--card-line); min-width: 0; }
+.money-rv-stat .money-bar { margin: 6px 0 4px; }
+.money-rv-over i { background: var(--danger); }
+.money-rv-val { display: block; font-family: var(--f-display); font-size: 22px; font-weight: 700; margin: 2px 0; font-variant-numeric: tabular-nums; }
+.money-rv-h3 { font-size: 15px; font-weight: 700; margin: 16px 0 4px; }
+.money-rv-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding-top: 12px;
+  border-top: 1px solid var(--line); }
+.money-rv-foot .btn { min-height: 48px; }
+.money-rv-streak { display: flex; align-items: center; gap: 10px; font-size: 16px; transform-origin: left center; }
+.money-rv-streak b { font-family: var(--f-display); font-size: 22px; }
+.money-rv-flame { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; background: var(--c-haldi); color: var(--warn); }
+.money-rv-streak.is-pop .money-rv-flame { background: var(--accent-soft); color: var(--accent); }
+.money-rv-ask { display: flex; justify-content: flex-end; }
+.money-rv-ask .btn { background: var(--c-lilac); border-color: transparent; color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .money-sm-vs .money-bar i, .money-rv-stat .money-bar i { transition: none; }
+}

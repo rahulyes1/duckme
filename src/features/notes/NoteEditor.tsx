@@ -3,13 +3,14 @@ import { MotionConfig } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Archive, ArchiveRestore, ArrowLeft, Bell, BellOff, Check, CheckCircle2, CheckSquare, Copy, History, ImagePlus,
-  BookOpen, IndianRupee, ListChecks, Lock, LockOpen, MoreVertical, Palette, PenLine, Pin, PinOff, Receipt, StickyNote, Tag, Trash2, X,
+  BookOpen, BookmarkPlus, ClipboardCopy, IndianRupee, ListChecks, Lock, LockOpen, MessageCircle, MoreVertical, Palette, PenLine, Pin, PinOff, Receipt,
+  Share2, StickyNote, Tag, Trash2, X,
 } from 'lucide-react';
 import './notes.css';
 import { useApp } from '../../app-context';
 import { db, saveSettings } from '../../lib/db';
 import {
-  archive, convert, duplicate, getVersions, markDone, restore, restoreVersion, spawnFromNote, trash, updateCard,
+  archive, convert, createCard, duplicate, getVersions, markDone, restore, restoreVersion, spawnFromNote, trash, updateCard,
 } from '../../lib/actions';
 import { useCard, useSettings } from '../../lib/hooks';
 import { detectChips } from '../../lib/parse';
@@ -29,8 +30,27 @@ import {
   relTime, textToItems,
 } from './notes-lib';
 import { isActive } from '../../lib/types';
+import { noteToPlain, noteToWhatsApp, whatsAppLink } from './whatsapp';
+import { isTemplate, templateFromNote } from './templates';
 
-type SheetKind = null | 'more' | 'labels' | 'reminder' | 'color' | 'pin' | 'versions';
+type SheetKind = null | 'more' | 'share' | 'labels' | 'reminder' | 'color' | 'pin' | 'versions';
+
+const canNativeShare = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+/** Clipboard write with a fallback for browsers without the async clipboard API. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch { /* fall back below */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch { return false; }
+}
 
 const CHIP_ICON = { bill: Receipt, expense: IndianRupee, task: CheckSquare } as const;
 const HORIZONS: Horizon[] = ['week', 'month', 'year', 'none'];
@@ -283,6 +303,35 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
     requestAnimationFrame(() => bodyRef.current?.focus());
   };
 
+  // ---- share out ----
+  const shareSrc = () => ({ title, body, checklist });
+  const hasContent = !!(title.trim() || body.trim() || (checklist ?? []).some(i => i.text.trim()));
+  const sendWhatsApp = () => {
+    setSheet(null);
+    if (!hasContent) { app.toast('Nothing to send yet'); return; }
+    // Opened straight from the tap so pop-up blockers allow it.
+    window.open(whatsAppLink(noteToWhatsApp(shareSrc())), '_blank', 'noopener,noreferrer');
+  };
+  const copyAsText = async () => {
+    setSheet(null);
+    if (!hasContent) { app.toast('Nothing to copy yet'); return; }
+    app.toast((await copyText(noteToPlain(shareSrc()))) ? 'Copied as text' : 'Could not copy. Try again.');
+  };
+  const shareNative = async () => {
+    setSheet(null);
+    if (!hasContent) { app.toast('Nothing to share yet'); return; }
+    try {
+      await navigator.share({ title: title.trim() || undefined, text: noteToPlain(shareSrc()) });
+    } catch { /* cancelled */ }
+  };
+  const saveAsTemplate = async () => {
+    setSheet(null);
+    if (!hasContent) { app.toast('Write something first, then save it as a template'); return; }
+    await flush();
+    const t = await createCard(templateFromNote({ title, body, checklist, color: card.color }));
+    app.toast('Saved as a template. Find it under Templates.', async () => { await deleteForeverWithUndo([t.id]); });
+  };
+
   const Icon = TYPE_ICON[card.type];
   const isTask = card.type === 'task';
 
@@ -300,6 +349,9 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
             </button>
             <button type="button" className="icon-btn" aria-label="Lock note" aria-pressed={!!card.locked} onClick={toggleLock}>
               {card.locked ? <Lock size={20} aria-hidden="true" /> : <LockOpen size={20} aria-hidden="true" />}
+            </button>
+            <button type="button" className="icon-btn" aria-label="Share" aria-haspopup="dialog" onClick={() => setSheet('share')}>
+              <Share2 size={20} aria-hidden="true" />
             </button>
             <button type="button" className="icon-btn" aria-label="More options" aria-haspopup="dialog" onClick={() => setSheet('more')}>
               <MoreVertical size={20} aria-hidden="true" />
@@ -446,7 +498,12 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
           <li><button type="button" onClick={() => setSheet('labels')}><Tag size={20} aria-hidden="true" />Labels</button></li>
           <li><button type="button" onClick={() => { setSheet(null); toggleChecklist(); }}><ListChecks size={20} aria-hidden="true" />{checklist ? 'Show as plain text' : 'Show as checklist'}</button></li>
           <li><button type="button" onClick={() => { setSheet(null); fileRef.current?.click(); }}><ImagePlus size={20} aria-hidden="true" />Add image</button></li>
+          <li><button type="button" onClick={sendWhatsApp}><MessageCircle size={20} aria-hidden="true" />Send to WhatsApp</button></li>
+          <li><button type="button" onClick={copyAsText}><ClipboardCopy size={20} aria-hidden="true" />Copy as text</button></li>
           <li><button type="button" onClick={doCopy}><Copy size={20} aria-hidden="true" />Make a copy</button></li>
+          {card.type === 'note' && !isJournal && !isTemplate(card) && (
+            <li><button type="button" onClick={saveAsTemplate}><BookmarkPlus size={20} aria-hidden="true" />Save as template</button></li>
+          )}
           <li><button type="button" onClick={() => setSheet('versions')}><History size={20} aria-hidden="true" />Version history</button></li>
           {card.type === 'note'
             ? <li><button type="button" onClick={() => doConvert('task')}><CheckSquare size={20} aria-hidden="true" />Convert to task</button></li>
@@ -459,6 +516,17 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
           </button></li>
           <li><button type="button" className="danger" onClick={doTrash}><Trash2 size={20} aria-hidden="true" />Move to trash</button></li>
         </ul>
+      </Sheet>
+
+      <Sheet open={sheet === 'share'} onClose={() => setSheet(null)} title="Share">
+        <ul className="notes-menu">
+          <li><button type="button" onClick={sendWhatsApp}><MessageCircle size={20} aria-hidden="true" />Send to WhatsApp</button></li>
+          {canNativeShare() && (
+            <li><button type="button" onClick={shareNative}><Share2 size={20} aria-hidden="true" />Share to another app</button></li>
+          )}
+          <li><button type="button" onClick={copyAsText}><ClipboardCopy size={20} aria-hidden="true" />Copy as text</button></li>
+        </ul>
+        <p className="notes-muted">Sends the title in bold, checkboxes as ☐ / ☑, sums with their results and the ₹ total.</p>
       </Sheet>
 
       <Sheet open={sheet === 'color'} onClose={() => setSheet(null)} title="Colour">

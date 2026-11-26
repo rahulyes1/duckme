@@ -8,6 +8,7 @@ import { createCard, purgeOldTrash, type Undo } from './lib/actions';
 import { useCard } from './lib/hooks';
 import { prefersReducedMotion } from './lib/format';
 import { coinBurst } from './ui/fx';
+import { clearIncomingShare, readIncomingShare, shareToNote } from './features/notes/share';
 
 import HomeScreen from './features/home/HomeScreen';
 import NotesScreen from './features/notes/NotesScreen';
@@ -121,6 +122,28 @@ export default function App() {
   }), [route]);
 
   const closeEditor = useCallback(() => setEditor(null), []);
+
+  // Text shared from WhatsApp/GPay/email, and the home-screen shortcuts (?new=note / ?new=expense).
+  const shareDone = useRef(false);
+  useEffect(() => {
+    if (!settings?.consentAt || shareDone.current) return;
+    shareDone.current = true;
+    const s = readIncomingShare();
+    if (!s) return;
+    clearIncomingShare();
+    if (s.kind === 'share') {
+      const partial = shareToNote(s);
+      if (!partial) return;
+      location.hash = 'notes';
+      void api.createAndOpen(partial).then(() => api.toast('Saved from share'));
+    } else if (s.type === 'note') {
+      location.hash = 'notes';
+      void api.createAndOpen({ type: 'note' });
+    } else {
+      try { sessionStorage.setItem('hisaab.quickSpend', '1'); } catch { /* storage blocked */ }
+      location.hash = 'money';
+    }
+  }, [settings?.consentAt, api]);
 
   if (!settings) return null;
   if (!settings.consentAt) return <AppCtx.Provider value={api}><Onboarding /></AppCtx.Provider>;

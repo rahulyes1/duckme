@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, Pencil, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Pencil, Sparkles, Wallet } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
 import { fmtDate, inr, today } from '../../lib/format';
@@ -8,6 +8,8 @@ import { Money } from '../../ui/bits';
 import { cashFlow, spentByCategory, type CashFlow } from './cashflow';
 import { longMonth, monthKey, openBills, parseAmount } from './money-util';
 import { BillRow, CategoryBar } from './parts';
+import { inPaydayWindow, isSunday } from './review';
+import { PaydayCard, WeekCard } from './reviewCards';
 
 /* ---------- salary form ---------- */
 function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?: () => void; compact?: boolean }) {
@@ -88,6 +90,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
   cards: Card[]; settings: Settings; onSpend: (el?: HTMLElement) => void; onTab: (t: 'expenses' | 'bills' | 'invest') => void;
 }) {
   const [editSalary, setEditSalary] = useState(false);
+  const [weekOpen, setWeekOpen] = useState(() => isSunday(today()));
   const salary = settings.salaryAmount ?? 0;
   const ref = today();
   const month = monthKey(ref);
@@ -106,6 +109,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
   const { flow } = d;
   const daysTxt = flow.cycle.daysLeft === 1 ? '1 day' : `${flow.cycle.daysLeft} days`;
   const gl = d.nw.value - d.nw.invested;
+  const payday = salary > 0 && !editSalary && inPaydayWindow(settings.salaryDay, ref);
 
   return (
     <div className="money-layout">
@@ -135,6 +139,16 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
           <Waterfall flow={flow} />
         </section>
       )}
+
+      {payday && <PaydayCard cards={cards} settings={settings} flow={flow} />}
+
+      {weekOpen
+        ? <WeekCard cards={cards} settings={settings} safePerDay={salary ? flow.safeToday : 0} onClose={isSunday(ref) ? undefined : () => setWeekOpen(false)} />
+        : (
+          <div className="money-wide money-rv-ask">
+            <button type="button" className="btn" onClick={() => setWeekOpen(true)}><Sparkles size={16} aria-hidden="true" /> Review my week</button>
+          </div>
+        )}
 
       <section className="money-card" aria-labelledby="m-top">
         <div className="money-h-row">
