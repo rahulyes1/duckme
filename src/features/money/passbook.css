@@ -1,7 +1,7 @@
 /* Passbook look for the Money screen: serif ledger headings, underline tabs, a cream ledger page and a passbook list. */
 
 /* ---------- header & tabs ---------- */
-.money .screen-title { font-family: var(--f-serif); font-weight: 700; letter-spacing: -.01em; }
+.money .screen-title { font-family: var(--f-chalk); font-weight: 700; }
 .money .money-tabs { display: flex; gap: 20px; padding: 0 2px; margin-top: 8px; border-radius: 0; background: transparent;
   border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
 .money .money-tabs::-webkit-scrollbar { display: none; }
@@ -10,7 +10,7 @@
 
 /* Cards in Money read like ledger panels */
 .money .money-card { border-radius: 16px; }
-.money .money-h { font-family: var(--f-serif); font-weight: 700; font-size: 19px; letter-spacing: -.005em; }
+.money .money-h { font-family: var(--f-chalk); font-weight: 700; font-size: 20px; }
 
 /* ---------- the cream page ---------- */
 .pb-page { position: relative; margin: 6px 0 4px; padding: 16px 16px 14px 34px; color: var(--paper-ink); background-color: var(--paper);
@@ -38,7 +38,7 @@
 /* ---------- passbook list ---------- */
 .pb-book { display: grid; gap: 8px; }
 .pb-book-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 10px 2px 0; }
-.pb-book-h h2 { margin: 0; font-family: var(--f-serif); font-size: 21px; font-weight: 700; }
+.pb-book-h h2 { margin: 0; font-family: var(--f-chalk); font-size: 22px; font-weight: 700; }
 .pb-book-h small { font-size: 13px; color: var(--muted); font-weight: 600; }
 .pb-ledger { list-style: none; margin: 0; padding: 0; border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--card-line); }
 .pb-row { display: flex; align-items: center; border-bottom: 1px solid var(--card-line); animation: pb-in .35s var(--ease-out) both; }

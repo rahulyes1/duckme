@@ -30,7 +30,7 @@ export async function shareImage(r: Recap, name?: string): Promise<'shared' | 's
   const bg = g.createLinearGradient(0, 0, W, H);
   bg.addColorStop(0, '#1C1D21'); bg.addColorStop(1, '#14342A');
   g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  const disp = '"Bricolage Grotesque", "Segoe UI", sans-serif', body = '"Figtree", "Segoe UI", sans-serif';
+  const disp = '"Kalam", "Segoe Print", cursive', body = '"Figtree", "Segoe UI", sans-serif';
   g.fillStyle = '#3CC79A'; g.font = `700 34px ${body}`; g.fillText('HISAAB · MONTH RECAP', 80, 130);
   g.fillStyle = '#ECEAE6'; g.font = `700 92px ${disp}`; g.fillText(`${name ? name + "'s " : 'My '}${r.label}`, 80, 240);
   g.fillStyle = '#A9A7A2'; g.font = `500 34px ${body}`; g.fillText(cycleLabel(r), 80, 300);
