@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { QuickSearch, openQuickSearch } from './ui/QuickSearch';
 import { Search } from 'lucide-react';
 import { startReminderLoop } from './lib/notify';
@@ -193,9 +194,11 @@ export default function App() {
         <main className="main" id="main">
           {/* Plain CSS fade: no transform/will-change, so fixed bars and sheets stay fixed to the screen. */}
           <div key={route} className="route-fade">
-            <Suspense fallback={<div className="screen-loading" aria-busy="true" aria-label="Loading" />}>
-              <Screen />
-            </Suspense>
+            <ErrorBoundary resetKey={route}>
+              <Suspense fallback={<div className="screen-loading" aria-busy="true" aria-label="Loading" />}>
+                <Screen />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>

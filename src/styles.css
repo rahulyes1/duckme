@@ -14,6 +14,10 @@
   --rule: rgba(20, 30, 25, .06); --margin-line: rgba(179, 38, 30, .16); --ink-line: rgba(11, 115, 86, .5); --grain: .05;
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  /* Passbook paper (same cream in every theme; it is a page lying on the desk) */
+  --paper: #F3E9D4; --paper-ink: #2B2218; --paper-muted: #6B5A44; --paper-accent: #8A6A3A;
+  --paper-rule: rgba(43, 34, 24, .09); --paper-margin: rgba(180, 60, 45, .45); --ul: #B4432D;
   --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px;
   --nav-h: 64px;
   --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1); --spring: cubic-bezier(.3, 1.5, .5, 1);
@@ -359,3 +363,7 @@ body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); botto
   .nav-search span { flex: 1; text-align: left; }
 }
 .money-search, .plan-search { margin-left: auto; }
+
+.err-screen { display: grid; gap: 10px; justify-items: start; padding-top: 48px; max-width: 520px; }
+.err-screen h2 { font-family: var(--f-display); margin: 0; }
+.err-screen p { margin: 0; color: var(--muted); }

@@ -1,0 +1,36 @@
+import { describe, expect, it } from 'vitest';
+import type { Card } from '../../lib/types';
+import { passbook } from './passbook';
+
+const base = (id: string, extra: Partial<Card>): Card => ({
+  id, type: 'expense', title: id, body: '', color: 'white', pinned: false, labels: [], horizon: 'none', rank: 1, status: 'open', links: [],
+  createdAt: 0, updatedAt: 0, ...extra,
+});
+const REF = new Date(2026, 10, 26);
+
+describe('passbook', () => {
+  const cards = [
+    base('Petrol', { date: '2026-11-20', amount: 1500, category: 'Fuel', mode: 'Card' }),
+    base('Groceries', { date: '2026-11-24', amount: 1840, category: 'Groceries', mode: 'UPI' }),
+    base('Old', { date: '2026-10-30', amount: 999 }),
+    base('Card bill', { type: 'bill', due: '2026-11-28', amount: 18450, penalty: 'Late fee ₹900' }),
+    base('Rent', { type: 'bill', due: '2026-12-05', amount: 18000 }), // after next salary: not in this cycle
+  ];
+
+  it('salary first, spends debit, running balance oldest → newest', () => {
+    const { lines } = passbook(cards, 65000, 1, REF);
+    expect(lines.map(l => [l.title, l.amount, l.balance, l.kind])).toEqual([
+      ['Card bill', -18450, 43210, 'due'],
+      ['Groceries', -1840, 61660, 'spend'],
+      ['Petrol', -1500, 63500, 'spend'],
+      ['Salary', 65000, 65000, 'salary'],
+    ]);
+    expect(lines[0].sub).toBe('Due · Late fee ₹900');
+    expect(lines[2].sub).toBe('Fuel · Card');
+  });
+  it('without a salary: no balance, no salary line', () => {
+    const { lines } = passbook(cards, 0, 1, REF);
+    expect(lines.every(l => l.balance === null)).toBe(true);
+    expect(lines.some(l => l.kind === 'salary')).toBe(false);
+  });
+});

@@ -1,0 +1,99 @@
+/* Passbook look for the Money screen: serif ledger headings, underline tabs, a cream ledger page and a passbook list. */
+
+/* ---------- header & tabs ---------- */
+.money .screen-title { font-family: var(--f-serif); font-weight: 700; letter-spacing: -.01em; }
+.money .money-tabs { display: flex; gap: 20px; padding: 0 2px; margin-top: 8px; border-radius: 0; background: transparent;
+  border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.money .money-tabs::-webkit-scrollbar { display: none; }
+.money .money-tab { flex: none; min-height: 44px; padding: 0; border-radius: 0; font-size: 15px; }
+.money .money-tab-pill { inset: auto 0 -1px 0; height: 2px; border-radius: 2px; background: var(--accent); box-shadow: none; }
+
+/* Cards in Money read like ledger panels */
+.money .money-card { border-radius: 16px; }
+.money .money-h { font-family: var(--f-serif); font-weight: 700; font-size: 19px; letter-spacing: -.005em; }
+
+/* ---------- the cream page ---------- */
+.pb-page { position: relative; margin: 6px 0 4px; padding: 16px 16px 14px 34px; color: var(--paper-ink); background-color: var(--paper);
+  border-radius: 6px 18px 18px 6px; box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .55);
+  background-image: repeating-linear-gradient(transparent 0 27px, var(--paper-rule) 27px 28px); animation: pb-in .45s var(--ease-out) both; }
+.pb-page::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 0; width: 4px;
+  border-left: 1px solid var(--paper-margin); border-right: 1px solid var(--paper-margin); }
+.pb-page-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pb-k { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--paper-accent); }
+.pb-edit { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; border: 0; border-radius: 999px;
+  background: color-mix(in srgb, var(--paper-ink) 8%, transparent); color: var(--paper-muted); font-size: 13px; font-weight: 600; }
+.pb-big { display: block; font-family: var(--f-serif); font-weight: 700; font-size: 54px; line-height: 1; margin: 8px 0 0; letter-spacing: -.02em; color: var(--paper-ink); }
+.pb-page.is-over .pb-big { color: var(--ul); }
+.pb-ul { display: block; width: 180px; height: 8px; margin-top: 2px; overflow: visible; }
+.pb-ul path { fill: none; stroke: var(--ul); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1;
+  vector-effect: non-scaling-stroke; animation: pb-draw .9s cubic-bezier(.45, .05, .2, 1) .35s forwards; }
+.pb-sub { margin: 8px 0 0; font-size: 13px; color: var(--paper-muted); }
+.pb-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 14px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--paper-ink) 30%, transparent); }
+.pb-split span { display: block; font-size: 12px; color: var(--paper-muted); }
+.pb-split b { display: block; font-family: var(--f-serif); font-size: 18px; color: var(--paper-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-spend { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px;
+  background: var(--paper-ink); color: var(--paper); font-weight: 700; font-size: 15px; }
+.pb-spend:active { filter: brightness(1.15); }
+
+/* ---------- passbook list ---------- */
+.pb-book { display: grid; gap: 8px; }
+.pb-book-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 10px 2px 0; }
+.pb-book-h h2 { margin: 0; font-family: var(--f-serif); font-size: 21px; font-weight: 700; }
+.pb-book-h small { font-size: 13px; color: var(--muted); font-weight: 600; }
+.pb-ledger { list-style: none; margin: 0; padding: 0; border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--card-line); }
+.pb-row { display: flex; align-items: center; border-bottom: 1px solid var(--card-line); animation: pb-in .35s var(--ease-out) both; }
+.pb-row:last-child { border-bottom: 0; }
+.pb-row:nth-child(2) { animation-delay: 40ms; } .pb-row:nth-child(3) { animation-delay: 80ms; } .pb-row:nth-child(4) { animation-delay: 120ms; }
+.pb-row:nth-child(5) { animation-delay: 160ms; } .pb-row:nth-child(6) { animation-delay: 200ms; } .pb-row:nth-child(7) { animation-delay: 240ms; }
+.pb-main { flex: 1; min-width: 0; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 14px;
+  border: 0; background: transparent; color: var(--ink); text-align: left; }
+.pb-main:disabled { cursor: default; opacity: 1; }
+.pb-date { text-align: center; line-height: 1; }
+.pb-date b { display: block; font-family: var(--f-serif); font-size: 18px; }
+.pb-date small { display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin-top: 3px; }
+.pb-p { display: grid; min-width: 0; }
+.pb-p b { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pb-p span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pb-row.is-due .pb-p span { color: var(--warn); font-weight: 600; }
+.pb-row.is-due { background: color-mix(in srgb, var(--warn) 6%, transparent); }
+.pb-amt { text-align: right; display: grid; }
+.pb-amt b { font-family: var(--f-serif); font-size: 17px; }
+.pb-amt b.dr { color: var(--danger); }
+.pb-amt b.cr { color: var(--ok); }
+.pb-amt small { font-size: 11px; color: var(--muted); }
+.pb-row.is-due .pb-amt small { font-style: italic; }
+.pb-pay { flex: none; width: 36px; height: 36px; margin-right: 10px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); color: var(--ok); display: grid; place-items: center; }
+.pb-more { justify-self: center; }
+
+/* Insights become a dashed margin note */
+.money .ins-card { background: transparent; border: 1px dashed color-mix(in srgb, var(--ink) 25%, transparent); box-shadow: none; }
+
+@keyframes pb-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes pb-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .pb-page, .pb-row { animation: none; } .pb-ul path { animation: none; stroke-dashoffset: 0; } }
+@media (min-width: 1024px) {
+  .pb-page { padding: 22px 24px 20px 44px; }
+  .pb-page::before { left: 24px; }
+  .pb-big { font-size: 64px; }
+}
+
+/* ---------- other tabs in the same voice ---------- */
+/* Expenses / Invest summary strip becomes a passbook page */
+.money .money-summary { color: var(--paper-ink); background-color: var(--paper); border-radius: 6px 18px 18px 6px; padding-left: 34px; position: relative;
+  background-image: repeating-linear-gradient(transparent 0 27px, var(--paper-rule) 27px 28px); box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .55); }
+.money .money-summary::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 0; width: 4px; border-left: 1px solid var(--paper-margin); border-right: 1px solid var(--paper-margin); }
+.money .money-summary .money-k, .money .money-summary .money-sk, .money .money-summary .money-vs { color: var(--paper-muted); }
+.money .money-summary .money-big, .money .money-summary .money-mid { font-family: var(--f-serif); color: var(--paper-ink); }
+.money .money-big, .money .money-mid, .money .gl-txt b, .money .rc-big, .money .money-wk-big { font-family: var(--f-serif); }
+/* Bill rows: passbook dates */
+.money .bill-date { background: transparent; border: 0; }
+.money .bill-date b { font-family: var(--f-serif); font-size: 20px; }
+.money .money-row.money-bill { background: var(--surface); }
+
+/* Desktop: the page on the left, the passbook beside it, other cards fill in around */
+@media (min-width: 1100px) {
+  .money .money-layout { grid-auto-flow: row dense; }
+  .money .money-layout > .pb-page { grid-column: 1; align-self: start; margin-top: 0; }
+  .money .money-layout > .pb-book { grid-column: 2; grid-row: span 3; align-self: start; }
+  .money .pb-book-h { margin-top: 0; }
+}

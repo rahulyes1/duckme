@@ -1,6 +1,7 @@
 import { AlertTriangle, ArrowRight, CalendarClock, PartyPopper, Coffee, Lightbulb, Pencil, Sparkles, TrendingDown, TrendingUp, Wallet, Zap } from 'lucide-react';
 import { spendingInsights, type InsightKind } from './insights';
 import { RecapCard, RecapSheet } from './RecapCard';
+import { PaperHero, PassbookList } from './PassbookView';
 import { weekAllowance } from './allowance';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
@@ -78,40 +79,6 @@ function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?
   );
 }
 
-/* ---------- waterfall ---------- */
-function Waterfall({ flow }: { flow: CashFlow }) {
-  const [on, setOn] = useState(false);
-  useEffect(() => { const r = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(r); }, []);
-  const S = Math.max(flow.salary, 1);
-  const clamp = (x: number) => Math.max(0, Math.min(1, x));
-  const b = flow.billsTotal / S, p = flow.sipsTotal / S, s = flow.spent / S;
-  const over = flow.left < 0;
-  const rows = [
-    { k: 'salary', label: 'Salary', sign: '', amount: flow.salary, from: 0, w: 1 },
-    { k: 'bills', label: `Bills due before salary (${flow.bills.length})`, sign: '− ', amount: flow.billsTotal, from: 0, w: b },
-    { k: 'sips', label: `SIPs and instalments (${flow.sips.length})`, sign: '− ', amount: flow.sipsTotal, from: b, w: p },
-    { k: 'spent', label: 'Spent so far', sign: '− ', amount: flow.spent, from: b + p, w: s },
-    { k: over ? 'over' : 'left', label: over ? 'Over by' : 'Left to spend', sign: over ? '' : '= ', amount: Math.abs(flow.left), from: over ? 0 : b + p + s, w: over ? 1 : flow.left / S },
-  ];
-  return (
-    <ul className="money-wf" aria-label="Where this salary goes">
-      {rows.map((r, i) => {
-        const from = clamp(r.from), w = Math.min(clamp(r.w), 1 - from);
-        return (
-          <li key={r.k} className={`money-wf-row money-wf-${r.k}`}>
-            <div className="money-wf-top">
-              <span>{r.k === 'over' && <AlertTriangle size={14} aria-hidden="true" />} {r.label}</span>
-              <b className="num">{r.sign}{inr(r.amount)}</b>
-            </div>
-            <div className="money-wf-track" aria-hidden="true">
-              <i style={{ transform: on ? `translateX(${from * 100}%) scaleX(${w})` : 'translateX(0) scaleX(0)', transitionDelay: `${i * 60}ms` }} />
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 export default function OverviewTab({ cards, settings, onSpend, onTab }: {
   cards: Card[]; settings: Settings; onSpend: (el?: HTMLElement) => void; onTab: (t: 'expenses' | 'bills' | 'invest') => void;
@@ -149,25 +116,10 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
           <SalaryForm settings={settings} compact={!!salary} onDone={() => setEditSalary(false)} />
         </section>
       ) : (
-        <section className="money-card money-wide money-flow" aria-labelledby="m-flow">
-          <div className="money-h-row">
-            <h2 id="m-flow" className="money-h">This salary cycle</h2>
-            <button type="button" className="btn ghost" onClick={() => setEditSalary(true)}><Pencil size={16} aria-hidden="true" /> Salary</button>
-          </div>
-          <p className="money-muted num">{fmtDate(flow.cycle.start)} to {fmtDate(flow.cycle.end)} · next salary in {daysTxt}</p>
-          <div className={`money-safe ${flow.overBy ? 'is-over' : ''}`}>
-            <div>
-              <span className="money-k">Safe to spend today</span>
-              <Money value={flow.safeToday} className="money-big" />
-              {flow.overBy > 0
-                ? <span className="money-over num"><AlertTriangle size={15} aria-hidden="true" /> Over by {inr(flow.overBy)} this cycle</span>
-                : <span className="money-sk num">{inr(flow.left)} left ÷ {daysTxt}</span>}
-            </div>
-            <button type="button" className="btn primary money-spend-sm" onClick={e => onSpend(e.currentTarget)}>Add spend</button>
-          </div>
-          <Waterfall flow={flow} />
-        </section>
+        <PaperHero flow={flow} onSpend={onSpend} onEditSalary={() => setEditSalary(true)} />
       )}
+
+      <PassbookList cards={cards} settings={settings} />
 
       {payday && <RecapCard cards={cards} settings={settings} />}
       {payday && <PaydayCard cards={cards} settings={settings} flow={flow} />}
@@ -184,7 +136,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
       {settings.weeklyAllowance ? <WeekCardAllowance cards={cards} allowance={settings.weeklyAllowance} /> : null}
 
       {insights.length > 0 && (
-        <section className="money-card" aria-labelledby="m-ins">
+        <section className="money-card ins-card" aria-labelledby="m-ins">
           <h2 id="m-ins" className="money-h"><Lightbulb size={18} aria-hidden="true" /> Insights</h2>
           <ul className="ins-list">
             {insights.map((x, i) => {
@@ -207,15 +159,6 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
         ) : <p className="money-muted">Nothing spent yet this month. Tap Spend to add your first expense.</p>}
       </section>
 
-      <section className="money-card" aria-labelledby="m-next">
-        <div className="money-h-row">
-          <h2 id="m-next" className="money-h">Next bills</h2>
-          <button type="button" className="btn ghost" onClick={() => onTab('bills')}>Calendar <ArrowRight size={16} aria-hidden="true" /></button>
-        </div>
-        {d.upcoming.length
-          ? <ul className="money-list">{d.upcoming.map(b => <BillRow key={b.id} c={b} salaryDay={settings.salaryDay} />)}</ul>
-          : <p className="money-muted">No bills waiting. Add rent, card or EMI dates from the Add menu.</p>}
-      </section>
 
       <section className="money-card" aria-labelledby="m-nw">
         <div className="money-h-row">
