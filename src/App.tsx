@@ -8,6 +8,7 @@ import { createCard, purgeOldTrash, type Undo } from './lib/actions';
 import { useCard } from './lib/hooks';
 import { prefersReducedMotion } from './lib/format';
 import { coinBurst } from './ui/fx';
+import { Ambient } from './ui/Ambient';
 import { clearIncomingShare, readIncomingShare, shareToNote } from './features/notes/share';
 
 import HomeScreen from './features/home/HomeScreen';
@@ -155,7 +156,7 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={api}>
-      <div className="ambient" aria-hidden="true"><span className="a1" /><span className="a2" /><span className="a3" /><span className="grain" /></div>
+      <Ambient />
       <div className="shell">
         <nav className="nav" aria-label="Main">
           <div className="brand">Hisaab<span>.</span></div>

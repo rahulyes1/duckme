@@ -11,7 +11,7 @@
   --g-white: #EEF2FF; --g-haldi: #FFD3E0; --g-mint: #D6ECFF; --g-rose: #E6DBFF; --g-sky: #DDF5EC; --g-lilac: #FFDCEB; --g-sand: #FFE3D6;
   --card-line: rgba(27, 33, 29, .10); --shadow-1: 0 1px 2px rgba(20, 30, 25, .06); --shadow-3: 0 18px 40px -12px rgba(10, 20, 15, .35);
   --scrim: rgba(10, 15, 12, .42); --gold: #E4A70F;
-  --amb1: rgba(11, 115, 86, .10); --amb2: rgba(120, 100, 230, .08); --amb3: rgba(255, 150, 120, .08); --grain: .04;
+  --rule: rgba(20, 30, 25, .06); --margin-line: rgba(179, 38, 30, .16); --ink-line: rgba(11, 115, 86, .5); --grain: .05;
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
   --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px;
@@ -28,7 +28,7 @@
   --c-white: #2A2C31; --c-haldi: #4A3530; --c-mint: #1E3F37; --c-rose: #47293A; --c-sky: #213750; --c-lilac: #38305A; --c-sand: #3E3830;
   --g-white: #33374A; --g-haldi: #55303F; --g-mint: #22395A; --g-rose: #3C3060; --g-sky: #1F453C; --g-lilac: #522C48; --g-sand: #523830;
   --card-line: rgba(255, 255, 255, .08); --shadow-1: none; --scrim: rgba(0, 0, 0, .6);
-  --amb1: rgba(60, 199, 154, .17); --amb2: rgba(150, 125, 255, .15); --amb3: rgba(255, 160, 130, .10); --grain: .06;
+  --rule: rgba(255, 255, 255, .035); --margin-line: rgba(242, 130, 122, .16); --ink-line: rgba(60, 199, 154, .55); --grain: .07;
   color-scheme: dark;
 } }
 :root[data-theme="dark"] {
@@ -39,7 +39,7 @@
   --c-white: #2A2C31; --c-haldi: #4A3530; --c-mint: #1E3F37; --c-rose: #47293A; --c-sky: #213750; --c-lilac: #38305A; --c-sand: #3E3830;
   --g-white: #33374A; --g-haldi: #55303F; --g-mint: #22395A; --g-rose: #3C3060; --g-sky: #1F453C; --g-lilac: #522C48; --g-sand: #523830;
   --card-line: rgba(255, 255, 255, .08); --shadow-1: none; --scrim: rgba(0, 0, 0, .6);
-  --amb1: rgba(60, 199, 154, .17); --amb2: rgba(150, 125, 255, .15); --amb3: rgba(255, 160, 130, .10); --grain: .06;
+  --rule: rgba(255, 255, 255, .035); --margin-line: rgba(242, 130, 122, .16); --ink-line: rgba(60, 199, 154, .55); --grain: .07;
   color-scheme: dark;
 }
 :root[data-theme="oldpage"] {
@@ -51,7 +51,7 @@
   --c-white: #312921; --c-haldi: #4D3426; --c-mint: #2F3A2A; --c-rose: #4A2E2E; --c-sky: #2C3540; --c-lilac: #3B3045; --c-sand: #43382A;
   --g-white: #3D3226; --g-haldi: #5A3B2A; --g-mint: #3A4630; --g-rose: #5A3434; --g-sky: #36414D; --g-lilac: #483A55; --g-sand: #554530;
   --card-line: rgba(240, 230, 210, .10); --shadow-1: none; --scrim: rgba(10, 6, 2, .62);
-  --amb1: rgba(217, 168, 92, .16); --amb2: rgba(190, 110, 70, .12); --amb3: rgba(240, 220, 170, .08); --grain: .16;
+  --rule: rgba(240, 222, 186, .06); --margin-line: rgba(196, 74, 60, .30); --ink-line: rgba(217, 168, 92, .62); --grain: .15;
   color-scheme: dark;
 }
 
@@ -274,19 +274,38 @@ canvas.fx { position: fixed; inset: 0; z-index: var(--z-fx); pointer-events: non
 }
 @media (prefers-reduced-motion: reduce) { .notes .tile::before, .notes-today::before { animation: none; } }
 
-/* ---------- ambient background: slow drifting light + paper grain, behind everything ---------- */
+
+/* ---------- the page behind the app: a still khata (ledger) sheet + this month's money line ---------- */
 .ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .shell { position: relative; z-index: 1; }
-.ambient span { position: absolute; width: 75vmax; height: 75vmax; border-radius: 50%; will-change: transform; }
-.ambient .a1 { top: -25vmax; left: -25vmax; background: radial-gradient(closest-side, var(--amb1), transparent 72%); animation: amb-1 42s ease-in-out infinite alternate; }
-.ambient .a2 { bottom: -30vmax; right: -25vmax; background: radial-gradient(closest-side, var(--amb2), transparent 72%); animation: amb-2 53s ease-in-out infinite alternate; }
-.ambient .a3 { top: 25%; left: 30%; width: 55vmax; height: 55vmax; background: radial-gradient(closest-side, var(--amb3), transparent 72%); animation: amb-3 61s ease-in-out infinite alternate; }
-.ambient .grain { inset: 0; width: auto; height: auto; border-radius: 0; opacity: var(--grain); mix-blend-mode: overlay;
+.ambient .ledger { position: absolute; inset: 0;
+  background-image:
+    linear-gradient(to right, transparent 39px, var(--margin-line) 39px, var(--margin-line) 40px, transparent 40px,
+                    transparent 43px, var(--margin-line) 43px, var(--margin-line) 44px, transparent 44px),
+    repeating-linear-gradient(to bottom, transparent 0, transparent 35px, var(--rule) 35px, var(--rule) 36px); }
+@media (min-width: 1024px) { .ambient .ledger { left: 232px; } }
+.ambient .grain { position: absolute; inset: 0; opacity: var(--grain); mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
 :root[data-theme="oldpage"] .ambient .grain { mix-blend-mode: soft-light; }
-/* old page: soft vignette like the edge of an old sheet */
-:root[data-theme="oldpage"] .ambient::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(8, 5, 2, .45) 100%); }
-@keyframes amb-1 { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(22vw, 18vh, 0) scale(1.15); } }
-@keyframes amb-2 { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(-20vw, -22vh, 0) scale(.9); } }
-@keyframes amb-3 { from { transform: translate3d(-8vw, 6vh, 0) scale(.9); } to { transform: translate3d(10vw, -10vh, 0) scale(1.12); } }
-@media (prefers-reduced-motion: reduce) { .ambient span { animation: none; } }
+:root[data-theme="oldpage"] .ambient::after { content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(8, 5, 2, .45) 100%); }
+
+/* This salary cycle's money, drawn once like a pen stroke across the lower page. */
+.ambient .moneyline { position: absolute; left: 56px; right: 14px; bottom: calc(var(--nav-h) + 96px); height: 26vh; }
+.ambient .moneyline svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+@media (min-width: 1024px) { .ambient .moneyline { left: 280px; right: 48px; bottom: 80px; } }
+.ml-ink { fill: none; stroke: var(--ink-line); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation: ml-draw 2.8s cubic-bezier(.45, .05, .2, 1) .4s forwards; }
+.ml-ink.is-neutral { opacity: .45; }
+.ml-rest { stroke: var(--ink-line); stroke-width: 1; opacity: .35; vector-effect: non-scaling-stroke; stroke-dasharray: .004 .012; }
+.ml-dot { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--ink-line);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink-line) 18%, transparent); opacity: 0;
+  animation: ml-dot-in .5s ease-out 3.1s forwards, ml-breathe 4.5s ease-in-out 3.6s infinite; }
+@keyframes ml-draw { to { stroke-dashoffset: 0; } }
+@keyframes ml-dot-in { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes ml-breathe { 0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink-line) 18%, transparent); }
+  50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--ink-line) 6%, transparent); } }
+@media (prefers-reduced-motion: reduce) {
+  .ml-ink { animation: none; stroke-dashoffset: 0; }
+  .ml-dot { animation: none; opacity: 1; }
+}
