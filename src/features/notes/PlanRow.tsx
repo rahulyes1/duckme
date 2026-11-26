@@ -1,48 +1,71 @@
 import { useState } from 'react';
-import { CalendarRange, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CalendarRange, ChevronDown, Flag, X } from 'lucide-react';
 import type { Card, Quadrant, When } from '../../lib/types';
 import { QUADRANTS } from '../../lib/types';
 import { WhenPicker, whenLabel } from '../../ui/WhenPicker';
+import { prefersReducedMotion } from '../../lib/format';
 
-const SHORT: Record<Quadrant, string> = { do: 'Do now', schedule: 'Schedule', quick: 'Quick wins', later: 'Later' };
+const SHORT: Record<Quadrant, string> = { do: 'Do now', schedule: 'Schedule', quick: 'Quick win', later: 'Later' };
 
-/** "Plan it" (day / week / month slot) and the 4-box priority, for notes and tasks. */
+/**
+ * One quiet row under a note or task: when you'll do it, and how much it matters.
+ * The four priority choices stay folded away until you ask for them.
+ */
 export function PlanRow({ card, save }: { card: Card; save: (p: Partial<Card>) => Promise<void> }) {
   const [open, setOpen] = useState(false);
+  const [qOpen, setQOpen] = useState(false);
   const setWhen = (w: When | undefined) => { void save({ when: w }); };
+  const q = card.quadrant;
   const qId = `q-${card.id}`;
+  const fast = prefersReducedMotion();
+
   return (
     <section className="notes-plan" aria-label="Planning">
-      <div className="notes-plan-when">
-        <button type="button" className={`notes-plan-btn ${card.when ? 'is-set' : ''}`} aria-haspopup="dialog" onClick={() => setOpen(true)}>
-          <CalendarRange size={18} aria-hidden="true" />
-          {card.when ? <span><span className="sr-only">Planned for </span>{whenLabel(card.when)}</span> : 'Plan it'}
+      <div className="notes-plan-row">
+        <span className="notes-plan-when">
+          <button type="button" className={`notes-plan-btn ${card.when ? 'is-set' : ''}`} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+            <CalendarRange size={16} aria-hidden="true" />
+            {card.when ? <span><span className="sr-only">Planned for </span>{whenLabel(card.when)}</span> : 'Add a date'}
+          </button>
+          {card.when && (
+            <button type="button" className="icon-btn notes-plan-x" aria-label="Clear date" onClick={() => setWhen(undefined)}>
+              <X size={16} aria-hidden="true" />
+            </button>
+          )}
+        </span>
+        <button type="button" className={`notes-plan-btn ${q ? 'is-set' : ''}`} data-q={q} aria-expanded={qOpen} aria-controls={qId}
+          onClick={() => setQOpen(o => !o)}>
+          {q ? <span className="notes-quad-dot" aria-hidden="true" /> : <Flag size={16} aria-hidden="true" />}
+          {q ? SHORT[q] : 'Priority'}
+          <ChevronDown size={14} aria-hidden="true" className={`notes-plan-chev ${qOpen ? 'is-open' : ''}`} />
         </button>
-        {card.when && (
-          <button type="button" className="icon-btn notes-plan-x" aria-label="Clear plan" onClick={() => setWhen(undefined)}>
-            <X size={18} aria-hidden="true" />
-          </button>
-        )}
       </div>
-      <div className="notes-quad" role="radiogroup" aria-labelledby={qId}>
-        <span id={qId} className="notes-quad-l">Priority</span>
-        {QUADRANTS.map(q => (
-          <button
-            key={q.id}
-            type="button"
-            role="radio"
-            aria-checked={card.quadrant === q.id}
-            className="notes-quad-btn"
-            data-q={q.id}
-            title={q.hint}
-            onClick={() => save({ quadrant: card.quadrant === q.id ? undefined : q.id })}
+
+      <AnimatePresence initial={false}>
+        {qOpen && (
+          <motion.div
+            id={qId} className="notes-quad" role="radiogroup" aria-label="Priority"
+            initial={fast ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={fast ? undefined : { opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
           >
-            <span className="notes-quad-dot" aria-hidden="true" />
-            {SHORT[q.id]}
-            <span className="sr-only">, {q.hint}</span>
-          </button>
-        ))}
-      </div>
+            {QUADRANTS.map(x => (
+              <button
+                key={x.id}
+                type="button"
+                role="radio"
+                aria-checked={q === x.id}
+                className="notes-quad-btn"
+                data-q={x.id}
+                onClick={() => { void save({ quadrant: q === x.id ? undefined : x.id }); setQOpen(false); }}
+              >
+                <span className="notes-quad-dot" aria-hidden="true" />
+                <span className="notes-quad-txt"><b>{SHORT[x.id]}</b><small>{x.hint}</small></span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <WhenPicker open={open} value={card.when} onChange={w => { setWhen(w); }} onClose={() => setOpen(false)} />
     </section>
   );

@@ -1,1 +1,1 @@
-{"version":"0.0.1","configurations":[{"name":"hisaab","runtimeExecutable":"npx","runtimeArgs":["vite","--port","5191","--strictPort"],"port":5191,"autoPort":false}]}
+{"version": "0.0.1", "configurations": [{"name": "hisaab", "runtimeExecutable": "node", "runtimeArgs": ["D:/download/DUCK ME/hisaab-web/node_modules/vite/bin/vite.js", "D:/download/DUCK ME/hisaab-web", "--port", "5191", "--strictPort"], "port": 5191, "autoPort": false}]}

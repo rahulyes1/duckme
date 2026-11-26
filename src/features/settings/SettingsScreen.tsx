@@ -28,22 +28,58 @@ function Section({ id, title, icon, children }: { id: string; title: string; ico
 }
 
 /* ---------------- theme ---------------- */
-const THEMES: { v: Settings['theme']; label: string; Icon: typeof Sun }[] = [
-  { v: 'dark', label: 'Charcoal', Icon: Moon },
-  { v: 'oldpage', label: 'Old page', Icon: ScrollText },
-  { v: 'light', label: 'Light', Icon: Sun },
+const THEMES: { v: Settings['theme']; label: string; Icon: typeof Sun; bg: string; card: string; ink: string; accent: string }[] = [
+  { v: 'dark', label: 'Charcoal', Icon: Moon, bg: '#1C1D21', card: '#2A2C31', ink: '#ECEAE6', accent: '#3CC79A' },
+  { v: 'oldpage', label: 'Old page', Icon: ScrollText, bg: '#221C15', card: '#312921', ink: '#F0E6D2', accent: '#D9A85C' },
+  { v: 'light', label: 'Light', Icon: Sun, bg: '#F3F5F1', card: '#FFFFFF', ink: '#1B211D', accent: '#0B7356' },
 ];
 
 function ThemePicker({ value }: { value: Settings['theme'] }) {
+  const cur = value === 'system' ? 'dark' : value;
   return (
-    <div className="set-seg" role="radiogroup" aria-label="Theme">
-      {THEMES.map(({ v, label, Icon }) => (
-        <button key={v} type="button" role="radio" aria-checked={(value === 'system' ? 'dark' : value) === v} className="set-seg-btn"
-          onClick={() => saveSettings({ theme: v })}>
-          <Icon size={18} aria-hidden="true" />{label}
+    <div className="set-themes" role="radiogroup" aria-label="Theme">
+      {THEMES.map(({ v, label, Icon, bg, card, ink, accent }) => (
+        <button key={v} type="button" role="radio" aria-checked={cur === v} className="set-theme" onClick={() => saveSettings({ theme: v })}>
+          <span className="set-theme-pv" aria-hidden="true" style={{ background: bg }}>
+            <i style={{ background: card }}><b style={{ background: ink }} /><b style={{ background: ink, width: '55%', opacity: .5 }} /></i>
+            <i style={{ background: card }}><b style={{ background: accent, width: '45%' }} /></i>
+          </span>
+          <span className="set-theme-l"><Icon size={14} aria-hidden="true" />{label}{cur === v && <Check size={14} aria-hidden="true" className="set-theme-ok" />}</span>
         </button>
       ))}
     </div>
+  );
+}
+
+/* ---------------- you ---------------- */
+function Profile({ settings, cards }: { settings: Settings; cards: Card[] }) {
+  const [name, setName] = useState(settings.userName ?? '');
+  const [editing, setEditing] = useState(false);
+  const live = cards.filter(c => c.status !== 'trashed');
+  const notes = live.filter(c => c.type === 'note').length;
+  const spends = live.filter(c => c.type === 'expense').length;
+  const since = live.reduce((m, c) => Math.min(m, c.createdAt || Date.now()), Date.now());
+  const days = Math.max(1, Math.round((Date.now() - since) / 86400000));
+  const save = async () => { await saveSettings({ userName: name.trim() || undefined }); setEditing(false); };
+  const initial = (settings.userName?.trim()[0] ?? 'H').toUpperCase();
+  return (
+    <section className="set-me" aria-label="You">
+      <span className="set-me-av" aria-hidden="true">{initial}</span>
+      <div className="set-me-txt">
+        {editing ? (
+          <form className="set-me-form" onSubmit={e => { e.preventDefault(); void save(); }}>
+            <label htmlFor="me-name" className="sr-only">Your first name</label>
+            <input id="me-name" className="input" autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Your first name" autoComplete="given-name" />
+            <button type="submit" className="btn primary">Save</button>
+          </form>
+        ) : (
+          <button type="button" className="set-me-name" onClick={() => setEditing(true)}>
+            {settings.userName || 'Add your name'} <Pencil size={14} aria-hidden="true" />
+          </button>
+        )}
+        <span className="set-me-stats num">{notes} notes · {spends} spends · {days} day{days === 1 ? '' : 's'} with Hisaab</span>
+      </div>
+    </section>
   );
 }
 
@@ -388,6 +424,8 @@ export default function SettingsScreen() {
           </button>
         </div>
       )}
+
+      <Profile settings={settings} cards={cards} />
 
       <AccountSection />
 

@@ -252,21 +252,30 @@
 /* =====================================================================
    Plan it + 4-box priority
    ===================================================================== */
-.notes-plan { display: grid; gap: 10px; margin-top: 14px; }
-.notes-plan-when { display: flex; align-items: center; gap: 8px; }
-.notes-plan-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; font-size: 15px; font-weight: 600;
-  border: 1px dashed color-mix(in srgb, var(--ink) 40%, transparent); background: color-mix(in srgb, var(--surface) 60%, transparent); color: var(--ink);
-  transition: transform .12s var(--ease-out); }
+.notes-plan { display: grid; gap: 8px; margin-top: 18px; }
+.notes-plan-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.notes-plan-when { display: inline-flex; align-items: center; gap: 2px; }
+.notes-plan-btn { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 14px; border-radius: 12px; font-size: 14px; font-weight: 600;
+  border: 0; background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--muted); transition: background .15s, color .15s; }
 .notes-plan-btn:active { filter: brightness(.92); }
-.notes-plan-btn.is-set { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+.notes-plan-btn.is-set { background: var(--accent-soft); color: var(--ink); }
 .notes-plan-btn svg { color: var(--accent); }
-.notes-quad { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.notes-quad-l { font-size: 13px; font-weight: 700; color: color-mix(in srgb, var(--ink) 75%, transparent); margin-right: 2px; }
-.notes-quad-btn { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 600;
-  border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--ink); transition: transform .12s var(--ease-out); }
+.notes-plan-btn[data-q] { --q: var(--accent); }
+.notes-plan-btn[data-q="do"] { --q: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.notes-plan-btn[data-q="quick"] { --q: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.notes-plan-btn[data-q="later"] { --q: var(--muted); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.notes-plan-chev { color: var(--muted) !important; transition: transform .2s var(--ease-out); }
+.notes-plan-chev.is-open { transform: rotate(180deg); }
+.notes-plan-x { width: 36px; height: 36px; color: var(--muted); }
+.notes-quad { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; overflow: hidden; }
+.notes-quad-btn { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 12px; border-radius: 14px; text-align: left;
+  border: 1px solid var(--card-line); background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--ink); }
 .notes-quad-btn:active { filter: brightness(.92); }
-.notes-quad-btn[aria-checked="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.notes-quad-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--q); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--bg) 60%, transparent); }
+.notes-quad-btn[aria-checked="true"] { border-color: var(--q); background: color-mix(in srgb, var(--q) 14%, var(--surface)); }
+.notes-quad-txt { display: grid; min-width: 0; line-height: 1.25; }
+.notes-quad-txt b { font-size: 14px; }
+.notes-quad-txt small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notes-quad-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--q); }
 .notes-quad-btn[data-q="do"] { --q: var(--danger); }
 .notes-quad-btn[data-q="schedule"] { --q: var(--accent); }
 .notes-quad-btn[data-q="quick"] { --q: var(--warn); }

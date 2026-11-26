@@ -317,3 +317,11 @@ canvas.fx { position: fixed; inset: 0; z-index: var(--z-fx); pointer-events: non
 
 /* While a sheet is open the toast moves to the top, so it never covers the sheet's buttons. */
 body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); bottom: auto; }
+
+/* ₹ prefix inside an amount box (used across Money, Goals, onboarding) */
+.money-rupee-input { position: relative; }
+.money-rupee-input > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 600; pointer-events: none; }
+.money-rupee-input .input { padding-left: 32px; }
+
+/* Shown for a split second the very first time a screen is opened */
+.screen-loading { min-height: 60vh; }

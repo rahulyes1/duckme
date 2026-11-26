@@ -12,10 +12,17 @@ import { Ambient } from './ui/Ambient';
 import { clearIncomingShare, readIncomingShare, shareToNote } from './features/notes/share';
 
 import HomeScreen from './features/home/HomeScreen';
-import NotesScreen from './features/notes/NotesScreen';
-import MoneyScreen from './features/money/MoneyScreen';
-import PlanScreen from './features/plan/PlanScreen';
-import SettingsScreen from './features/settings/SettingsScreen';
+// Home ships in the first download; the other screens load when first opened
+// (and are fetched quietly in the background once the app is idle, so tabs still feel instant).
+const loadNotes = () => import('./features/notes/NotesScreen');
+const loadMoney = () => import('./features/money/MoneyScreen');
+const loadPlan = () => import('./features/plan/PlanScreen');
+const loadMore = () => import('./features/settings/SettingsScreen');
+const NotesScreen = lazy(loadNotes);
+const MoneyScreen = lazy(loadMoney);
+const PlanScreen = lazy(loadPlan);
+const SettingsScreen = lazy(loadMore);
+const prefetchScreens = () => { void loadNotes(); void loadMoney(); void loadPlan(); void loadMore(); };
 import Onboarding from './features/settings/Onboarding';
 
 const NoteEditor = lazy(() => import('./features/notes/NoteEditor'));
@@ -149,6 +156,12 @@ export default function App() {
     }
   }, [settings?.consentAt, api]);
 
+  // Must stay above the early returns below (hooks run in the same order every render).
+  useEffect(() => {
+    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
+    const t = w.requestIdleCallback ? w.requestIdleCallback(prefetchScreens) : window.setTimeout(prefetchScreens, 1500);
+    return () => { if (!w.requestIdleCallback) clearTimeout(t); };
+  }, []);
   if (!settings) return null;
   if (!settings.consentAt) return <AppCtx.Provider value={api}><Onboarding /></AppCtx.Provider>;
 
@@ -169,7 +182,9 @@ export default function App() {
         <main className="main" id="main">
           {/* Plain CSS fade: no transform/will-change, so fixed bars and sheets stay fixed to the screen. */}
           <div key={route} className="route-fade">
-            <Screen />
+            <Suspense fallback={<div className="screen-loading" aria-busy="true" aria-label="Loading" />}>
+              <Screen />
+            </Suspense>
           </div>
         </main>
       </div>
