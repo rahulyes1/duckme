@@ -159,7 +159,8 @@ export interface Settings {
   key: 'settings';
   /** Day of month salary is credited (1–31). */
   salaryDay: number;
-  theme: 'system' | 'light' | 'dark';
+  /** 'dark' = Charcoal, 'oldpage' = dark aged paper. 'system' (older setting) is shown as Charcoal. */
+  theme: 'system' | 'light' | 'dark' | 'oldpage';
   /** SHA-256 hex of the PIN for locked notes. */
   pinHash?: string;
   /** Monthly budget per expense category in ₹. */

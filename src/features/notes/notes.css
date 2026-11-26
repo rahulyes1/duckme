@@ -347,3 +347,6 @@
   .notes-tpl { transition: none; }
   .notes-tpl:hover, .notes-tpl:active { transform: none; }
 }
+
+/* Old page: the Today banner matches the warm paper instead of lavender */
+:root[data-theme="oldpage"] .notes-today { --c: var(--c-sand); --g: var(--g-sand); }

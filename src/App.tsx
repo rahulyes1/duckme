@@ -96,9 +96,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const t = settings?.theme ?? 'system';
-    if (t === 'system') delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = t;
+    // Dark by default: the old 'system' setting now means Charcoal.
+    const t = !settings?.theme || settings.theme === 'system' ? 'dark' : settings.theme;
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('hisaab.theme', t); } catch { /* storage blocked */ }
+    document.querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', t === 'light' ? '#F3F5F1' : t === 'oldpage' ? '#221C15' : '#1C1D21');
   }, [settings?.theme]);
 
   const api: AppApi = useMemo(() => ({
@@ -152,6 +155,7 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={api}>
+      <div className="ambient" aria-hidden="true"><span className="a1" /><span className="a2" /><span className="a3" /><span className="grain" /></div>
       <div className="shell">
         <nav className="nav" aria-label="Main">
           <div className="brand">Hisaab<span>.</span></div>

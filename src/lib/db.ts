@@ -65,7 +65,7 @@ export const db = new HisaabDB();
 export const DEFAULT_SETTINGS: Settings = {
   key: 'settings',
   salaryDay: 1,
-  theme: 'system',
+  theme: 'dark',
   budgets: {},
   labels: [],
   delayDays: 7,

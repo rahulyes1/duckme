@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ArrowRight, Check, Download, HardDriveDownload, Info, KeyRound, Monitor, Moon, Pencil, Smartphone, Sun, Tag, Trash2, Upload, X,
+  ArrowRight, Check, Download, HardDriveDownload, Info, KeyRound, Moon, ScrollText, Pencil, Smartphone, Sun, Tag, Trash2, Upload, X,
 } from 'lucide-react';
 import { useApp } from '../../app-context';
 import { db, saveSettings } from '../../lib/db';
@@ -28,16 +28,16 @@ function Section({ id, title, icon, children }: { id: string; title: string; ico
 
 /* ---------------- theme ---------------- */
 const THEMES: { v: Settings['theme']; label: string; Icon: typeof Sun }[] = [
-  { v: 'system', label: 'System', Icon: Monitor },
+  { v: 'dark', label: 'Charcoal', Icon: Moon },
+  { v: 'oldpage', label: 'Old page', Icon: ScrollText },
   { v: 'light', label: 'Light', Icon: Sun },
-  { v: 'dark', label: 'Dark', Icon: Moon },
 ];
 
 function ThemePicker({ value }: { value: Settings['theme'] }) {
   return (
     <div className="set-seg" role="radiogroup" aria-label="Theme">
       {THEMES.map(({ v, label, Icon }) => (
-        <button key={v} type="button" role="radio" aria-checked={value === v} className="set-seg-btn"
+        <button key={v} type="button" role="radio" aria-checked={(value === 'system' ? 'dark' : value) === v} className="set-seg-btn"
           onClick={() => saveSettings({ theme: v })}>
           <Icon size={18} aria-hidden="true" />{label}
         </button>
