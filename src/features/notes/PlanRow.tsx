@@ -4,7 +4,7 @@ import type { Card, Quadrant, When } from '../../lib/types';
 import { QUADRANTS } from '../../lib/types';
 import { WhenPicker, whenLabel } from '../../ui/WhenPicker';
 
-const SHORT: Record<Quadrant, string> = { do: 'Do now', schedule: 'Plan it', quick: 'Quick wins', later: 'Later' };
+const SHORT: Record<Quadrant, string> = { do: 'Do now', schedule: 'Schedule', quick: 'Quick wins', later: 'Later' };
 
 /** "Plan it" (day / week / month slot) and the 4-box priority, for notes and tasks. */
 export function PlanRow({ card, save }: { card: Card; save: (p: Partial<Card>) => Promise<void> }) {

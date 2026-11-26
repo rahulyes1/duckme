@@ -1,16 +1,15 @@
 /** Small building blocks shared by the Money tabs. */
 import {
-  AlertTriangle, Bus, Check, Clapperboard, Fuel, GraduationCap, HeartPulse, House, Receipt, Repeat2, Shapes, ShoppingBag,
+  AlertTriangle, Bus, Check, Clapperboard, Fuel, GraduationCap, HeartPulse, House, Receipt, Shapes, ShoppingBag,
   ShoppingBasket, UserRound, Users, UtensilsCrossed, type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '../../app-context';
 import { StaffPaySheet } from './staff-ui';
 import { payBill } from '../../lib/actions';
-import { addDaysISO, fmtDate, inr, inrShort, salarySide } from '../../lib/format';
+import { addDaysISO, dueLabel, dueTone, fmtDate, fromISO, inr, inrShort, salarySide } from '../../lib/format';
 import type { Card } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
-import { DuePill } from '../../ui/CardTile';
 import { budgetStatus } from './cashflow';
 import { longMonth, monthKey, paidMessage, REPEAT_LABEL, shortMonth, sum } from './money-util';
 
@@ -36,26 +35,31 @@ export function BillRow({ c, salaryDay, showSide = true }: { c: Card; salaryDay:
   const pay = usePayBill();
   const [staffOpen, setStaffOpen] = useState(false);
   const side = salarySide(c.due!, salaryDay);
+  const tone = dueTone(c.due!);
+  const due = fromISO(c.due!);
   return (
-    <li className="money-row money-bill" data-color={c.color}>
+    <li className={`money-row money-bill tone-${tone}`} data-color={c.color}>
       <button type="button" className="money-row-main" onClick={e => openCard(c.id, e.currentTarget)}>
-        <span className="money-row-top">
+        <span className="bill-date" aria-hidden="true"><b className="num">{due.getDate()}</b><small>{due.toLocaleDateString('en-IN', { month: 'short' })}</small></span>
+        <span className="bill-txt">
           <span className="money-row-title">{c.title || 'Untitled bill'}</span>
-          <span className="money-row-amt num">{c.amount ? inr(c.amount) : 'No amount'}</span>
-        </span>
-        <span className="money-pills">
-          <DuePill due={c.due!} />
-          <span className="pill">{fmtDate(c.due!)}</span>
-          {showSide && <span className="pill outline">{side === 'before' ? 'Before salary' : 'After salary'}</span>}
-          {c.lastSafe && <span className="pill outline">Last safe day {fmtDate(addDaysISO(c.due!, 3))}</span>}
-          {c.repeat && c.repeat !== 'none' && <span className="pill"><Repeat2 size={11} aria-hidden="true" />{REPEAT_LABEL[c.repeat]}</span>}
-          {c.penalty && <span className="pill pen"><AlertTriangle size={11} aria-hidden="true" />{c.penalty}</span>}
+          <span className="bill-when">{dueLabel(c.due!)}<span className="sr-only">, due {fmtDate(c.due!)}</span></span>
+          {(showSide || (c.repeat && c.repeat !== 'none')) && (
+            <span className="bill-meta">
+              {[c.repeat && c.repeat !== 'none' ? REPEAT_LABEL[c.repeat] : '', showSide ? (side === 'before' ? 'before salary' : 'after salary') : ''].filter(Boolean).join(' · ')}
+            </span>
+          )}
+          {c.lastSafe && <span className="bill-meta">Safe to pay till {fmtDate(addDaysISO(c.due!, 3))}</span>}
+          {c.penalty && <span className="bill-pen"><AlertTriangle size={12} aria-hidden="true" /> {c.penalty}</span>}
         </span>
       </button>
-      <button type="button" className="btn money-paid" aria-label={`${c.staff ? 'Pay' : 'Mark'} ${c.title || 'bill'}${c.staff ? '' : ' paid'}`}
-        onClick={e => { if (c.staff) setStaffOpen(true); else void pay(c, e.currentTarget); }}>
-        <Check size={16} aria-hidden="true" /> {c.staff ? 'Pay' : 'Paid'}
-      </button>
+      <span className="bill-right">
+        <span className="money-row-amt num">{c.amount ? inr(c.amount) : '—'}</span>
+        <button type="button" className="btn money-paid" aria-label={`${c.staff ? 'Pay' : 'Mark'} ${c.title || 'bill'}${c.staff ? '' : ' paid'}`}
+          onClick={e => { if (c.staff) setStaffOpen(true); else void pay(c, e.currentTarget); }}>
+          <Check size={15} aria-hidden="true" /> {c.staff ? 'Pay' : 'Paid'}
+        </button>
+      </span>
       {c.staff && <StaffPaySheet card={c} open={staffOpen} onClose={() => setStaffOpen(false)} />}
     </li>
   );

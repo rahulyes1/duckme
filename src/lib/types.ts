@@ -12,7 +12,7 @@ export type InvestKind = 'SIP' | 'FD' | 'RD' | 'PPF' | 'MF' | 'Stock' | 'Gold' |
 export type Quadrant = 'do' | 'schedule' | 'quick' | 'later';
 export const QUADRANTS: { id: Quadrant; title: string; hint: string }[] = [
   { id: 'do', title: 'Do now', hint: 'Urgent and important' },
-  { id: 'schedule', title: 'Plan it', hint: 'Important, not urgent' },
+  { id: 'schedule', title: 'Schedule', hint: 'Important, not urgent' },
   { id: 'quick', title: 'Quick wins', hint: 'Urgent, not important' },
   { id: 'later', title: 'Later / drop', hint: 'Neither' },
 ];

@@ -118,7 +118,7 @@ export default function App() {
     toast: (msg, undo) => {
       clearTimeout(toastTimer.current);
       setToast({ msg, undo, key: Date.now() });
-      toastTimer.current = window.setTimeout(() => setToast(null), undo ? 5000 : 3200);
+      toastTimer.current = window.setTimeout(() => setToast(null), undo ? 7000 : 3200);
     },
     burst: from => coinBurst(from instanceof DOMRect ? from : from.getBoundingClientRect()),
     isUnlocked: id => unlocked.current.has(id),

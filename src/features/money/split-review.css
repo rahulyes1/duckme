@@ -17,7 +17,7 @@
 .money-sp .money-list { margin-top: 8px; }
 .money-sp-row { min-height: 56px; }
 .money-sp-avatar { flex: none; width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center;
-  background: var(--c-lilac); color: var(--ink); font-weight: 700; font-family: var(--f-display); }
+  background: var(--accent-soft); color: var(--accent); font-weight: 700; font-family: var(--f-display); }
 .money-sp-sheet { display: grid; gap: 12px; }
 .money-sp-net { margin: 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-2); font-family: var(--f-display);
   font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -51,7 +51,7 @@
 
 /* ---------- money review ---------- */
 .money-rv-payday { background: color-mix(in srgb, var(--c-mint) 55%, var(--surface)); }
-.money-rv-week { background: color-mix(in srgb, var(--c-lilac) 50%, var(--surface)); }
+.money-rv-week { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
 .money-rv-steps { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
 .money-rv-step { padding: 8px 12px 10px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--card-line); }
 .money-rv-check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
@@ -83,7 +83,7 @@
 .money-rv-flame { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; background: var(--c-haldi); color: var(--warn); }
 .money-rv-streak.is-pop .money-rv-flame { background: var(--accent-soft); color: var(--accent); }
 .money-rv-ask { display: flex; justify-content: flex-end; }
-.money-rv-ask .btn { background: var(--c-lilac); border-color: transparent; color: var(--ink); }
+.money-rv-ask .btn { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
   .money-sm-vs .money-bar i, .money-rv-stat .money-bar i { transition: none; }

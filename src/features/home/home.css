@@ -132,3 +132,6 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
 .hero-set { color: var(--accent); }
 @media (min-width: 1024px) { .hero { padding: 22px 26px 18px; } .hero-big { font-size: 52px; } .hero-line { height: 72px; } }
 @media (prefers-reduced-motion: reduce) { .hero { animation: none; } .hl-ink { animation: none; stroke-dashoffset: 0; } .hl-dot { animation: none; opacity: 1; } }
+.hero-tip { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0 0; padding: 10px 12px; border-radius: 14px; font-size: 14px; line-height: 1.4;
+  background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); animation: hero-in .5s var(--ease-out) .5s both; }
+.hero-tip svg { flex: none; margin-top: 2px; color: var(--accent); }

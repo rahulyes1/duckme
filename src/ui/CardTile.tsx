@@ -131,6 +131,7 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
             </div>
           )}
           {c.title && <div className="t">{c.title}</div>}
+          {c.type === 'note' && !c.title && !c.body?.trim() && !items.length && !c.images?.length && <div className="t is-empty">Empty note</div>}
 
           {(c.type === 'note' || c.type === 'task') && c.body && <NoteBody text={c.body} />}
           {!!items.length && (

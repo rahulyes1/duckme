@@ -1,4 +1,5 @@
-import { AlertTriangle, ArrowRight, Pencil, Sparkles, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarClock, Coffee, Lightbulb, Pencil, Sparkles, TrendingDown, TrendingUp, Wallet, Zap } from 'lucide-react';
+import { spendingInsights, type InsightKind } from './insights';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
 import { fmtDate, inr, today } from '../../lib/format';
@@ -10,6 +11,10 @@ import { longMonth, monthKey, openBills, parseAmount } from './money-util';
 import { BillRow, CategoryBar } from './parts';
 import { inPaydayWindow, isSunday } from './review';
 import { PaydayCard, WeekCard } from './reviewCards';
+
+const INS_ICON: Record<InsightKind, typeof Wallet> = {
+  up: TrendingUp, down: TrendingDown, pace: Zap, big: Sparkles, calm: Coffee, weekend: CalendarClock, bills: CalendarClock,
+};
 
 /* ---------- salary form ---------- */
 function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?: () => void; compact?: boolean }) {
@@ -107,6 +112,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
   }, [cards, salary, settings.salaryDay, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { flow } = d;
+  const insights = useMemo(() => spendingInsights(cards, ref), [cards]); // eslint-disable-line react-hooks/exhaustive-deps
   const daysTxt = flow.cycle.daysLeft === 1 ? '1 day' : `${flow.cycle.daysLeft} days`;
   const gl = d.nw.value - d.nw.invested;
   const payday = salary > 0 && !editSalary && inPaydayWindow(settings.salaryDay, ref);
@@ -137,6 +143,18 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
             <button type="button" className="btn primary money-spend-sm" onClick={e => onSpend(e.currentTarget)}>Add spend</button>
           </div>
           <Waterfall flow={flow} />
+        </section>
+      )}
+
+      {insights.length > 0 && (
+        <section className="money-card money-wide" aria-labelledby="m-ins">
+          <h2 id="m-ins" className="money-h"><Lightbulb size={18} aria-hidden="true" /> Insights</h2>
+          <ul className="ins-list">
+            {insights.map((x, i) => {
+              const Icon = INS_ICON[x.kind];
+              return <li key={x.text} className={`ins k-${x.kind}`} style={{ animationDelay: `${i * 60}ms` }}><i aria-hidden="true"><Icon size={16} /></i><span>{x.text}</span></li>;
+            })}
+          </ul>
         </section>
       )}
 

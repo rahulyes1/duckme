@@ -140,11 +140,13 @@ export default function MoneyScreen() {
       </header>
 
       <div role="tabpanel" id={`money-panel-${tab}`} aria-labelledby={`money-tab-${tab}`} className="money-panel">
+        <div key={tab} className="money-panel-anim">
         {tab === 'overview' && <OverviewTab cards={live} settings={settings} onSpend={() => setSpend(true)} onTab={setTab} />}
         {tab === 'expenses' && <ExpensesTab cards={live} settings={settings} />}
         {tab === 'bills' && <BillsTab cards={live} settings={settings} />}
         {tab === 'invest' && <InvestTab cards={live} onAdd={el => add('invest', el)} />}
         {tab === 'goals' && <GoalsTab settings={settings} />}
+        </div>
       </div>
 
       <QuickExpense open={spend} onClose={closeSpend} />

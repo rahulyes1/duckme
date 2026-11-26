@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import type { Card, Settings } from '../../lib/types';
 import { fmtDayMonth, inr, today } from '../../lib/format';
 import { useCountUp } from '../../lib/hooks';
 import { cashFlow } from '../money/cashflow';
+import { spendingInsights } from '../money/insights';
 import { linePath, moneyLine } from '../../ui/money-line';
 
 function greeting(h: number): string {
@@ -24,6 +25,7 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
   const line = useMemo(() => moneyLine(cards, salary || undefined, settings.salaryDay, ref), [cards, salary, settings.salaryDay]); // eslint-disable-line react-hooks/exhaustive-deps
   const { d, lastX, lastY } = useMemo(() => linePath(line, 1000, 120, 14), [line]);
 
+  const tip = useMemo(() => spendingInsights(cards, ref).find(i => i.kind !== 'bills'), [cards]); // eslint-disable-line react-hooks/exhaustive-deps
   const big = useCountUp(salary ? flow.safeToday : flow.spent, 800);
   const days = flow.cycle.daysLeft;
   const name = settings.userName?.split(' ')[0];
@@ -65,6 +67,7 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
           <em>{fmtDayMonth(flow.cycle.end)}</em>
         </div>
       </div>
+      {tip && <p className="hero-tip"><Sparkles size={14} aria-hidden="true" /> {tip.text}</p>}
     </a>
   );
 }

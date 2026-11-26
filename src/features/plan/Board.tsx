@@ -26,7 +26,7 @@ type Cols = Record<Col, string[]>;
 const COLS: Col[] = ['do', 'schedule', 'quick', 'later', 'none'];
 const BOX_ID = (c: Col) => `box:${c}`;
 const COL_TITLE: Record<Col, string> = {
-  do: 'Do now', schedule: 'Plan it', quick: 'Quick wins', later: 'Later / drop', none: 'Unsorted',
+  do: 'Do now', schedule: 'Schedule', quick: 'Quick wins', later: 'Later / drop', none: 'Unsorted',
 };
 
 const titleOf = (c: Card) => c.title || c.body?.split(/\n/)[0]?.slice(0, 60) || c.checklist?.[0]?.text || 'Untitled';
