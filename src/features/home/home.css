@@ -144,3 +144,9 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
   .home > .hero .hero-big { font-size: 46px; }
   .home > .hero .hero-line { height: 64px; }
 }
+
+.hero-sub { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+.hero-sub b { color: var(--ink); font-weight: 700; }
+.hero-safe { color: var(--accent); font-weight: 600; }
+.hero-over { color: var(--danger); font-weight: 700; }
+.hero.is-over .hero-k { color: var(--accent); }
