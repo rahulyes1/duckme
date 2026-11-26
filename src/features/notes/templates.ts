@@ -9,7 +9,7 @@ import { addDaysISO, fmtDate, fromISO, nextSalary, toISO, uid } from '../../lib/
 export const TEMPLATE_LABEL = 'Template';
 export const isTemplate = (c: Pick<Card, 'labels'>) => c.labels.includes(TEMPLATE_LABEL);
 
-export type TemplateIcon = 'month' | 'tax' | 'trip' | 'festival' | 'grocery';
+export type TemplateIcon = 'month' | 'tax' | 'trip' | 'festival' | 'grocery' | 'warranty';
 
 export interface BuiltinTemplate {
   id: TemplateIcon;
@@ -72,6 +72,11 @@ export function builtinTemplates(salaryDay: number, todayIso: string): BuiltinTe
       id: 'grocery', name: 'Grocery list', hint: 'Monthly kirana basics', color: 'mint',
       title: 'Groceries',
       items: ['Atta', 'Rice', 'Dal', 'Cooking oil', 'Milk', 'Sugar', 'Tea', 'Vegetables', 'Fruits', 'Eggs'],
+    },
+    {
+      id: 'warranty', name: 'Warranty / document', hint: 'Photo + expiry reminder', color: 'white',
+      title: 'Warranty: ',
+      items: ['Bought from', 'Price ₹0', 'Invoice / warranty card photo (tap the image button)', 'Service centre number', 'Set Expires below'],
     },
   ];
 }

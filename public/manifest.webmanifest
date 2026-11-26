@@ -38,6 +38,32 @@
   },
   "shortcuts": [
     {
+      "name": "Add spend",
+      "short_name": "Spend",
+      "description": "Add what you just spent",
+      "url": "./?new=expense",
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Paste bank SMS",
+      "short_name": "Paste SMS",
+      "description": "Fill a spend from a bank or UPI message",
+      "url": "./?new=sms",
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
       "name": "New note",
       "short_name": "Note",
       "description": "Start a new note",
@@ -51,10 +77,10 @@
       ]
     },
     {
-      "name": "New expense",
-      "short_name": "Expense",
-      "description": "Add what you just spent",
-      "url": "./?new=expense",
+      "name": "Search",
+      "short_name": "Search",
+      "description": "Find any note, bill or spend",
+      "url": "./?new=search",
       "icons": [
         {
           "src": "icon.svg",

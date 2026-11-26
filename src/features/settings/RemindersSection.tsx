@@ -54,6 +54,7 @@ export default function RemindersSection({ settings }: { settings: Settings }) {
         <>
           <Toggle id="rem-bills" label="Bills" hint="The day before, on the day, and if one is overdue" on={prefs.bills} onChange={v => set({ bills: v })} />
           <Toggle id="rem-salary" label="Salary day" hint="Your month recap and payday checklist" on={prefs.salary} onChange={v => set({ salary: v })} />
+          <Toggle id="rem-expiry" label="Warranties & documents" hint="30 days, 7 days and 1 day before something expires" on={prefs.expiry !== false} onChange={v => set({ expiry: v })} />
           <div className="field">
             <label htmlFor="rem-hour">Remind me from</label>
             <select id="rem-hour" className="select set-narrow" value={prefs.hour} onChange={e => set({ hour: +e.target.value })}>

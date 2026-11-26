@@ -12,6 +12,8 @@ import { expensesIn, lastMonths, longMonth, monthKey, monthStart, spentIn, sum }
 import { catIcon, CategoryBar, Trend } from './parts';
 import { SmallSpendsCard } from './smallSpends';
 import { SplitsCard } from './splitCard';
+import { UdhaarCard } from './UdhaarCard';
+import './goals.css';
 
 function ExpenseRow({ c }: { c: Card }) {
   const { openCard, toast } = useApp();
@@ -112,6 +114,7 @@ export default function ExpensesTab({ cards, settings }: { cards: Card[]; settin
         </section>
 
         <SplitsCard cards={cards} settings={settings} />
+        <UdhaarCard cards={cards} settings={settings} />
         <SmallSpendsCard cards={cards} month={key} monthDate={month} />
 
         <section className="money-card money-wide" aria-labelledby="e-list">

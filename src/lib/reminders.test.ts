@@ -37,3 +37,17 @@ describe('dueReminders', () => {
     expect(dueReminders([bill('Rent', '2026-11-27')], { salaryDay: 1 }, at(27, 10))[0].tag).not.toBe(r[0].tag);
   });
 });
+
+describe('expiry reminders', () => {
+  const doc = (expiry: string): Card => ({ ...bill('Laptop warranty', '2099-01-01'), type: 'note', expiry, status: 'open' });
+  it('30, 7, 1 days before and on the day — not in between', () => {
+    expect(dueReminders([doc('2026-12-26')], { salaryDay: 1 }, at(26, 10)).map(r => r.title)).toEqual(['Laptop warranty expires in 30 days']);
+    expect(dueReminders([doc('2026-12-03')], { salaryDay: 1 }, at(26, 10)).map(r => r.title)).toEqual(['Laptop warranty expires in 7 days']);
+    expect(dueReminders([doc('2026-11-27')], { salaryDay: 1 }, at(26, 10)).map(r => r.title)).toEqual(['Laptop warranty expires tomorrow']);
+    expect(dueReminders([doc('2026-11-26')], { salaryDay: 1 }, at(26, 10)).map(r => r.title)).toEqual(['Laptop warranty expires today']);
+    expect(dueReminders([doc('2026-12-10')], { salaryDay: 1 }, at(26, 10))).toEqual([]);
+  });
+  it('can be switched off', () => {
+    expect(dueReminders([doc('2026-11-27')], { salaryDay: 1, reminders: { bills: true, salary: true, hour: 9, expiry: false } }, at(26, 10))).toEqual([]);
+  });
+});

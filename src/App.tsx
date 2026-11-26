@@ -1,4 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { QuickSearch, openQuickSearch } from './ui/QuickSearch';
+import { Search } from 'lucide-react';
 import { startReminderLoop } from './lib/notify';
 import { CalendarRange, Home, Settings2, StickyNote, Wallet } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -151,9 +153,15 @@ export default function App() {
     } else if (s.type === 'note') {
       location.hash = 'notes';
       void api.createAndOpen({ type: 'note' });
+    } else if (s.type === 'search') {
+      setTimeout(openQuickSearch, 400);
     } else {
-      try { sessionStorage.setItem('hisaab.quickSpend', '1'); } catch { /* storage blocked */ }
+      try {
+        sessionStorage.setItem('hisaab.quickSpend', '1');
+        if (s.type === 'sms') sessionStorage.setItem('hisaab.quickSpend.sms', '1');
+      } catch { /* storage blocked */ }
       location.hash = 'money';
+      window.dispatchEvent(new Event('hisaab:spend'));
     }
   }, [settings?.consentAt, api]);
 
@@ -175,6 +183,7 @@ export default function App() {
       <div className="shell">
         <nav className="nav" aria-label="Main">
           <div className="brand">Hisaab<span>.</span></div>
+          <button type="button" className="nav-search" onClick={openQuickSearch}><Search size={18} aria-hidden="true" /><span>Search</span><kbd>Ctrl K</kbd></button>
           {NAV.map(({ r, label, Icon }) => (
             <a key={r} href={`#${r}`} aria-current={route === r ? 'page' : undefined}>
               <span className="ico"><Icon size={22} strokeWidth={2} aria-hidden="true" /></span>{label}
@@ -207,6 +216,7 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+      <QuickSearch />
     </AppCtx.Provider>
   );
 }

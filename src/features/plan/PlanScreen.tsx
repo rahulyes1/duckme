@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { openQuickSearch } from '../../ui/QuickSearch';
+import { Search } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCards, useSettings } from '../../lib/hooks';
 import { MyOrder } from './MyOrder';
@@ -36,6 +38,7 @@ export default function PlanScreen() {
       <header className="topbar">
         <div className="topbar-row plan-head">
           <h1 className="screen-title">Priorities</h1>
+          <button type="button" className="icon-btn plan-search" aria-label="Search everything" onClick={openQuickSearch}><Search size={20} aria-hidden="true" /></button>
         </div>
         <div className="plan-seg plan-views" role="group" aria-label="Plan view">
           {VIEWS.map(v => (

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarRange, ChevronDown, Flag, X } from 'lucide-react';
+import { CalendarRange, ChevronDown, Flag, ShieldCheck, X } from 'lucide-react';
 import type { Card, Quadrant, When } from '../../lib/types';
 import { QUADRANTS } from '../../lib/types';
 import { WhenPicker, whenLabel } from '../../ui/WhenPicker';
-import { prefersReducedMotion } from '../../lib/format';
+import { fmtDate, prefersReducedMotion, todayISO } from '../../lib/format';
 
 const SHORT: Record<Quadrant, string> = { do: 'Do now', schedule: 'Schedule', quick: 'Quick win', later: 'Later' };
 
@@ -40,6 +40,21 @@ export function PlanRow({ card, save }: { card: Card; save: (p: Partial<Card>) =
           {q ? SHORT[q] : 'Priority'}
           <ChevronDown size={14} aria-hidden="true" className={`notes-plan-chev ${qOpen ? 'is-open' : ''}`} />
         </button>
+        {card.type === 'note' && (
+          <span className="notes-plan-when">
+            <label className={`notes-plan-btn notes-plan-exp ${card.expiry ? 'is-set' : ''}`}>
+              <ShieldCheck size={16} aria-hidden="true" />
+              {card.expiry ? <span>Expires {fmtDate(card.expiry)}</span> : 'Expires'}
+              <input type="date" className="notes-plan-date" min={todayISO()} value={card.expiry ?? ''} aria-label="Warranty or document expiry date"
+                onChange={e => { void save({ expiry: e.target.value || undefined }); }} />
+            </label>
+            {card.expiry && (
+              <button type="button" className="icon-btn notes-plan-x" aria-label="Clear expiry" onClick={() => { void save({ expiry: undefined }); }}>
+                <X size={16} aria-hidden="true" />
+              </button>
+            )}
+          </span>
+        )}
       </div>
 
       <AnimatePresence initial={false}>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CalendarClock, FileText, Gift, Plane, ShoppingBasket, Trash2, type LucideIcon } from 'lucide-react';
+import { CalendarClock, FileText, Gift, Plane, ShieldCheck, ShoppingBasket, Trash2, type LucideIcon } from 'lucide-react';
 import './notes.css';
 import { useApp } from '../../app-context';
 import { useSettings } from '../../lib/hooks';
@@ -10,7 +10,7 @@ import { deleteForeverWithUndo } from './notes-lib';
 import { builtinTemplates, isTemplate, noteFromBuiltin, noteFromTemplate, type TemplateIcon } from './templates';
 
 const ICON: Record<TemplateIcon, LucideIcon> = {
-  month: CalendarClock, tax: FileText, trip: Plane, festival: Gift, grocery: ShoppingBasket,
+  month: CalendarClock, tax: FileText, trip: Plane, festival: Gift, grocery: ShoppingBasket, warranty: ShieldCheck,
 };
 
 /** "Templates" sheet from the Take-a-note bar: built-ins, then your own ("Yours"). Tapping one makes a note and opens it. */

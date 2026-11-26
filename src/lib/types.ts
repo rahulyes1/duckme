@@ -117,6 +117,8 @@ export interface Card {
 
   /** Reminder date-time (ISO local, "YYYY-MM-DDTHH:mm"). */
   reminder?: string;
+  /** Warranty / insurance / document expiry (YYYY-MM-DD). Reminds 30, 7 and 1 day before, and on the day. */
+  expiry?: string;
   /** Locked notes need the PIN to view. */
   locked?: boolean;
 
@@ -195,9 +197,15 @@ export interface Settings {
   goals?: Goal[];
   /** Loans you are repaying by EMI. */
   loans?: Loan[];
-  /** Phone reminders: bills due tomorrow/today/overdue, and salary day. */
-  reminders?: { bills: boolean; salary: boolean; hour: number };
+  /** Phone reminders: bills due tomorrow/today/overdue, salary day, and document expiries. */
+  reminders?: { bills: boolean; salary: boolean; hour: number; expiry?: boolean };
+  /** Money lent to / borrowed from people directly. */
+  udhaar?: UdhaarEntry[];
+  /** Optional weekly spending allowance in ₹ (Mon–Sun). */
+  weeklyAllowance?: number;
 }
+
+export interface UdhaarEntry { id: string; name: string; dir: 'lent' | 'borrowed'; amount: number; note?: string; /** YYYY-MM-DD */ date: string; settled?: boolean; settledAt?: number; createdAt: number }
 
 export interface Goal { id: string; name: string; emoji?: string; target: number; saved: number; /** YYYY-MM-DD */ by?: string; createdAt: number }
 export interface Loan { id: string; name: string; principal: number; /** yearly % */ rate: number; emi: number; /** YYYY-MM-DD of the first EMI */ firstEmi: string; createdAt: number }

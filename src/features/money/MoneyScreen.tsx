@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { IndianRupee, Plus, Receipt, TrendingUp } from 'lucide-react';
+import { IndianRupee, Plus, Receipt, Search, TrendingUp } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useApp } from '../../app-context';
 import { prefersReducedMotion } from '../../lib/format';
@@ -14,6 +14,7 @@ import OverviewTab from './OverviewTab';
 import { readPref, writePref } from './parts';
 import QuickExpense from './QuickExpense';
 import './money.css';
+import { openQuickSearch } from '../../ui/QuickSearch';
 
 type AddType = Extract<CardType, 'expense' | 'bill' | 'invest'>;
 const TABS = ['overview', 'expenses', 'bills', 'invest', 'goals'] as const;
@@ -84,7 +85,10 @@ export default function MoneyScreen() {
   const closeSpend = useCallback(() => setSpend(false), []);
   // "New expense" home-screen shortcut: App sets this flag, then routes here.
   useEffect(() => {
-    try { if (sessionStorage.getItem('hisaab.quickSpend')) { sessionStorage.removeItem('hisaab.quickSpend'); setSpend(true); } } catch { /* storage blocked */ }
+    const check = () => { try { if (sessionStorage.getItem('hisaab.quickSpend')) { sessionStorage.removeItem('hisaab.quickSpend'); setSpend(true); } } catch { /* storage blocked */ } };
+    check();
+    window.addEventListener('hisaab:spend', check);
+    return () => window.removeEventListener('hisaab:spend', check);
   }, []);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -120,6 +124,7 @@ export default function MoneyScreen() {
       <header className="topbar">
         <div className="topbar-row">
           <h1 className="screen-title">Money</h1>
+          <button type="button" className="icon-btn money-search" aria-label="Search everything" onClick={openQuickSearch}><Search size={20} aria-hidden="true" /></button>
           <span style={{ flex: 1 }} />
           <AddMenu onPick={(t, el) => add(t, el)} />
           <button type="button" className="btn primary money-spend" onClick={() => setSpend(true)}>

@@ -77,6 +77,18 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
   if (!all && cat && !visible.includes(cat)) visible = [...order.slice(0, FIRST - 1), cat];
 
   const value = padValue(amt);
+  const spentNow = useMemo(() => spentByCategory(cards ?? [], month), [cards, month]);
+  const budgetHint = useMemo(() => {
+    const b = cat ? settings.budgets[cat] : undefined;
+    if (!cat || !b) return null;
+    const after = (spentNow[cat] ?? 0) + (value || 0);
+    const st = budgetStatus(after, b);
+    return {
+      level: st.level,
+      text: st.level === 'over' ? `${cat}: this puts you ${inr(st.over)} over the ${inr(b)} budget`
+        : `${cat}: ${inr(st.left)} of ${inr(b)} left${value ? ' after this' : ''}`,
+    };
+  }, [cat, settings.budgets, spentNow, value]);
   const date = day === 'today' ? todayISO() : day === 'yesterday' ? addDaysISO(todayISO(), -1) : picked;
 
   const press = useCallback((k: string) => {
@@ -265,6 +277,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
 
           <div className="money-qe-sec">
             <span className="money-qe-label" id="qe-cat">Category <span>Hold one to make it a favourite</span></span>
+            {budgetHint && <span className={`money-qe-bhint money-lvl-text-${budgetHint.level}`} aria-live="polite">{budgetHint.text}</span>}
             <div className="money-qe-cats" role="group" aria-labelledby="qe-cat">
               {visible.map(k => {
                 const Icon = catIcon(k);

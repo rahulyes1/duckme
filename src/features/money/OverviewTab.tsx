@@ -1,6 +1,7 @@
 import { AlertTriangle, ArrowRight, CalendarClock, PartyPopper, Coffee, Lightbulb, Pencil, Sparkles, TrendingDown, TrendingUp, Wallet, Zap } from 'lucide-react';
 import { spendingInsights, type InsightKind } from './insights';
 import { RecapCard, RecapSheet } from './RecapCard';
+import { weekAllowance } from './allowance';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
 import { fmtDate, inr, today } from '../../lib/format';
@@ -16,6 +17,26 @@ import { PaydayCard, WeekCard } from './reviewCards';
 const INS_ICON: Record<InsightKind, typeof Wallet> = {
   up: TrendingUp, down: TrendingDown, pace: Zap, big: Sparkles, calm: Coffee, weekend: CalendarClock, bills: CalendarClock,
 };
+
+/* ---------- weekly allowance ---------- */
+function WeekCardAllowance({ cards, allowance }: { cards: Card[]; allowance: number }) {
+  const w = weekAllowance(cards, allowance, today());
+  const lvl = w.over > 0 ? 'over' : w.frac >= 0.8 ? 'warn' : 'ok';
+  return (
+    <section className={`money-card money-wk money-lvl-${lvl}`} aria-labelledby="m-wk">
+      <div className="money-h-row">
+        <h2 id="m-wk" className="money-h">This week</h2>
+        <span className="money-muted num">{fmtDate(w.start).slice(0, 5)} – {fmtDate(w.end).slice(0, 5)}</span>
+      </div>
+      <div className="money-wk-row num">
+        <div><span className="money-k">{w.over ? 'Over by' : 'Left'}</span><b className="money-wk-big">{inr(w.over || w.left)}</b></div>
+        <div><span className="money-k">Per day</span><b className="money-wk-mid">{inr(w.perDay)}</b><small className="money-muted">{w.daysLeft} day{w.daysLeft === 1 ? '' : 's'} left</small></div>
+      </div>
+      <div className="money-bar" aria-hidden="true"><i style={{ transform: `scaleX(${w.frac})` }} /></div>
+      <p className="money-budget num">{inr(w.spent)} of {inr(allowance)} spent</p>
+    </section>
+  );
+}
 
 /* ---------- salary form ---------- */
 function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?: () => void; compact?: boolean }) {
@@ -159,6 +180,8 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
             <button type="button" className="btn" onClick={() => setWeekOpen(true)}><Sparkles size={16} aria-hidden="true" /> Review my week</button>
           </div>
         )}
+
+      {settings.weeklyAllowance ? <WeekCardAllowance cards={cards} allowance={settings.weeklyAllowance} /> : null}
 
       {insights.length > 0 && (
         <section className="money-card" aria-labelledby="m-ins">

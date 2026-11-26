@@ -13,13 +13,15 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
   open: boolean; onClose: () => void; settings: Settings; spent: Record<string, number>; monthName: string;
 }) {
   const [vals, setVals] = useState<Record<string, string>>({});
+  const [weekly, setWeekly] = useState('');
   const [err, setErr] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!open) return;
     const v: Record<string, string> = {};
     for (const c of EXPENSE_CATEGORIES) v[c] = settings.budgets[c] ? settings.budgets[c].toLocaleString('en-IN') : '';
     setVals(v); setErr({});
-  }, [open, settings.budgets]);
+    setWeekly(settings.weeklyAllowance ? settings.weeklyAllowance.toLocaleString('en-IN') : '');
+  }, [open, settings.budgets, settings.weeklyAllowance]);
 
   const save = async () => {
     const budgets: Record<string, number> = {};
@@ -33,13 +35,26 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
     }
     setErr(errs);
     if (Object.keys(errs).length) return;
-    await saveSettings({ budgets });
+    const w = weekly.trim() ? parseAmount(weekly) : 0;
+    if (w === null || w < 0) { setErr({ ...errs, __weekly: 'Enter a weekly amount, like 3,500, or leave it empty' }); return; }
+    await saveSettings({ budgets, weeklyAllowance: w ? Math.round(w) : undefined });
     onClose();
   };
 
   return (
     <Sheet open={open} onClose={onClose} title="Monthly budgets">
-      <p className="money-muted">Leave a box empty for no budget. Bars turn amber at 80% and red when you go over.</p>
+      <div className="field money-weekly">
+        <label htmlFor="budget-weekly">Weekly allowance (Mon–Sun)</label>
+        <div className="money-rupee-input">
+          <span aria-hidden="true">₹</span>
+          <input id="budget-weekly" className="input num" inputMode="decimal" autoComplete="off" value={weekly} placeholder="Not set"
+            aria-invalid={!!err.__weekly} onChange={e => setWeekly(e.target.value)}
+            onBlur={e => { const n = parseAmount(e.target.value); if (n !== null) setWeekly(n.toLocaleString('en-IN')); }} />
+        </div>
+        {err.__weekly ? <span className="err" role="alert">{err.__weekly}</span>
+          : <span className="help">Everyday spending only (bills and rent don't count). Money shows what's left this week and per day.</span>}
+      </div>
+      <p className="money-muted">Category budgets: leave a box empty for no budget. Bars turn amber at 80% and red when you go over.</p>
       <div className="money-budget-grid">
         {EXPENSE_CATEGORIES.map(c => {
           const id = `budget-${c.replace(/\s/g, '')}`;

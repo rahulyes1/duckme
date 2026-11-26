@@ -104,6 +104,19 @@ function dueReminders(cards, settings, now) {
         });
       });
   }
+  if (prefs.expiry !== false) {
+    cards.forEach(c => {
+      if (!c.expiry || c.status === 'trashed' || c.status === 'killed') return;
+      const days = Math.round((new Date(c.expiry + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+      if (![30, 7, 1, 0].includes(days)) return;
+      out.push({
+        tag: `expiry-${c.id}-${c.expiry}-${days}`,
+        title: `${c.title || 'Document'} ${days === 0 ? 'expires today' : days === 1 ? 'expires tomorrow' : `expires in ${days} days`}`,
+        body: `On ${c.expiry.slice(8, 10)}-${c.expiry.slice(5, 7)}-${c.expiry.slice(0, 4)}. Renew or claim before then.`,
+        url: '#notes',
+      });
+    });
+  }
   if (prefs.salary) {
     const day = Math.max(1, settings.salaryDay || 1);
     const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();

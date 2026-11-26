@@ -8,7 +8,7 @@ import type { Card } from '../../lib/types';
 
 export type IncomingShare =
   | { kind: 'share'; title?: string; text?: string; url?: string }
-  | { kind: 'new'; type: 'note' | 'expense' }
+  | { kind: 'new'; type: 'note' | 'expense' | 'sms' | 'search' }
   | null;
 
 const KEYS = ['title', 'text', 'url', 'new'] as const;
@@ -24,7 +24,7 @@ export function readIncomingShare(search: string = typeof location !== 'undefine
   let p: URLSearchParams;
   try { p = new URLSearchParams(search); } catch { return null; }
   const n = p.get('new');
-  if (n === 'note' || n === 'expense') return { kind: 'new', type: n };
+  if (n === 'note' || n === 'expense' || n === 'sms' || n === 'search') return { kind: 'new', type: n };
   const title = clean(p.get('title'));
   const text = clean(p.get('text'));
   const url = clean(p.get('url'));

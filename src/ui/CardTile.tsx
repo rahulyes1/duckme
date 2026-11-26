@@ -1,4 +1,4 @@
-import { Bell, CheckSquare, IndianRupee, Lock, Pin, Receipt, StickyNote, TrendingUp } from 'lucide-react';
+import { Bell, CheckSquare, IndianRupee, Lock, Pin, Receipt, ShieldCheck, StickyNote, TrendingUp } from 'lucide-react';
 import type { Card, Settings } from '../lib/types';
 import { KIND_LABEL, HORIZON_LABEL } from '../lib/types';
 import { addDaysISO, daysLeft, dueLabel, dueTone, fmtDate, fmtDateY, inr, salarySide } from '../lib/format';
@@ -92,6 +92,11 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
   if (c.type === 'task') {
     if (c.horizon !== 'none') pills.push(<span key="h" className="pill solid" title={HORIZON_LABEL[c.horizon]} aria-label={HORIZON_LABEL[c.horizon]}>{HORIZON_BADGE[c.horizon]}</span>);
     if (c.due) pills.push(<DuePill key="d" due={c.due} />);
+  }
+  if (c.expiry) {
+    const n = daysLeft(c.expiry);
+    const tone = n < 0 ? 'late' : n <= 30 ? 'urgent' : '';
+    pills.push(<span key="x" className={`pill ${tone}`}><ShieldCheck size={11} aria-hidden="true" />{n < 0 ? `Expired ${fmtDate(c.expiry)}` : n === 0 ? 'Expires today' : n <= 60 ? `Expires in ${n} days` : `Expires ${fmtDate(c.expiry)}`}</span>);
   }
   if (c.reminder) pills.push(<span key="r" className="pill outline"><Bell size={11} aria-hidden="true" />{fmtDate(c.reminder.slice(0, 10))} {c.reminder.slice(11, 16)}</span>);
 

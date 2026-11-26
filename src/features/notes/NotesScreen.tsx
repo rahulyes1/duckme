@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'framer-motion';
-import {
-  Archive, Bell, BookOpen, CheckSquare, ImagePlus, LayoutGrid, LayoutTemplate, List, Lock, Palette, Search, StickyNote, Trash2, Undo2, X,
-} from 'lucide-react';
+import { Archive, Bell, BookOpen, CheckSquare, ImagePlus, LayoutGrid, LayoutTemplate, List, Lock, Palette, Search, ShieldCheck, StickyNote, Trash2, Undo2, X } from 'lucide-react';
 import './notes.css';
 import { useApp } from '../../app-context';
 import { archive, restore } from '../../lib/actions';
@@ -21,7 +19,7 @@ import { TemplatesSheet } from './TemplatesSheet';
 import { TEMPLATE_LABEL, isTemplate } from './templates';
 
 type View = 'grid' | 'list';
-type Fixed = 'all' | 'journal' | 'tasks' | 'reminders' | 'locked' | 'archive' | 'trash';
+type Fixed = 'all' | 'journal' | 'tasks' | 'docs' | 'reminders' | 'locked' | 'archive' | 'trash';
 type Filter = Fixed | `label:${string}`;
 
 const COLOR_NAME: Record<CardColor, string> = {
@@ -70,6 +68,7 @@ export default function NotesScreen() {
     else if (filter === 'journal') l = pool.filter(c => !!c.journalDate && (isActive(c) || c.status === 'archived'));
     else if (filter === 'tasks') l = open.filter(c => c.type === 'task');
     else if (filter === 'reminders') l = open.filter(c => !!c.reminder);
+    else if (filter === 'docs') l = pool.filter(c => (isActive(c) || c.status === 'archived') && (!!c.expiry || !!c.images?.length));
     else if (filter === 'locked') l = open.filter(c => c.locked);
     else if (filter === 'archive') l = pool.filter(c => c.status === 'archived');
     else if (filter === 'trash') l = pool.filter(c => c.status === 'trashed');
@@ -77,6 +76,7 @@ export default function NotesScreen() {
     if (color) l = l.filter(c => c.color === color);
     if (q.trim()) l = l.filter(c => (hiddenOf(c) ? matchesQuery({ ...c, body: '', checklist: undefined }, q) : matchesQuery(c, q)));
     if (filter === 'reminders') l.sort((a, b) => (a.reminder ?? '').localeCompare(b.reminder ?? ''));
+    else if (filter === 'docs') l.sort((a, b) => (a.expiry ?? '9999').localeCompare(b.expiry ?? '9999') || b.updatedAt - a.updatedAt);
     else if (filter === 'tasks') l.sort((a, b) => (a.rank || 0) - (b.rank || 0));
     else if (filter === 'trash') l.sort((a, b) => (b.trashedAt ?? 0) - (a.trashedAt ?? 0));
     else if (filter === 'journal') l.sort((a, b) => (b.journalDate ?? '').localeCompare(a.journalDate ?? '') || b.updatedAt - a.updatedAt);
@@ -84,7 +84,7 @@ export default function NotesScreen() {
     return l;
   })();
 
-  const sectioned = filter !== 'trash' && filter !== 'archive' && filter !== 'reminders' && filter !== 'journal';
+  const sectioned = filter !== 'trash' && filter !== 'archive' && filter !== 'reminders' && filter !== 'journal' && filter !== 'docs';
   const pinned = sectioned ? list.filter(c => c.pinned) : [];
   const others = sectioned ? list.filter(c => !c.pinned) : list;
 
@@ -189,6 +189,7 @@ export default function NotesScreen() {
     { f: 'journal', label: 'Journal', icon: <BookOpen size={15} aria-hidden="true" /> },
     { f: 'tasks', label: 'Tasks', icon: <CheckSquare size={15} aria-hidden="true" /> },
     ...labels.map(l => ({ f: `label:${l}` as Filter, label: l })),
+    { f: 'docs', label: 'Documents', icon: <ShieldCheck size={15} aria-hidden="true" /> },
     { f: 'reminders', label: 'Reminders', icon: <Bell size={15} aria-hidden="true" /> },
     { f: 'locked', label: 'Locked', icon: <Lock size={15} aria-hidden="true" /> },
     { f: 'archive', label: 'Archive', icon: <Archive size={15} aria-hidden="true" /> },
@@ -326,6 +327,7 @@ function Empty({ filter, q, color, onClear, onNew, onBack }: {
     journal: { icon: <BookOpen size={40} aria-hidden="true" />, title: 'No journal pages yet', text: 'Tap Today above to start today’s page. Unticked items carry over to the next day.', action: 'back' },
     all: { icon: <StickyNote size={40} aria-hidden="true" />, title: 'Your notes live here', text: 'Shopping lists, ideas, things to pay. Type ₹ amounts and dates, and Hisaab offers to make a bill or expense.', action: 'new' },
     tasks: { icon: <CheckSquare size={40} aria-hidden="true" />, title: 'No open tasks', text: 'Add a task with a deadline, like “Renew bike insurance by 15 Dec”.', action: 'new' },
+    docs: { icon: <ShieldCheck size={40} aria-hidden="true" />, title: 'No documents yet', text: 'Add a photo of a bill, warranty card or policy to a note, and set Expires so Hisaab reminds you before it runs out.', action: 'new' },
     reminders: { icon: <Bell size={40} aria-hidden="true" />, title: 'No reminders', text: 'Open a note and tap the bell to set one.', action: 'new' },
     locked: { icon: <Lock size={40} aria-hidden="true" />, title: 'No locked notes', text: 'Lock a note with a PIN from the lock button in the note.', action: 'new' },
     archive: { icon: <Archive size={40} aria-hidden="true" />, title: 'Archive is empty', text: 'Archived notes stay out of the way but are still searchable here.', action: 'back' },

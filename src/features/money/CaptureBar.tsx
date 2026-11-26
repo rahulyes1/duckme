@@ -27,6 +27,9 @@ export function CaptureBar({ cards, onFill, onError }: { cards: Card[]; onFill: 
   const canSpeak = !!SpeechRec();
 
   useEffect(() => () => recRef.current?.abort(), []);
+  useEffect(() => {
+    try { if (sessionStorage.getItem('hisaab.quickSpend.sms')) { sessionStorage.removeItem('hisaab.quickSpend.sms'); setPasteOpen(true); } } catch { /* storage blocked */ }
+  }, []);
 
   const useSms = (raw: string): boolean => {
     const s = parseBankSms(raw);

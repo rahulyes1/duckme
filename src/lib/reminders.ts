@@ -5,7 +5,7 @@
 import type { Card, Settings } from './types';
 import { inr, toISO } from './format';
 
-export interface ReminderPrefs { bills: boolean; salary: boolean; /** hour of day (0–23) after which reminders show */ hour: number }
+export interface ReminderPrefs { bills: boolean; salary: boolean; /** hour of day (0–23) after which reminders show */ hour: number; /** documents & warranties (default on) */ expiry?: boolean }
 export const DEFAULT_REMINDERS: ReminderPrefs = { bills: true, salary: true, hour: 9 };
 
 export interface Reminder { tag: string; title: string; body: string; url: string }
@@ -37,6 +37,20 @@ export function dueReminders(cards: Card[], settings: Pick<Settings, 'salaryDay'
         title: `${b.title || 'Bill'} · ${amt}${when}`,
         body: b.penalty ? `Pay to avoid: ${b.penalty}` : 'Tap to open, then swipe right or tap Paid once it is done.',
         url: '#money',
+      });
+    }
+  }
+
+  if (prefs.expiry !== false) {
+    for (const c of cards) {
+      if (!c.expiry || c.status === 'trashed' || c.status === 'killed') continue;
+      const days = Math.round((new Date(c.expiry + 'T00:00:00').getTime() - new Date(today + 'T00:00:00').getTime()) / 86400000);
+      if (![30, 7, 1, 0].includes(days)) continue;
+      out.push({
+        tag: `expiry-${c.id}-${c.expiry}-${days}`,
+        title: `${c.title || 'Document'} ${days === 0 ? 'expires today' : days === 1 ? 'expires tomorrow' : `expires in ${days} days`}`,
+        body: `On ${ddmm(c.expiry)}-${c.expiry.slice(0, 4)}. Renew or claim before then.`,
+        url: '#notes',
       });
     }
   }

@@ -323,3 +323,24 @@
 .rs-txt small { font-size: 13px; color: var(--muted); }
 .rs-go { min-height: 38px; padding: 0 14px; font-size: 14px; }
 .qe-paste-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+/* ---------- udhaar ---------- */
+.ud-dir { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
+.ud-dir button { min-height: 44px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font-weight: 700; font-size: 15px; }
+.ud-dir button[aria-checked="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1), inset 0 0 0 1px var(--line); }
+.ud-people { margin-top: 6px; }
+.ud-items .ud-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--card-line); }
+.ud-item small { display: block; font-size: 12px; color: var(--muted); }
+.money-sp-avatar.is-owe { background: color-mix(in srgb, var(--warn) 20%, var(--surface-2)); color: var(--warn); }
+
+/* ---------- weekly allowance + live budget hint ---------- */
+.money-weekly { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--card-line); }
+.money-wk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+.money-wk-row > div { display: grid; }
+.money-wk-big { font-family: var(--f-display); font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+.money-wk-mid { font-family: var(--f-display); font-size: 22px; font-weight: 700; }
+.money-wk.money-lvl-over .money-wk-big { color: var(--danger); }
+.money-qe-bhint { font-size: 13px; font-weight: 600; }
+.money-qe-bhint.money-lvl-text-ok { color: var(--muted); }
+.money-qe-bhint.money-lvl-text-warn { color: var(--warn); }
+.money-qe-bhint.money-lvl-text-over { color: var(--danger); }
