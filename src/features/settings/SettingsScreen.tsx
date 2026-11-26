@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { expensesCsv } from '../money/goals';
 import {
   ArrowRight, Check, Download, HardDriveDownload, Info, KeyRound, Moon, ScrollText, Pencil, Smartphone, Sun, Tag, Trash2, Upload, X,
 } from 'lucide-react';
@@ -254,6 +255,19 @@ function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
     toast('Export saved');
   };
 
+  const doCsv = () => {
+    // BOM so Excel reads ₹ and Indian names correctly.
+    const url = URL.createObjectURL(new Blob(['﻿' + expensesCsv(cards)], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hisaab-expenses-${todayISO()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Expenses CSV saved');
+  };
+
   const doImport = async (file: File) => {
     setImportErr('');
     try {
@@ -270,7 +284,13 @@ function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
       for (const l of (Array.isArray(data.settings?.labels) ? data.settings.labels : [])) if (typeof l === 'string') labels.add(l);
       for (const c of incoming) c.labels.forEach(l => labels.add(l));
       const budgets = { ...(data.settings?.budgets && typeof data.settings.budgets === 'object' ? data.settings.budgets : {}), ...settings.budgets };
-      await saveSettings({ labels: [...labels], budgets });
+      // Goals and loans: keep yours, add ones from the file you don't have yet (matched by id).
+      const byId = <T extends { id: string }>(mine: T[] | undefined, theirs: unknown): T[] => {
+        const list = [...(mine ?? [])];
+        for (const x of (Array.isArray(theirs) ? theirs : []) as T[]) if (x && typeof x.id === 'string' && !list.some(m => m.id === x.id)) list.push(x);
+        return list;
+      };
+      await saveSettings({ labels: [...labels], budgets, goals: byId(settings.goals, data.settings?.goals), loans: byId(settings.loans, data.settings?.loans) });
       toast(`Imported ${incoming.length} ${incoming.length === 1 ? 'card' : 'cards'}`);
     } catch {
       setImportErr('Could not read this file. Pick a .json file exported from Hisaab.');
@@ -296,6 +316,7 @@ function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
       <div className="set-btnrow">
         <button type="button" className="btn primary" onClick={doExport}><Download size={18} aria-hidden="true" />Export JSON</button>
         <button type="button" className="btn" onClick={() => fileRef.current?.click()}><Upload size={18} aria-hidden="true" />Import JSON</button>
+        <button type="button" className="btn" onClick={doCsv}><Download size={18} aria-hidden="true" />Expenses CSV</button>
         <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" tabIndex={-1} aria-hidden="true"
           onChange={e => { const f = e.target.files?.[0]; if (f) doImport(f); }} />
       </div>
@@ -416,7 +437,7 @@ export default function SettingsScreen() {
         <dl className="set-about">
           <div><dt>Version</dt><dd className="num">{APP_VERSION}</dd></div>
           <div><dt>Advice</dt><dd>No buy/sell advice. Values you enter are shown as-is.</dd></div>
-          <div><dt>Privacy</dt><dd>Stored only in this browser on this device. No account, no server, no tracking. No SMS reading, no bank access, no money movement.</dd></div>
+          <div><dt>Privacy</dt><dd>Stored in this browser first. If you sign in with Google, a copy syncs to your private cloud space that only your account can read. No ads, no tracking, no SMS reading, no bank access, no money movement.</dd></div>
         </dl>
       </Section>
     </div>

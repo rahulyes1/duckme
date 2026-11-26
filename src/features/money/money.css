@@ -11,7 +11,7 @@
 @media (max-width: 359px) { .money-add-label { display: none; } }
 
 /* segmented tabs */
-.money-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 10px; padding: 4px; border-radius: 999px; background: var(--surface-2); }
+.money-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; margin-top: 10px; padding: 4px; border-radius: 999px; background: var(--surface-2); }
 .money-tab { position: relative; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-weight: 600; font-size: 15px;
   padding: 0 4px; -webkit-tap-highlight-color: transparent; }
 .money-tab[aria-selected="true"] { color: var(--ink); }
@@ -261,3 +261,4 @@
 .money-qe-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; }
 .money-qe-chips::-webkit-scrollbar { display: none; }
 .money-qe-key { min-height: 48px; }
+@media (max-width: 420px) { .money-tab { font-size: 13.5px; padding: 0 2px; } }

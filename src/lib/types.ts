@@ -191,7 +191,14 @@ export interface Settings {
   /** Weekly review streak (consecutive Sundays reviewed) and last review date. */
   reviewStreak?: number;
   lastReviewISO?: string;
+  /** Savings goals (jars): a trip, an emergency fund, a phone. */
+  goals?: Goal[];
+  /** Loans you are repaying by EMI. */
+  loans?: Loan[];
 }
+
+export interface Goal { id: string; name: string; emoji?: string; target: number; saved: number; /** YYYY-MM-DD */ by?: string; createdAt: number }
+export interface Loan { id: string; name: string; principal: number; /** yearly % */ rate: number; emi: number; /** YYYY-MM-DD of the first EMI */ firstEmi: string; createdAt: number }
 
 export const CARD_COLORS: CardColor[] = ['white', 'haldi', 'mint', 'rose', 'sky', 'lilac', 'sand'];
 export const KIND_LABEL: Record<CardType, string> = {

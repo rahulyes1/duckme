@@ -8,6 +8,7 @@ import type { CardType } from '../../lib/types';
 import BillsTab from './BillsTab';
 import ExpensesTab from './ExpensesTab';
 import InvestTab from './InvestTab';
+import GoalsTab from './GoalsTab';
 import { DEFAULTS, isLive } from './money-util';
 import OverviewTab from './OverviewTab';
 import { readPref, writePref } from './parts';
@@ -15,9 +16,9 @@ import QuickExpense from './QuickExpense';
 import './money.css';
 
 type AddType = Extract<CardType, 'expense' | 'bill' | 'invest'>;
-const TABS = ['overview', 'expenses', 'bills', 'invest'] as const;
+const TABS = ['overview', 'expenses', 'bills', 'invest', 'goals'] as const;
 type Tab = typeof TABS[number];
-const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', expenses: 'Expenses', bills: 'Bills', invest: 'Invest' };
+const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', expenses: 'Expenses', bills: 'Bills', invest: 'Invest', goals: 'Goals' };
 const TAB_KEY = 'hisaab.money.tab';
 
 /* ---------------- add menu ---------------- */
@@ -143,6 +144,7 @@ export default function MoneyScreen() {
         {tab === 'expenses' && <ExpensesTab cards={live} settings={settings} />}
         {tab === 'bills' && <BillsTab cards={live} settings={settings} />}
         {tab === 'invest' && <InvestTab cards={live} onAdd={el => add('invest', el)} />}
+        {tab === 'goals' && <GoalsTab settings={settings} />}
       </div>
 
       <QuickExpense open={spend} onClose={closeSpend} />

@@ -1,0 +1,47 @@
+/* Goals & loans tab. Tokens only. */
+.gl { display: grid; gap: 14px; }
+@media (min-width: 900px) { .gl { grid-template-columns: 1fr 1fr; align-items: start; } }
+.gl-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.gl-h h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--f-display); font-size: 18px; }
+.gl-sum { color: var(--muted); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.gl-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 10px; }
+.gl-new { width: 100%; justify-content: center; }
+
+.gl-card { border-radius: var(--r-md); background: var(--surface-2); padding: 10px 12px; animation: gl-in .35s var(--ease-out) both; }
+@keyframes gl-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.gl-main { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; color: inherit; text-align: left; padding: 0; min-height: 54px; }
+.gl-txt { display: grid; min-width: 0; flex: 1; }
+.gl-txt b { font-family: var(--f-display); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-txt > span { font-weight: 700; font-size: 15px; }
+.gl-txt i { font-style: normal; font-weight: 500; color: var(--muted); }
+.gl-txt small { font-size: 13px; color: var(--muted); }
+.gl-txt small.is-late { color: var(--warn); }
+.gl-pct { font-weight: 700; color: var(--accent); font-size: 15px; }
+.gl-card.is-done .gl-pct { color: var(--gold); }
+
+.gl-ring-wrap { position: relative; width: 54px; height: 54px; flex: none; }
+.gl-emo-in { position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; }
+.gl-ring { transform: rotate(-90deg); }
+.gl-ring circle { fill: none; stroke-width: 5; }
+.gl-ring .bg { stroke: color-mix(in srgb, var(--ink) 10%, transparent); }
+.gl-ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .8s var(--ease-out); }
+.gl-ring.is-done .fg { stroke: var(--gold); }
+
+.gl-add { margin-top: 4px; min-height: 40px; color: var(--accent); }
+.gl-addrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; margin-top: 8px; }
+
+.gl-form { display: grid; gap: 12px; }
+.gl-emoji { display: flex; flex-wrap: wrap; gap: 6px; }
+.gl-emo { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--card-line); background: var(--surface-2); font-size: 20px; }
+.gl-emo[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.gl-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gl-del { margin-right: auto; color: var(--danger); }
+
+.ln-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent); }
+.ln-bar { height: 6px; border-radius: 99px; margin: 10px 0 4px; background: color-mix(in srgb, var(--ink) 10%, transparent); overflow: hidden; }
+.ln-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .8s var(--ease-out); }
+.ln-foot { display: grid; gap: 8px; margin-top: 8px; font-size: 14px; color: var(--muted); }
+.ln-foot b { color: var(--ink); }
+.ln-pre { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.ln-save { margin: 0; color: var(--ok); }
+.ln-save b { color: var(--ok); }
