@@ -6,6 +6,7 @@ import { gainLoss } from '../lib/logic';
 import { NoteBody } from '../features/notes/NoteBody';
 import { lineAmount } from '../lib/parse';
 import { isActive } from '../lib/types';
+import { SAMPLE_LABEL } from '../lib/seed';
 
 const HORIZON_BADGE = { week: 'W', month: 'M', year: 'Y', none: '' } as const;
 
@@ -85,8 +86,6 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
 
   if (c.type === 'bill' && c.due) {
     pills.push(<DuePill key="d" due={c.due} />);
-    pills.push(<span key="s" className="pill hint">{salarySide(c.due, settings.salaryDay) === 'before' ? 'Before salary' : 'After salary'}</span>);
-    if (c.lastSafe) pills.push(<span key="l" className="pill outline hint">Last safe day {fmtDate(addDaysISO(c.due, 3))}</span>);
   }
   if (c.status === 'delayed') pills.push(<span key="dl" className="pill outline">Delayed</span>);
   if (c.autorenew) pills.push(<span key="a" className="pill solid">Auto-renews</span>);
@@ -94,9 +93,10 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
     if (c.horizon !== 'none') pills.push(<span key="h" className="pill solid" title={HORIZON_LABEL[c.horizon]} aria-label={HORIZON_LABEL[c.horizon]}>{HORIZON_BADGE[c.horizon]}</span>);
     if (c.due) pills.push(<DuePill key="d" due={c.due} />);
   }
-  if (c.penalty && (c.type === 'bill' || c.type === 'task')) pills.push(<span key="p" className="pill pen hint">{c.penalty}</span>);
   if (c.reminder) pills.push(<span key="r" className="pill outline"><Bell size={11} aria-hidden="true" />{fmtDate(c.reminder.slice(0, 10))} {c.reminder.slice(11, 16)}</span>);
 
+  // 'Sample' marks demo data; it doesn't need to shout on every card.
+  const shownLabels = c.labels.filter(l => l !== SAMPLE_LABEL);
   const total = checklistTotal(c);
   const items = c.checklist ?? [];
   const shownItems = [...items.filter(i => !i.done), ...items.filter(i => i.done)].slice(0, 6);
@@ -142,6 +142,12 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
           {total && <div className="total">Total {inr(total.total)}{total.open !== total.total ? ` · ${inr(total.open)} left` : ''}</div>}
 
           {c.type === 'bill' && <div className="amt">{c.amount ? inr(c.amount) : <small>Add amount</small>}</div>}
+          {c.type === 'bill' && c.due && (
+            <div className="meta">
+              {salarySide(c.due, settings.salaryDay) === 'before' ? 'Before salary' : 'After salary'}
+              {c.lastSafe ? ` · safe till ${fmtDate(addDaysISO(c.due, 3))}` : ''}
+            </div>
+          )}
           {c.type === 'expense' && (
             <>
               <div className="amt">{inr(c.amount)}</div>
@@ -166,7 +172,8 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
       )}
 
       {!!pills.length && <div className="pills">{pills}</div>}
-      {!!c.labels.length && !hidden && <div className="labels">{c.labels.map(l => <span key={l} className="pill outline">{l}</span>)}</div>}
+      {c.penalty && (c.type === 'bill' || c.type === 'task') && !hidden && <div className="pen-line">{c.penalty}</div>}
+      {!!shownLabels.length && !hidden && <div className="labels">{shownLabels.map(l => <span key={l} className="lbl">#{l}</span>)}</div>}
     </button>
   );
 }

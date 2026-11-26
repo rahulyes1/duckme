@@ -16,8 +16,8 @@ import { timeLabel } from './smart';
 const titleOf = (c: Card) => c.title || c.body?.split(/\n/)[0]?.slice(0, 60) || c.checklist?.[0]?.text || 'Untitled';
 
 const SLOT_HINT: Record<Slot, string> = {
-  week: 'What must get done by Sunday. Pick the day you\'ll do each one.',
-  month: 'Bigger things for this month. Pick a date if you know it.',
+  week: 'What must get done by Sunday?',
+  month: 'Bigger things for this month.',
   next: 'Lined up for next week',
   later: 'Further out',
 };
@@ -278,20 +278,21 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
     return g;
   }, [cards, refKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [ahead, setAhead] = useState(false);
   const pickCard = picking ? cards.find(c => c.id === picking.id) : undefined;
   const onPick = (id: string, unit: When['unit']) => setPicking({ id, unit });
 
   return (
     <section aria-label="Priorities for this week and this month" className="plan-wm">
-      <p className="plan-lead">Add what matters this week and this month. Pick the <b>day</b> you'll do it and a <b>deadline</b> — tap <b>Plan</b> any time to change them.</p>
       {SLOTS.map(s => {
         const list = groups[s.id];
+        if ((s.id === 'next' || s.id === 'later') && !list.length && !ahead) return null;
         const days = groupByDay(list, s.id);
         return (
           <section key={s.id} className="plan-wsec" data-slot={s.id} aria-labelledby={`plan-wsec-${s.id}`}>
             <header className="plan-wsec-h">
               <h2 id={`plan-wsec-${s.id}`}>{s.title} <span className="plan-count num" aria-label={`${list.length} items`}>{list.length}</span></h2>
-              <p>{SLOT_HINT[s.id]}</p>
+              {!list.length && <p>{SLOT_HINT[s.id]}</p>}
             </header>
             {days.map(g => (
               <div key={g.key} className="plan-dgroup">
@@ -308,6 +309,9 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
           </section>
         );
       })}
+      {!ahead && !groups.next.length && !groups.later.length && (
+        <button type="button" className="btn ghost plan-ahead" onClick={() => setAhead(true)}>Plan further ahead</button>
+      )}
       <WhenPicker
         open={!!pickCard}
         value={pickCard?.when}

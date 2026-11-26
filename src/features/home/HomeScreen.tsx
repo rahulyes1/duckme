@@ -5,13 +5,13 @@ import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
 import { matchesQuery, useCards, useSettings } from '../../lib/hooks';
 import { saveSettings } from '../../lib/db';
-import { buzz, prefersReducedMotion, today } from '../../lib/format';
+import { buzz, prefersReducedMotion } from '../../lib/format';
 import { EmptyState } from '../../ui/bits';
 import { Masonry } from '../../ui/Masonry';
 import { SwipeCard } from './SwipeCard';
 import { byRank } from '../../lib/logic';
 import { newCardDefaults } from './draft';
-import { SalaryStrip } from './SalaryStrip';
+import { TodayHero } from './TodayHero';
 import { Fab } from './Fab';
 import { QuickAdd } from './QuickAdd';
 import './home.css';
@@ -83,8 +83,6 @@ export default function HomeScreen() {
   const showHint = !settings.seenSwipeHint && open.length > 0;
   const retireHint = useCallback(() => { if (!settings.seenSwipeHint) void saveSettings({ seenSwipeHint: true }); }, [settings.seenSwipeHint]);
 
-  const dateLabel = today().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
-
   const grid = (list: Card[]) => (
     <Masonry
       key={filter}
@@ -134,7 +132,6 @@ export default function HomeScreen() {
       <header className="topbar">
         <div className="home-brand">
           <h1 className="screen-title">Hisaab</h1>
-          <span className="home-date">{dateLabel}</span>
         </div>
         <div className="topbar-row">
           <label className="search">
@@ -153,6 +150,8 @@ export default function HomeScreen() {
           ))}
         </div>
       </header>
+
+      {cards !== undefined && open.length > 0 && !q && filter === 'all' && <TodayHero cards={cards} settings={settings} />}
 
       {showHint && (
         <div className="home-hint" role="note">
@@ -173,7 +172,6 @@ export default function HomeScreen() {
           onTypeIt={() => openSheet(null)}
           onCloseFan={closeFan}
         />
-        <SalaryStrip cards={open} salaryDay={settings.salaryDay} />
       </div>
 
       <QuickAdd open={sheet.open} preset={sheet.type} onClose={closeSheet} onAdded={onAdded} />

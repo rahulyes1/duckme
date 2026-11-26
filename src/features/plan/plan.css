@@ -376,3 +376,5 @@
   .plan-ring .fg, .plan-prow-wrap .plan-brow-title, .plan-shint { transition: none; }
   .plan-prow-wrap.is-ticked .plan-pcheck::before { animation: none; }
 }
+
+.plan-ahead { display: flex; margin: 4px auto 8px; color: var(--accent); }
