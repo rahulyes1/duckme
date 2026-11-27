@@ -86,10 +86,12 @@ export function MiniRow({ c, right, sub, icon: Icon }: { c: Card; right: string;
 }
 
 /** Spending bar for one category: share of the month, plus budget status in words (never colour alone). */
-export function CategoryBar({ name, amount, total, budget, onSelect, selected }: {
+export function CategoryBar({ name, amount, total, budget, onSelect, selected, todayAt }: {
   name: string; amount: number; total: number; budget?: number;
   /** When set, the row is a button that filters the expense list to this category. */
   onSelect?: (name: string) => void; selected?: boolean;
+  /** Current month only: how far through the month today is (0–1), drawn as a line on budget bars. */
+  todayAt?: number;
 }) {
   const Icon = catIcon(name);
   const st = budgetStatus(amount, budget);
@@ -101,7 +103,10 @@ export function CategoryBar({ name, amount, total, budget, onSelect, selected }:
         <span className="money-cat-name"><Icon size={16} aria-hidden="true" /> {name}{selected && <span className="money-cat-on">Showing</span>}</span>
         <span className="num"><b>{inr(amount)}</b> <span className="money-muted">{pct}%</span></span>
       </div>
-      <div className="money-bar" aria-hidden="true"><i style={{ transform: `scaleX(${fill})` }} /></div>
+      <span className="pace-wrap" aria-hidden="true">
+        <div className="money-bar"><i style={{ transform: `scaleX(${fill})` }} /></div>
+        {todayAt !== undefined && st.level !== 'none' && <s style={{ left: `${todayAt * 100}%` }} />}
+      </span>
       {st.level !== 'none' && (
         <p className="money-budget num">
           {st.level === 'over'

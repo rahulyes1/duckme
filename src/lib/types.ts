@@ -235,6 +235,8 @@ export interface Settings {
   udhaar?: UdhaarEntry[];
   /** Optional weekly spending allowance in ₹ (Mon–Sun). */
   weeklyAllowance?: number;
+  /** One budget for all of a month's spending. */
+  monthBudget?: number;
   /** Last time "Backup to file" finished (ms). Drives the Home backup nudge. */
   lastBackupAt?: number;
   /** Category and pay mode of the last quick expense, preselected next time. */

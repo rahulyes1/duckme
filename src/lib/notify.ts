@@ -1,6 +1,6 @@
 /**
  * Phone notifications for reminders. No server: the open app checks when it starts, when it comes back
- * to the front and every 30 minutes; installed on Android, Chrome also wakes the service worker
+ * to the front and every minute; installed on Android, Chrome also wakes the service worker
  * about twice a day (Periodic Background Sync) to run the same check while the app is closed.
  * "Already sent today" lives in Cache Storage so the app and the service worker share it.
  */
@@ -76,12 +76,12 @@ export async function registerBackgroundCheck(): Promise<void> {
   } catch { /* not supported here: reminders still run whenever the app is open */ }
 }
 
-/** Run while the app is open: on start, when it comes back to the front, and every 30 minutes. */
+/** Run while the app is open: on start, when it comes back to the front, and every minute (so a timed reminder is on time). */
 export function startReminderLoop(): () => void {
   const run = () => { void checkReminders(); };
   const onVis = () => { if (document.visibilityState === 'visible') run(); };
   const first = window.setTimeout(run, 2500);
-  const every = window.setInterval(run, 30 * 60 * 1000);
+  const every = window.setInterval(run, 60 * 1000);
   document.addEventListener('visibilitychange', onVis);
   if (notifyState() === 'granted') void registerBackgroundCheck();
   return () => { clearTimeout(first); clearInterval(every); document.removeEventListener('visibilitychange', onVis); };

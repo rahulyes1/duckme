@@ -36,6 +36,8 @@ export function todayPriorities(cards: Card[], ref: Date, max = 5): Priorities {
       if (seen.has(c.id) || !inGroup(c)) continue;
       // "Later / drop" stays out of today, unless it is a bill about to cost you.
       if (c.quadrant === 'later' && !billSoon(c)) continue;
+      // Planned (or postponed) to a later day: it waits for that day.
+      if (c.type !== 'bill' && c.when?.unit === 'day' && c.when.start > t && !(c.due && c.due <= t)) continue;
       seen.add(c.id);
       all.push(c);
     }

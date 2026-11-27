@@ -14,6 +14,7 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
 }) {
   const [vals, setVals] = useState<Record<string, string>>({});
   const [weekly, setWeekly] = useState('');
+  const [total, setTotal] = useState('');
   const [err, setErr] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!open) return;
@@ -21,7 +22,8 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
     for (const c of allCategories(settings.customCategories)) v[c] = settings.budgets[c] ? settings.budgets[c].toLocaleString('en-IN') : '';
     setVals(v); setErr({});
     setWeekly(settings.weeklyAllowance ? settings.weeklyAllowance.toLocaleString('en-IN') : '');
-  }, [open, settings.budgets, settings.weeklyAllowance]);
+    setTotal(settings.monthBudget ? settings.monthBudget.toLocaleString('en-IN') : '');
+  }, [open, settings.budgets, settings.weeklyAllowance, settings.monthBudget]);
 
   const save = async () => {
     const budgets: Record<string, number> = {};
@@ -37,12 +39,23 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
     if (Object.keys(errs).length) return;
     const w = weekly.trim() ? parseAmount(weekly) : 0;
     if (w === null || w < 0) { setErr({ ...errs, __weekly: 'Enter a weekly amount, like 3,500, or leave it empty' }); return; }
-    await saveSettings({ budgets, weeklyAllowance: w ? Math.round(w) : undefined });
+    const m = total.trim() ? parseAmount(total) : 0;
+    if (m === null || m < 0) { setErr({ ...errs, __total: 'Enter a monthly amount, like 25,000, or leave it empty' }); return; }
+    await saveSettings({ budgets, weeklyAllowance: w ? Math.round(w) : undefined, monthBudget: m ? Math.round(m) : undefined });
     onClose();
   };
 
   return (
     <Sheet open={open} onClose={onClose} title="Monthly budgets">
+      <div className="field">
+        <label htmlFor="budget-total">Month budget (all spending)</label>
+        <div className="money-rupee-input">
+          <span aria-hidden="true">₹</span>
+          <input id="budget-total" className="input num" inputMode="decimal" autoComplete="off" value={total} placeholder="Not set"
+            aria-invalid={!!err.__total} onChange={e => setTotal(e.target.value)} />
+        </div>
+        {err.__total ? <span className="err" role="alert">{err.__total}</span> : <span className="help">Shows on your Tracker with money left per day.</span>}
+      </div>
       <div className="field money-weekly">
         <label htmlFor="budget-weekly">Weekly allowance (Mon–Sun)</label>
         <div className="money-rupee-input">

@@ -10,6 +10,7 @@ import BudgetSheet from './BudgetSheet';
 import { filterExpenses, groupByDay, spentByCategory, usedCategories } from './cashflow';
 import { expensesIn, longMonth, monthKey, monthStart, sum } from './money-util';
 import { catIcon, CategoryBar } from './parts';
+import { monthFrac } from './pace';
 import { SmallSpendsCard } from './smallSpends';
 import { smallInMonth } from './small';
 import { splitBalances } from './split';
@@ -105,7 +106,7 @@ export default function ExpensesTab({ cards, settings, month, setMonth, onAdd }:
           </div>
           {d.cats.length ? (<>
             <ul className="money-cats">
-              {(allCats ? d.cats : d.cats.slice(0, 3)).map(c => <CategoryBar key={c.name} name={c.name} amount={c.amount} total={d.spent} budget={c.budget}
+              {(allCats ? d.cats : d.cats.slice(0, 3)).map(c => <CategoryBar key={c.name} name={c.name} amount={c.amount} total={d.spent} budget={c.budget} todayAt={monthKey(month) === todayISO().slice(0, 7) ? monthFrac(today()) : undefined}
                 onSelect={c.amount > 0 ? setDetail : undefined} />)}
             </ul>
             {d.cats.length > 3 && <button type="button" className="btn ghost money-more-cats" aria-expanded={allCats} onClick={() => setAllCats(v => !v)}>{allCats ? 'Top 3' : `All ${d.cats.length}`}</button>}

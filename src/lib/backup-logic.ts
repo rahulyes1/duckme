@@ -31,13 +31,14 @@ const isEmpty = (x: unknown) =>
   x === undefined || x === null || x === '' || (Array.isArray(x) && x.length === 0) || (isObj(x) && Object.keys(x).length === 0);
 
 /** Fields brought back from a backup only when this device has none of its own (or no cards at all). */
-type FillField = 'salaryDay' | 'salaryAmount' | 'accounts' | 'reminders' | 'weeklyAllowance' | 'udhaar'
+type FillField = 'salaryDay' | 'salaryAmount' | 'accounts' | 'reminders' | 'weeklyAllowance' | 'monthBudget' | 'udhaar'
   | 'splitPeople' | 'customCategories' | 'upiId' | 'upiName' | 'favCategories' | 'userName';
 
 const VALID: Record<FillField, (v: unknown) => boolean> = {
   salaryDay: v => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 31,
   salaryAmount: v => typeof v === 'number' && Number.isFinite(v) && v > 0,
   weeklyAllowance: v => typeof v === 'number' && Number.isFinite(v) && v > 0,
+  monthBudget: v => typeof v === 'number' && Number.isFinite(v) && v > 0,
   accounts: v => Array.isArray(v) && v.every(a => isObj(a) && typeof a.name === 'string'),
   udhaar: v => Array.isArray(v) && v.every(a => isObj(a) && typeof a.id === 'string'),
   splitPeople: v => Array.isArray(v) && v.every(s => typeof s === 'string'),

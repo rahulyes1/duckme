@@ -4,7 +4,8 @@
  */
 import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Check, Target } from 'lucide-react';
+import { ArrowRight, Check, Clock, Target } from 'lucide-react';
+import { PostponeSheet } from '../notes/PostponeSheet';
 import type { Card } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
@@ -20,7 +21,7 @@ const titleOf = (c: Card) =>
   c.type === 'note' && c.locked ? 'Locked note'
     : c.title || c.body?.split(/\n/)[0]?.slice(0, 60) || c.checklist?.[0]?.text || 'Untitled';
 
-function Row({ card: c }: { card: Card }) {
+function Row({ card: c, onLater }: { card: Card; onLater: (c: Card) => void }) {
   const app = useApp();
   const reduce = useReducedMotion();
   const Icon = TYPE_ICON[c.type];
@@ -82,12 +83,16 @@ function Row({ card: c }: { card: Card }) {
           </span>
         )}
       </button>
+      {c.type !== 'bill' && (
+        <button type="button" className="tp-later" aria-label={`Postpone ${title}`} onClick={() => onLater(c)}><Clock size={18} aria-hidden="true" /></button>
+      )}
     </motion.li>
   );
 }
 
 export function TodayPriorities({ items, more }: { items: Card[]; more: number }) {
   const reduce = useReducedMotion();
+  const [later, setLater] = useState<Card | null>(null);
   return (
     <section className="tp" aria-labelledby="tp-h">
       <div className="tp-head">
@@ -97,7 +102,7 @@ export function TodayPriorities({ items, more }: { items: Card[]; more: number }
       {items.length ? (
         <motion.ul className="tp-list" layout={!reduce}>
           <AnimatePresence initial={false}>
-            {items.map(c => <Row key={c.id} card={c} />)}
+            {items.map(c => <Row key={c.id} card={c} onLater={setLater} />)}
           </AnimatePresence>
         </motion.ul>
       ) : (
@@ -107,6 +112,7 @@ export function TodayPriorities({ items, more }: { items: Card[]; more: number }
         </p>
       )}
       {more > 0 && <a className="tp-more" href="#plan">+{more} more</a>}
+      <PostponeSheet card={later} onClose={() => setLater(null)} />
     </section>
   );
 }

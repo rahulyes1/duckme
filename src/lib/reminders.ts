@@ -20,10 +20,20 @@ function salaryDateOf(y: number, m: number, day: number): Date {
 
 export function dueReminders(cards: Card[], settings: Pick<Settings, 'salaryDay'> & { reminders?: ReminderPrefs }, now: Date): Reminder[] {
   const prefs = settings.reminders ?? DEFAULT_REMINDERS;
-  if (now.getHours() < prefs.hour) return [];
   const today = toISO(now);
+  // Reminders you set on a card fire at their own time, not at the morning hour.
+  const stamp = `${today}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const own: Reminder[] = cards
+    .filter(c => c.reminder && c.reminder.startsWith(today) && c.reminder <= stamp && (c.status === 'open' || c.status === 'delayed'))
+    .map(c => ({
+      tag: `card-${c.id}-${c.reminder}`,
+      title: c.locked ? 'Locked note' : c.title || 'Reminder',
+      body: 'You asked to be reminded now.',
+      url: c.type === 'bill' ? '#money' : '#home',
+    }));
+  if (now.getHours() < prefs.hour) return own;
   const tomorrow = toISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
-  const out: Reminder[] = [];
+  const out: Reminder[] = [...own];
 
   if (prefs.bills) {
     const bills = cards

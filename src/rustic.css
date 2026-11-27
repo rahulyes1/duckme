@@ -149,3 +149,22 @@
 .lvl-chips { flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .lvl-chips .chip { min-height: 44px; }
 .lvl-chips .chip[aria-checked="true"] { background: var(--accent-fill, var(--accent)); border-color: var(--accent); color: var(--accent-ink); }
+
+/* ---------- budget pace ---------- */
+.pace { display: grid; gap: 7px; width: 100%; margin: -4px 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); text-align: left; }
+.pace-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.pace-sub { color: var(--muted); font-size: 13px; }
+.pace-bar { position: relative; height: 10px; border-radius: 9px; background: var(--surface-2); }
+.pace-bar i { display: block; height: 100%; border-radius: 9px; background: #B3344C; }
+.pace-bar.is-over i { background: #E0574F; }
+.pace-bar s, .pace-wrap s { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); text-decoration: none; }
+.pace-wrap { position: relative; display: block; }
+/* ---------- one-line task and postpone ---------- */
+.qt, .later { display: grid; gap: 10px; }
+.qt .input { min-height: 48px; }
+.qt .lvl-chips { margin: 0; }
+.qt-help { margin: 0; color: var(--muted); font-size: 13px; }
+.later-btn.btn { display: flex; justify-content: space-between; gap: 10px; min-height: 52px; }
+.later-btn small { color: var(--muted); }
+.later-open { align-self: flex-start; margin: 0 0 8px; }
+.tp-later { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }

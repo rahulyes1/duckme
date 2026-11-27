@@ -3,7 +3,7 @@ import { MotionConfig } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Archive, ArchiveRestore, ArrowLeft, Bell, BellOff, Check, CheckCircle2, CheckSquare, Copy, History, ImagePlus,
-  BookOpen, BookmarkPlus, ClipboardCopy, IndianRupee, ListChecks, Lock, LockOpen, MessageCircle, MoreVertical, Palette, PenLine, Pin, PinOff, Receipt,
+  BookOpen, BookmarkPlus, ClipboardCopy, Clock, IndianRupee, ListChecks, Lock, LockOpen, MessageCircle, MoreVertical, Palette, PenLine, Pin, PinOff, Receipt,
   Share2, StickyNote, Tag, Trash2, X,
 } from 'lucide-react';
 import { HomeButton } from '../../ui/HomeButton';
@@ -28,6 +28,7 @@ import { countWords, fmtWords } from './text-stats';
 import { useDebounced } from './use-debounced';
 import { PlanRow } from './PlanRow';
 import { LevelChips } from './LevelChips';
+import { PostponeSheet } from './PostponeSheet';
 import { hasMarkup } from './md-lite';
 import { calcLineTexts } from './calc';
 import {
@@ -105,6 +106,7 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   const [body, setBody] = useState(card.body);
   const [checklist, setChecklist] = useState<ChecklistItem[] | undefined>(card.checklist);
   const [sheet, setSheet] = useState<SheetKind>(null);
+  const [laterOpen, setLaterOpen] = useState(false);
   const [, tick] = useState(0);
   const mounted = useRef(true);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -450,6 +452,8 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
         )}
 
         {!isJournal && isActive(card) && (card.type === 'note' || card.type === 'task') && <LevelChips card={card} save={p => { void save(p); }} />}
+        {!isJournal && isActive(card) && card.type === 'task' && <button type="button" className="btn later-open" onClick={() => setLaterOpen(true)}><Clock size={16} aria-hidden="true" /> Postpone</button>}
+        <PostponeSheet card={laterOpen ? card : null} onClose={() => setLaterOpen(false)} />
         {!isJournal && isActive(card) && <PlanRow card={card} save={save} />}
 
         {chips.length > 0 && (

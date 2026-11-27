@@ -10,12 +10,13 @@ import { EmptyState } from '../../ui/bits';
 import { NotesBento } from './NotesBento';
 import { topFirst } from '../notes/importance';
 import { TrackerCards } from './TrackerCards';
+import { BudgetPace } from './BudgetPace';
+import { QuickTaskSheet } from '../notes/QuickTaskSheet';
 import { openQuickSearch } from '../../ui/QuickSearch';
 import { isSpend } from '../../lib/logic';
 import { cashFlow } from '../money/cashflow';
 import { AheadList, DueList, RecentSpends } from './HomeLists';
 import { aheadItems } from './helpers';
-import { newCardDefaults } from './draft';
 import { CloseDay } from './CloseDay';
 import { BackupNudge } from './BackupNudge';
 import { TodayPriorities } from './TodayPriorities';
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   // Home always opens on the Tracker; the switch is tap only so card swipes never clash with it.
   const [view, setView] = useState<View>('tracker');
   const [adding, setAdding] = useState<'expense' | 'income' | null>(null);
+  const [tasking, setTasking] = useState(false);
   /** The add screen loads the first time it is asked for, then stays mounted so it can animate closed. */
   const [addLoaded, setAddLoaded] = useState(false);
   const [fanOpen, setFanOpen] = useState(false);
@@ -46,7 +48,7 @@ export default function HomeScreen() {
 
   useEffect(() => () => clearTimeout(newTimer.current), []);
   // Home tapped again (or Home from an editor): All, empty search, nothing open.
-  useNavReset('home', () => { setView('tracker'); setQ(''); setFilter('all'); setFanOpen(false); setAdding(null); });
+  useNavReset('home', () => { setView('tracker'); setQ(''); setFilter('all'); setFanOpen(false); setAdding(null); setTasking(false); });
   // Re-render when the app comes back to the front, so priorities and the month total follow the date.
   const [, wake] = useState(0);
   useEffect(() => {
@@ -98,11 +100,6 @@ export default function HomeScreen() {
     void app.createAndOpen({ type: 'note' }, el ?? document.querySelector('.home-fab'));
   }, [app]);
   /** Hold +, then pick a type: opens a new card of that type in its editor. */
-  const newOfType = useCallback((t: CardType) => {
-    setFanOpen(false);
-    void app.createAndOpen(newCardDefaults(t), document.querySelector('.home-fab'));
-  }, [app]);
-
   /** The add screen, on Home itself: spend or income. */
   const add = useCallback((kind: 'expense' | 'income') => { setFanOpen(false); setAddLoaded(true); setAdding(kind); }, []);
   const addSpend = useCallback(() => add('expense'), [add]);
@@ -110,8 +107,8 @@ export default function HomeScreen() {
 
   const pick = useCallback((t: FanPick) => {
     setFanOpen(false);
-    if (t === 'spend') addSpend(); else if (t === 'note') quickNote(); else newOfType(t);
-  }, [addSpend, newOfType, quickNote]);
+    if (t === 'spend') addSpend(); else if (t === 'note') quickNote(); else setTasking(true);
+  }, [addSpend, quickNote]);
 
   const closeFan = useCallback(() => setFanOpen(false), []);
 
@@ -164,6 +161,7 @@ export default function HomeScreen() {
       {tracker && cards !== undefined && (
         <>
           <TrackerCards cards={cards} settings={settings} onAdd={add} />
+          <BudgetPace cards={cards} settings={settings} />
           <DueList bills={flow.bills} salaryISO={flow.cycle.end} />
           <TodayPriorities items={prio.items} more={prio.more} />
           <RecentSpends spends={recent} cards={cards} incomes={(settings.incomes ?? []).filter(i => i.date <= iso)} />
@@ -204,6 +202,8 @@ export default function HomeScreen() {
         <Fab fanOpen={fanOpen} active={fanOpen} items={tracker ? ['spend', 'note'] : ['spend', 'note', 'task']}
           onOpen={() => setFanOpen(true)} onPick={pick} onCloseFan={closeFan} />
       </div>
+
+      <QuickTaskSheet open={tasking} onClose={() => setTasking(false)} />
 
       {addLoaded && <Suspense fallback={null}><QuickExpense open={!!adding} kind={adding ?? 'expense'} onClose={closeAdd} /></Suspense>}
     </div>

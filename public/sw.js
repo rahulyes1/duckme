@@ -87,10 +87,14 @@ function readAll(dbName, store) {
 
 function dueReminders(cards, settings, now) {
   const prefs = settings.reminders || { bills: true, salary: true, hour: 9 };
-  if (now.getHours() < prefs.hour) return [];
   const today = iso(now);
+  const stamp = `${today}T${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  const own = cards
+    .filter(c => c.reminder && c.reminder.startsWith(today) && c.reminder <= stamp && (c.status === 'open' || c.status === 'delayed'))
+    .map(c => ({ tag: `card-${c.id}-${c.reminder}`, title: c.locked ? 'Locked note' : c.title || 'Reminder', body: 'You asked to be reminded now.', url: c.type === 'bill' ? '#money' : '#home' }));
+  if (now.getHours() < prefs.hour) return own;
   const tomorrow = iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
-  const out = [];
+  const out = [...own];
   if (prefs.bills) {
     cards.filter(c => c.type === 'bill' && (c.status === 'open' || c.status === 'delayed') && c.due && c.due <= tomorrow && !c.autopay)
       .sort((a, b) => (a.due < b.due ? -1 : 1))
