@@ -50,7 +50,7 @@ export function TodayBanner({ cards }: { cards: Card[] }) {
         <span className="notes-today-text">
           <span className="notes-today-k">Today · {weekdayName(today)}</span>
           <span className="notes-today-date num">{fmtDate(today)}</span>
-          <span className="notes-today-p">{preview || (entry ? 'Open today’s page' : 'Write today’s page. Unticked items from your last page come along.')}</span>
+          <span className="notes-today-p">{preview || (entry ? 'Open today’s page' : 'Write today’s page')}</span>
         </span>
         <ChevronRight size={20} aria-hidden="true" className="notes-today-go" />
       </button>

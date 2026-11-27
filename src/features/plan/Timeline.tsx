@@ -113,7 +113,7 @@ export function Timeline({ cards, settings }: { cards: Card[]; settings: Setting
           </button>
         </div>
       </div>
-      <p className="plan-tlhint">Pinch or ctrl+scroll to zoom. Tap any item to open it.</p>
+      <p className="plan-tlhint">Pinch or ctrl+scroll to zoom</p>
 
       <div className="plan-tl" ref={box}>
         <AnimatePresence mode="wait" initial={false} custom={dir}>

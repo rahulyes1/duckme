@@ -11,13 +11,14 @@ import { DuePill, TYPE_ICON } from '../../ui/CardTile';
 import { WhenPicker, whenLabel } from '../../ui/WhenPicker';
 import { DOW_SHORT, SLOTS, slotOf, weekStart, type Slot } from './when';
 import { SmartAdd } from './SmartAdd';
+import { InfoTip } from '../../ui/InfoTip';
 import { timeLabel } from './smart';
 
 const titleOf = (c: Card) => c.title || c.body?.split(/\n/)[0]?.slice(0, 60) || c.checklist?.[0]?.text || 'Untitled';
 
 const SLOT_HINT: Record<Slot, string> = {
-  week: 'What must get done by Sunday?',
-  month: 'Bigger things for this month.',
+  week: 'Done by Sunday',
+  month: 'Bigger ones, this month',
   next: 'Lined up for next week',
   later: 'Further out',
 };
@@ -286,7 +287,7 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
   return (
     <section aria-label="Priorities for this week and this month" className="plan-wm">
       {Object.values(groups).some(l => l.some(c => !!c.due)) && (
-        <p className="plan-legend">Ring = time left to the deadline. It empties as the date nears: orange is soon, red is late.</p>
+        <p className="plan-legend">Ring = time left <InfoTip label="About the ring">It empties as the deadline nears: orange is soon, red is late.</InfoTip></p>
       )}
       {SLOTS.map(s => {
         const list = groups[s.id];
@@ -314,7 +315,7 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
         );
       })}
       {!ahead && !groups.next.length && !groups.later.length && (
-        <button type="button" className="btn ghost plan-ahead" onClick={() => setAhead(true)}>+ Plan next month or later</button>
+        <button type="button" className="btn ghost plan-ahead" onClick={() => setAhead(true)}>+ Next month & later</button>
       )}
       <WhenPicker
         open={!!pickCard}

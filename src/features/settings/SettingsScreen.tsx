@@ -18,6 +18,7 @@ import { useInstallPrompt } from './pwa';
 import { Switch } from '../../ui/bits';
 import './settings.css';
 import AccountSection from './AccountSection';
+import { InfoTip } from '../../ui/InfoTip';
 import RemindersSection from './RemindersSection';
 
 const APP_VERSION = '0.1.0';
@@ -132,8 +133,8 @@ function PinManager({ pinHash }: { pinHash?: string }) {
     return (
       <div className="set-stack">
         <p className="set-text">{pinHash
-          ? 'A PIN is set. Locked notes ask for it before they open.'
-          : 'Set a 4 to 6 digit PIN to lock private notes. It is stored only as a hash on this device.'}</p>
+          ? 'PIN set. Locked notes ask for it.'
+          : 'Lock private notes with 4–6 digits'} <InfoTip label="About the PIN">Stored only as a hash on this device. Never in backups.</InfoTip></p>
         <div className="set-btnrow">
           {pinHash ? (
             <>
@@ -278,7 +279,7 @@ function LabelsManager({ settings, cards }: { settings: Settings; cards: Card[] 
     return m;
   }, [settings.labels, cards]);
   const names = [...counts.keys()].sort((a, b) => a.localeCompare(b));
-  if (!names.length) return <p className="set-text">No labels yet. Add labels from a note’s menu and manage them here.</p>;
+  if (!names.length) return <p className="set-text">No labels yet <InfoTip label="How to add labels">Add labels from a note’s menu, then manage them here.</InfoTip></p>;
   return (
     <ul className="set-lbls">
       {names.map(n => <LabelRow key={n} name={n} count={counts.get(n) ?? 0} settings={settings} all={names} />)}
@@ -295,7 +296,7 @@ function isCardLike(x: unknown): x is Card {
 function storageHint(state: boolean | null | undefined): string {
   const iPhone = /iphone|ipad|ipod/i.test(navigator.userAgent);
   if (state === true) return 'Storage: protected';
-  if (state === false) return iPhone ? 'Storage: may be cleared by iOS. Add to Home Screen helps.' : 'Storage: the browser may clear it when space runs low. Installing the app helps.';
+  if (state === false) return iPhone ? 'iOS may clear it · Add to Home Screen' : 'Browser may clear it · install to keep';
   return '';
 }
 
@@ -353,7 +354,7 @@ function BackupSection({ cards, settings }: { cards: Card[]; settings: Settings 
 
   return (
     <div className="set-stack">
-      <p className="set-text">Everything lives in this browser on this device. Back up to a file now and then, and before clearing browser data or changing phones.</p>
+      <p className="set-text">Data lives on this device only <InfoTip label="When to back up">Back up now and then, and before clearing browser data or changing phones.</InfoTip></p>
       <div className="set-btnrow">
         <button type="button" className="btn primary" onClick={doExport}><Download size={18} aria-hidden="true" />Backup to file</button>
         <button type="button" className="btn" onClick={() => fileRef.current?.click()}><Upload size={18} aria-hidden="true" />Restore from file</button>
@@ -361,7 +362,7 @@ function BackupSection({ cards, settings }: { cards: Card[]; settings: Settings 
           onChange={e => { const f = e.target.files?.[0]; if (f) doImport(f); }} />
       </div>
       {(lastText || hint) && <p className="set-small">{[lastText, hint].filter(Boolean).join(' · ')}</p>}
-      <p className="set-small">Restore merges cards by id: matching cards are replaced, new ones are added. Nothing is deleted. Your PIN is never in the file.</p>
+      <p className="set-small">Restore merges, never deletes <InfoTip label="How restore works">Matching cards are replaced, new ones are added. Nothing is deleted. Your PIN is never in the file.</InfoTip></p>
       {importErr && <p className="set-err" role="alert">{importErr}</p>}
     </div>
   );
@@ -432,7 +433,7 @@ function YourData({ cards }: { cards: Card[] }) {
 
       <div className="set-danger-zone">
         <h3 className="set-danger-title">Delete everything</h3>
-        <p className="set-text">Removes every card, note history and setting from this device. This cannot be undone. Back up to a file first if you may need it.</p>
+        <p className="set-text">Wipes this device. No undo. <InfoTip label="What gets deleted">Removes every card, note history and setting from this device. Back up to a file first if you may need it.</InfoTip></p>
         {wipe ? (
           <form className="set-stack" onSubmit={e => { e.preventDefault(); if (typed === 'DELETE') doWipe(); }}>
             <div className="field">
@@ -471,7 +472,7 @@ export default function SettingsScreen() {
       {canInstall && (
         <div className="set-install">
           <Smartphone size={22} aria-hidden="true" />
-          <span className="set-text">Install Hisaab to open it like an app, even offline.</span>
+          <span className="set-text">Use it like an app, offline</span>
           <button type="button" className="btn primary" onClick={async () => { if (await install()) toast('Installed'); }}>
             <HardDriveDownload size={18} aria-hidden="true" />Install app
           </button>
@@ -487,10 +488,10 @@ export default function SettingsScreen() {
             onChange={e => saveSettings({ salaryDay: +e.target.value })}>
             {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          <span className="help">Used for the before/after salary split. If a month is shorter, the last day is used.</span>
+          <span className="help">Short month? Last day is used.</span>
         </div>
         <button type="button" className="set-link" onClick={() => go('money')}>
-          Set monthly budgets in Money <ArrowRight size={18} aria-hidden="true" />
+          Budgets <ArrowRight size={18} aria-hidden="true" />
         </button>
       </Section>
 
@@ -504,7 +505,7 @@ export default function SettingsScreen() {
         <div className="field">
           <Switch checked={settings.backgroundLife !== false} label="Background life"
             onChange={v => saveSettings({ backgroundLife: v })} />
-          <span className="help">Gentle birds, kite, balloon and fireflies behind the page</span>
+          <span className="help">Birds, kite, fireflies behind the page</span>
         </div>
         <div className="field">
           <span className="label" id="delay-lbl">Swipe left delays by</span>
@@ -516,7 +517,7 @@ export default function SettingsScreen() {
               </button>
             ))}
           </div>
-          <span className="help">Delay moves the due date and marks the card Delayed. It never changes your order.</span>
+          <span className="help">Moves the due date, not your order</span>
         </div>
       </Section>
 
@@ -541,8 +542,8 @@ export default function SettingsScreen() {
       <Section id="set-about" title="About" icon={<Info size={18} aria-hidden="true" />}>
         <dl className="set-about">
           <div><dt>Version</dt><dd className="num">{APP_VERSION}</dd></div>
-          <div><dt>Advice</dt><dd>No buy/sell advice. Values you enter are shown as-is.</dd></div>
-          <div><dt>Privacy</dt><dd>Stored in this browser first. If you sign in with Google, a copy syncs to your private cloud space that only your account can read. No ads, no tracking, no SMS reading, no bank access, no money movement.</dd></div>
+          <div><dt>Advice</dt><dd>None. Your values, as entered.</dd></div>
+          <div><dt>Privacy</dt><dd>No ads, tracking, SMS or bank access <InfoTip label="Privacy details">Stored in this browser first. If you sign in with Google, a copy syncs to your private cloud space that only your account can read. Hisaab never moves money.</InfoTip></dd></div>
         </dl>
       </Section>
     </div>

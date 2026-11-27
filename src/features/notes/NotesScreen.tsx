@@ -309,7 +309,7 @@ export default function NotesScreen() {
         </motion.div>
       )}
       <TemplatesSheet open={showTemplates} onClose={() => setShowTemplates(false)} cards={all} anchor={barRef.current} />
-      {swipeHint && canCreate && list.length > 0 && <p className="notes-swipe-hint">{isTouchDevice() ? 'Swipe a note sideways to archive it.' : 'Open a note and use its More options button to archive it.'}</p>}
+      {swipeHint && canCreate && list.length > 0 && <p className="notes-swipe-hint">{isTouchDevice() ? 'Swipe sideways to archive' : 'Archive from a note’s ⋯ menu'}</p>}
     </div>
     </MotionConfig>
   );
@@ -327,16 +327,16 @@ function Empty({ filter, q, color, onClear, onNew, onBack }: {
     );
   }
   const map: Record<string, { icon: JSX.Element; title: string; text: string; action: 'new' | 'back' }> = {
-    journal: { icon: <BookOpen size={40} aria-hidden="true" />, title: 'No journal pages yet', text: 'Tap Today above to start today’s page. Unticked items carry over to the next day.', action: 'back' },
-    all: { icon: <StickyNote size={40} aria-hidden="true" />, title: 'Your notes live here', text: 'Shopping lists, ideas, things to pay. Type ₹ amounts and dates, and Hisaab offers to make a bill or expense.', action: 'new' },
-    tasks: { icon: <CheckSquare size={40} aria-hidden="true" />, title: 'No open tasks', text: 'Add a task with a deadline, like “Renew bike insurance by 15 Dec”.', action: 'new' },
-    docs: { icon: <ShieldCheck size={40} aria-hidden="true" />, title: 'No documents yet', text: 'Add a photo of a bill, warranty card or policy to a note, and set Expires so Hisaab reminds you before it runs out.', action: 'new' },
-    reminders: { icon: <Bell size={40} aria-hidden="true" />, title: 'No reminders', text: 'Open a note and tap the bell to set one.', action: 'new' },
-    locked: { icon: <Lock size={40} aria-hidden="true" />, title: 'No locked notes', text: 'Lock a note with a PIN from the lock button in the note.', action: 'new' },
-    archive: { icon: <Archive size={40} aria-hidden="true" />, title: 'Archive is empty', text: 'Archived notes stay out of the way but are still searchable here.', action: 'back' },
-    trash: { icon: <Trash2 size={40} aria-hidden="true" />, title: 'Trash is empty', text: 'Deleted notes stay here for 30 days.', action: 'back' },
+    journal: { icon: <BookOpen size={40} aria-hidden="true" />, title: 'No journal pages yet', text: 'Tap Today above to start.', action: 'back' },
+    all: { icon: <StickyNote size={40} aria-hidden="true" />, title: 'Your notes live here', text: 'Lists, ideas, things to pay.', action: 'new' },
+    tasks: { icon: <CheckSquare size={40} aria-hidden="true" />, title: 'No open tasks', text: 'Like “Renew bike insurance by 15 Dec”.', action: 'new' },
+    docs: { icon: <ShieldCheck size={40} aria-hidden="true" />, title: 'No documents yet', text: 'Add a warranty or policy photo.', action: 'new' },
+    reminders: { icon: <Bell size={40} aria-hidden="true" />, title: 'No reminders', text: 'Tap the bell in a note.', action: 'new' },
+    locked: { icon: <Lock size={40} aria-hidden="true" />, title: 'No locked notes', text: 'Use the lock in a note.', action: 'new' },
+    archive: { icon: <Archive size={40} aria-hidden="true" />, title: 'Archive is empty', text: 'Archived notes stay searchable.', action: 'back' },
+    trash: { icon: <Trash2 size={40} aria-hidden="true" />, title: 'Trash is empty', text: 'Kept for 30 days.', action: 'back' },
   };
-  const e = map[filter] ?? { icon: <StickyNote size={40} aria-hidden="true" />, title: `No notes with “${filter.slice(6)}”`, text: 'New notes you make here get this label.', action: 'new' as const };
+  const e = map[filter] ?? { icon: <StickyNote size={40} aria-hidden="true" />, title: `No notes with “${filter.slice(6)}”`, text: 'New notes here get this label.', action: 'new' as const };
   return (
     <EmptyState
       icon={e.icon}

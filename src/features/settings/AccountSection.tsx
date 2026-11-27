@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, Cloud, CloudOff, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { useApp } from '../../app-context';
+import { InfoTip } from '../../ui/InfoTip';
 import { signIn, signOut, syncNow, useSyncAccount, type SyncStatus } from '../../lib/sync';
 
 function ago(at: number, now: number): string {
@@ -52,11 +53,9 @@ export default function AccountSection() {
       <section className="set-sec" aria-labelledby="set-acct-title">
         {title}
         <div className="set-stack">
-          <p className="set-text">Cloud sync isn't set up yet</p>
-          <p className="set-small">
-            Everything stays on this device and works fully offline. To use Hisaab on your phone and laptop together,
-            cloud sync has to be switched on once by whoever deploys the app (steps in docs/SYNC_SETUP.md).
-          </p>
+          <p className="set-text">Sync off · works offline <InfoTip label="About sync">
+            To use Hisaab on phone and laptop together, cloud sync has to be switched on once by whoever deploys the app (docs/SYNC_SETUP.md).
+          </InfoTip></p>
         </div>
       </section>
     );
@@ -94,8 +93,7 @@ export default function AccountSection() {
       <section className="set-sec" aria-labelledby="set-acct-title">
         {title}
         <div className="set-stack">
-          <p className="set-text">Sign in with Google to use Hisaab on all your devices</p>
-          <p className="set-small">Your data stays on this device too, and the app keeps working offline.</p>
+          <p className="set-text">Sync across your devices <InfoTip label="About sync">Your data stays on this device too, and the app keeps working offline.</InfoTip></p>
           <div className="set-btnrow">
             <button type="button" className="btn primary" onClick={doSignIn} disabled={busy}>
               <LogIn size={18} aria-hidden="true" />{busy ? 'Opening Google…' : 'Sign in with Google'}

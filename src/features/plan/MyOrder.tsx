@@ -17,6 +17,7 @@ import { isActive } from '../../lib/types';
 
 const verticalOnly: Modifier = ({ transform }) => ({ ...transform, x: 0 });
 
+import { InfoTip } from '../../ui/InfoTip';
 import { byRank } from '../../lib/logic';
 
 interface RowProps {
@@ -157,7 +158,7 @@ export function MyOrder({ cards, settings }: { cards: Card[]; settings: Settings
   return (
     <section aria-label="My order" className={hints ? '' : 'hide-hints'}>
       <div className="plan-note">
-        <p>Drag to set your order. Home shows cards in exactly this order; dates and penalties never move them.</p>
+        <p>Drag to set order <InfoTip label="About my order">Home shows cards in exactly this order; dates and penalties never move them.</InfoTip></p>
         <Switch checked={hints} onChange={setHints} label="Hints" />
       </div>
       <DndContext

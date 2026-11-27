@@ -116,17 +116,20 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
       onClick={e => onOpen?.(e.currentTarget)}
     >
       {hasRing && <Ring due={c.due!} />}
-      <div className="k">
-        <Icon size={12} strokeWidth={2.4} aria-hidden="true" />
-        <span>{kind}</span>
-        {c.pinned && <Pin size={11} aria-label="Pinned" />}
-        {c.locked && <Lock size={11} aria-label="Locked" />}
-      </div>
+      {/* Plain notes skip the "NOTE" header: it says nothing the card doesn't. */}
+      {(c.type !== 'note' || c.pinned || c.locked) && (
+        <div className="k">
+          <Icon size={12} strokeWidth={2.4} aria-hidden="true" />
+          {c.type !== 'note' && <span>{kind}</span>}
+          {c.pinned && <Pin size={11} aria-label="Pinned" />}
+          {c.locked && <Lock size={11} aria-label="Locked" />}
+        </div>
+      )}
 
       {hidden ? (
         <>
           {c.title && <div className="t">{c.title}</div>}
-          <div className="locked"><Lock size={16} aria-hidden="true" /> Locked. Tap to unlock.</div>
+          <div className="locked"><Lock size={16} aria-hidden="true" /> Tap to unlock</div>
         </>
       ) : (
         <>

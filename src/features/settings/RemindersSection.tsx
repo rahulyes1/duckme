@@ -4,6 +4,7 @@ import { useApp } from '../../app-context';
 import { saveSettings } from '../../lib/db';
 import { askPermission, checkReminders, notifyState, sendTest, type NotifyState } from '../../lib/notify';
 import { DEFAULT_REMINDERS } from '../../lib/reminders';
+import { InfoTip } from '../../ui/InfoTip';
 import type { Settings } from '../../lib/types';
 
 const HOURS = [7, 8, 9, 10, 12, 18, 20];
@@ -47,14 +48,14 @@ export default function RemindersSection({ settings }: { settings: Settings }) {
         <p className="set-text">Notifications are blocked for Hisaab. Allow them in your browser's site settings (tap the lock icon next to the address), then come back here.</p>
       ) : perm === 'default' ? (
         <div className="set-rem-ask">
-          <p className="set-text">Get a nudge the day before a bill is due, and on salary day. Nothing leaves your phone.</p>
+          <p className="set-text">Bills and salary day nudges <InfoTip label="About reminders">The day before a bill is due, and on salary day. Nothing leaves your phone.</InfoTip></p>
           <button type="button" className="btn primary" onClick={allow}><BellRing size={18} aria-hidden="true" />Turn on reminders</button>
         </div>
       ) : (
         <>
-          <Toggle id="rem-bills" label="Bills" hint="The day before, on the day, and if one is overdue" on={prefs.bills} onChange={v => set({ bills: v })} />
-          <Toggle id="rem-salary" label="Salary day" hint="Your month recap and payday checklist" on={prefs.salary} onChange={v => set({ salary: v })} />
-          <Toggle id="rem-expiry" label="Warranties & documents" hint="30 days, 7 days and 1 day before something expires" on={prefs.expiry !== false} onChange={v => set({ expiry: v })} />
+          <Toggle id="rem-bills" label="Bills" hint="Day before, on the day, overdue" on={prefs.bills} onChange={v => set({ bills: v })} />
+          <Toggle id="rem-salary" label="Salary day" hint="Recap and payday checklist" on={prefs.salary} onChange={v => set({ salary: v })} />
+          <Toggle id="rem-expiry" label="Warranties & documents" hint="30, 7 and 1 day before expiry" on={prefs.expiry !== false} onChange={v => set({ expiry: v })} />
           <div className="field">
             <label htmlFor="rem-hour">Remind me from</label>
             <select id="rem-hour" className="select set-narrow" value={prefs.hour} onChange={e => set({ hour: +e.target.value })}>

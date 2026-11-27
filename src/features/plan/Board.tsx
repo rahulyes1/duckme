@@ -259,7 +259,7 @@ export function Board({ cards }: { cards: Card[] }) {
 
   return (
     <section aria-label="4-box board" className="plan-board-wrap">
-      <p className="plan-lead">Drag a card by its grip into a box, or tap its three-dot button to move it.</p>
+      <p className="plan-lead">Drag into a box, or tap ⋯</p>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
