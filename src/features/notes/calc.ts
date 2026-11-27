@@ -244,3 +244,10 @@ export function fmtCalc(n: number): string {
   const s = a.toLocaleString('en-IN', { maximumFractionDigits: 2 });
   return `${n < 0 && s !== '0' ? '−' : ''}₹${s}`;
 }
+
+/** The trimmed text of every line that is a calc line, so smart chips can skip them
+ *  ("Rent 18000 + 2500 =" is a sum, not an ₹18,000 expense). */
+export function calcLineTexts(text: string): Set<string> {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');
+  return new Set(calcLines(text).map(r => lines[r.line].trim()));
+}
