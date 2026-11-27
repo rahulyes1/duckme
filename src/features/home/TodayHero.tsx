@@ -6,6 +6,7 @@ import { useCountUp } from '../../lib/hooks';
 import { cashFlow } from '../money/cashflow';
 import { spendingInsights } from '../money/insights';
 import { linePath, moneyLine } from '../../ui/money-line';
+import { isInvestLog, isSpend } from '../../lib/logic';
 
 function greeting(h: number): string {
   if (h < 5) return 'Up late';
@@ -34,18 +35,20 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
   const { d, lastX, lastY } = useMemo(() => linePath(line, 1000, 120, 14), [line]);
 
   const tip = useMemo(() => spendingInsights(cards, ref).find(i => i.kind !== 'bills'), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
-  // What you spent leads: today, then this month. Safe-to-spend stays as the guide underneath.
+  // What you spent this month leads, then today. Investments (SIP, MF, FD…) are never "spent".
   const spent = useMemo(() => {
     const t = toISO(ref), m = t.slice(0, 7);
-    let day = 0, month = 0, count = 0;
+    let day = 0, month = 0, count = 0, invested = 0;
     for (const c of cards) {
-      if (c.type !== 'expense' || c.status === 'trashed' || c.status === 'killed' || !c.date) continue;
-      if (c.date === t) { day += c.amount ?? 0; count++; }
-      if (c.date.startsWith(m) && c.date <= t) month += c.amount ?? 0;
+      if (!c.date || !c.date.startsWith(m) || c.date > t) continue;
+      if (isSpend(c)) {
+        month += c.amount ?? 0;
+        if (c.date === t) { day += c.amount ?? 0; count++; }
+      } else if (isInvestLog(c)) invested += c.amount ?? 0;
     }
-    return { day, month, count };
+    return { day, month, count, invested };
   }, [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
-  const big = useCountUp(spent.day, 800);
+  const big = useCountUp(spent.month, 800);
   const days = flow.cycle.daysLeft;
   const name = settings.userName?.split(' ')[0];
 
@@ -56,15 +59,17 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
         <span className="hero-date">{ref.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
       </div>
 
-      <div className="hero-k">Spent today</div>
+      <div className="hero-k">Spent this month</div>
       <div className="hero-big num" aria-live="off">{inr(big)}</div>
       <p className="hero-sub num">
-        {spent.count ? `${spent.count} spend${spent.count === 1 ? '' : 's'} · ` : 'Nothing yet today · '}
-        <b>{inr(spent.month)}</b> this month
+        {spent.count
+          ? <><b>{inr(spent.day)}</b> today · {spent.count} spend{spent.count === 1 ? '' : 's'}</>
+          : 'Nothing yet today'}
         {salary > 0 && (flow.overBy
           ? <> · <span className="hero-over">over by {inr(flow.overBy)}</span></>
           : <> · <span className="hero-safe">{inr(flow.safeToday)} safe today</span></>)}
       </p>
+      {spent.invested > 0 && <p className="hero-invested num">Invested this month <b>{inr(spent.invested)}</b></p>}
 
       <div className="hero-line" aria-hidden="true">
         <svg viewBox="0 0 1000 120" preserveAspectRatio="none">

@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ListOrdered, Plus, Search, Sparkles, X } from 'lucide-react';
+import { ChevronRight, ListOrdered, Plus, Search, Sparkles, X } from 'lucide-react';
 import type { Card, CardType } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
 import { matchesQuery, useCards, useSettings } from '../../lib/hooks';
 import { saveSettings } from '../../lib/db';
-import { buzz, prefersReducedMotion } from '../../lib/format';
+import { buzz, inr, prefersReducedMotion, today, todayISO } from '../../lib/format';
 import { EmptyState } from '../../ui/bits';
 import { Masonry } from '../../ui/Masonry';
 import { SwipeCard } from './SwipeCard';
-import { byRank } from '../../lib/logic';
+import { byRank, isSpend } from '../../lib/logic';
 import { newCardDefaults } from './draft';
 import { TodayHero } from './TodayHero';
 import { CloseDay } from './CloseDay';
 import { BackupNudge } from './BackupNudge';
+import { TodayPriorities } from './TodayPriorities';
+import { todayPriorities } from './priorities';
+import { writePref } from '../../lib/prefs';
 import { Fab } from './Fab';
 import { QuickAdd } from './QuickAdd';
 import './home.css';
@@ -35,15 +38,34 @@ export default function HomeScreen() {
   const newTimer = useRef<number>();
 
   useEffect(() => () => clearTimeout(newTimer.current), []);
+  // Re-render when the app comes back to the front, so priorities and the month total follow the date.
+  const [, wake] = useState(0);
+  useEffect(() => {
+    const on = () => { if (document.visibilityState === 'visible') wake(n => n + 1); };
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
+  }, []);
+  const iso = todayISO();
 
   const isHidden = useCallback((c: Card) => !!c.locked && !app.isUnlocked(c.id), [app]);
 
   // Journal pages live in Notes → Today, not in the Home grid.
   const open = useMemo(() => (cards ?? []).filter(c => isActive(c) && !c.journalDate), [cards]);
+  const home = !q.trim() && filter === 'all';
+  const prio = useMemo(() => todayPriorities(cards ?? [], today()), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
+  // This month's real spends (not investments), for the "Open in Money" row.
+  const spends = useMemo(() => {
+    const m = iso.slice(0, 7);
+    const list = (cards ?? []).filter(c => isSpend(c) && !!c.date && c.date.startsWith(m) && c.date <= iso);
+    return { count: list.length, total: list.reduce((s, c) => s + (c.amount ?? 0), 0) };
+  }, [cards, iso]);
   const shown = useMemo(() => {
     const query = q.trim();
+    const inStrip = new Set(prio.items.map(c => c.id));
     return open
       .filter(c => filter === 'all' || c.type === FILTER_TYPE[filter])
+      // On All with no search: spends live in Money, and today's priorities are already in the strip above.
+      .filter(c => query || filter !== 'all' || ((c.pinned || c.type !== 'expense') && !inStrip.has(c.id)))
       .filter(c => {
         if (!query) return true;
         const withKind = { ...c, labels: [...c.labels, KIND_LABEL[c.type]] };
@@ -52,7 +74,7 @@ export default function HomeScreen() {
       })
       // Your order is the ONLY order (spec §7): due dates, penalties and salary side never move cards.
       .sort(byRank);
-  }, [open, filter, q, isHidden]);
+  }, [open, filter, q, isHidden, prio]);
   const pinned = shown.filter(c => c.pinned);
   const others = shown.filter(c => !c.pinned);
 
@@ -107,6 +129,16 @@ export default function HomeScreen() {
           Tap + for a quick note. Hold + to pick a task, bill, expense or investment, or choose <b>Type it</b> and write it the way you would say it: <b>bijli 2400 15th</b>.
         </EmptyState>
       );
+    } else if (!shown.length && home) {
+      content = (
+        <EmptyState
+          icon={<Sparkles size={40} aria-hidden="true" />}
+          title="All clear"
+          action={<button type="button" className="btn primary" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Write a note</button>}
+        >
+          Your spends are in Money. Tap + for a note, or hold + to add a task or bill.
+        </EmptyState>
+      );
     } else if (!shown.length) {
       content = (
         <EmptyState
@@ -153,7 +185,14 @@ export default function HomeScreen() {
         </div>
       </header>
 
-      {cards !== undefined && open.length > 0 && !q && filter === 'all' && <TodayHero cards={cards} settings={settings} />}
+      {cards !== undefined && open.length > 0 && home && <TodayPriorities items={prio.items} more={prio.more} />}
+      {cards !== undefined && open.length > 0 && home && <TodayHero cards={cards} settings={settings} />}
+      {cards !== undefined && home && spends.count > 0 && (
+        <button type="button" className="home-spends num" onClick={() => { writePref('hisaab.money.tab', 'expenses'); app.go('money'); }}>
+          <span>{spends.count} spend{spends.count === 1 ? '' : 's'} this month · <b>{inr(spends.total)}</b></span>
+          <em>Open in Money <ChevronRight size={16} aria-hidden="true" /></em>
+        </button>
+      )}
       {cards !== undefined && !q && filter === 'all' && <CloseDay cards={cards} />}
       {cards !== undefined && !q && filter === 'all' && <BackupNudge cardCount={cards.filter(c => c.status !== 'trashed').length} settings={settings} />}
 
