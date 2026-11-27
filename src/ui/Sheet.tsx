@@ -54,9 +54,13 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
     const html = document.documentElement;
     const prevOverflow = html.style.overflow;
     html.style.overflow = 'hidden';
+    // "Go to Home" from anywhere closes any open sheet first.
+    const onHome = () => onCloseRef.current();
+    window.addEventListener('hisaab:dismiss', onHome);
     document.addEventListener('keydown', onKey, true);
     document.addEventListener('focusin', onFocusIn);
     return () => {
+      window.removeEventListener('hisaab:dismiss', onHome);
       clearTimeout(t);
       html.style.overflow = prevOverflow;
       document.removeEventListener('keydown', onKey, true);

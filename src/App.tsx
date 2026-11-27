@@ -142,6 +142,26 @@ export default function App() {
 
   const closeEditor = useCallback(() => setEditor(null), []);
 
+  // Nav taps and the editors' Home button: close whatever is open and land on the screen at once.
+  const editorOpen = useRef(false);
+  editorOpen.current = !!editor;
+  const jump = useCallback((r: Route) => {
+    window.dispatchEvent(new Event('hisaab:dismiss')); // sheets, quick search
+    if (editorOpen.current) {
+      // The editor's own Back flushes unsaved text and drops empty notes.
+      const back = document.querySelector<HTMLButtonElement>('.editor .editor-top [aria-label="Back"]');
+      if (back) back.click(); else setEditor(null);
+    }
+    const same = readRoute() === r;
+    if (!same) { location.hash = r; setRoute(r); }
+    window.scrollTo({ top: 0, behavior: same && !reduceMotion ? 'smooth' : 'auto' });
+  }, [reduceMotion]);
+  useEffect(() => {
+    const onHome = () => jump('home');
+    window.addEventListener('hisaab:home', onHome);
+    return () => window.removeEventListener('hisaab:home', onHome);
+  }, [jump]);
+
   // Text shared from WhatsApp/GPay/email, and the home-screen shortcuts (?new=note / ?new=expense).
   const shareDone = useRef(false);
   useEffect(() => {
@@ -201,7 +221,8 @@ export default function App() {
           <div className="brand">Hisaab<span>.</span></div>
           <button type="button" className="nav-search" onClick={openQuickSearch}><Search size={18} aria-hidden="true" /><span>Search</span><kbd>Ctrl K</kbd></button>
           {NAV.map(({ r, label, Icon }) => (
-            <a key={r} href={`#${r}`} aria-current={route === r ? 'page' : undefined}>
+            <a key={r} href={`#${r}`} aria-current={route === r ? 'page' : undefined}
+              onClick={e => { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); jump(r); }}>
               <span className="ico">
                 <Icon size={22} strokeWidth={2} aria-hidden="true" />
                 {route === r && (

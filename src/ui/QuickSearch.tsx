@@ -41,9 +41,11 @@ export function QuickSearch() {
       if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) { e.preventDefault(); show(); }
       else if (e.key === '/' && !typing && !document.querySelector('.sheet, .editor')) { e.preventDefault(); show(); }
     };
+    const hide = () => setOpen(false);
     window.addEventListener('hisaab:search', show);
+    window.addEventListener('hisaab:dismiss', hide);
     window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('hisaab:search', show); window.removeEventListener('keydown', onKey); };
+    return () => { window.removeEventListener('hisaab:search', show); window.removeEventListener('hisaab:dismiss', hide); window.removeEventListener('keydown', onKey); };
   }, []);
   useEffect(() => { if (open) setTimeout(() => input.current?.focus(), 30); }, [open]);
 

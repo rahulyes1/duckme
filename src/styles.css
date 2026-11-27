@@ -108,7 +108,8 @@ img { max-width: 100%; display: block; }
 .nav .brand span { color: var(--accent); }
 
 @keyframes route-fade { from { opacity: 0; } to { opacity: 1; } }
-.route-fade { animation: route-fade .2s ease-out; }
+.route-fade { animation: route-fade .12s ease-out; }
+.editor-lead { display: flex; align-items: center; gap: 2px; }
 
 /* ---------- primitives ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px;

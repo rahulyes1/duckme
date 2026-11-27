@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowLeft, CheckCircle2, Copy, IndianRupee, Link2, MoreVertical, Palette, Pin, PinOff, Receipt, StickyNote, CheckSquare, Trash2, TrendingUp,
 } from 'lucide-react';
+import { HomeButton } from '../../ui/HomeButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
 import { convert, duplicate, trash, updateCard } from '../../lib/actions';
@@ -245,7 +246,10 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
   return (
     <div className="editor-scroll money-editor">
       <div className="editor-top">
-        <button type="button" className="icon-btn" aria-label="Back" onClick={back}><ArrowLeft size={22} aria-hidden="true" /></button>
+        <span className="editor-lead">
+          <button type="button" className="icon-btn" aria-label="Back" onClick={back}><ArrowLeft size={22} aria-hidden="true" /></button>
+          <HomeButton />
+        </span>
         <span className="money-editor-kind">{c.type === 'invest' && kind ? kind : KIND_LABEL[c.type]}</span>
         <div className="money-editor-actions">
           <button type="button" className="icon-btn" aria-pressed={c.pinned} aria-label={c.pinned ? 'Unpin' : 'Pin'} onClick={() => set({ pinned: !c.pinned })}>

@@ -6,6 +6,7 @@ import {
   BookOpen, BookmarkPlus, ClipboardCopy, IndianRupee, ListChecks, Lock, LockOpen, MessageCircle, MoreVertical, Palette, PenLine, Pin, PinOff, Receipt,
   Share2, StickyNote, Tag, Trash2, X,
 } from 'lucide-react';
+import { HomeButton } from '../../ui/HomeButton';
 import './notes.css';
 import { useApp } from '../../app-context';
 import { db, saveSettings } from '../../lib/db';
@@ -80,7 +81,10 @@ function LockedGate({ card, onClose }: { card: Card; onClose: () => void }) {
   return (
     <div className="editor-scroll">
       <div className="editor-top">
-        <button type="button" className="icon-btn" aria-label="Back" onClick={onClose}><ArrowLeft size={22} aria-hidden="true" /></button>
+        <span className="editor-lead">
+          <button type="button" className="icon-btn" aria-label="Back" onClick={onClose}><ArrowLeft size={22} aria-hidden="true" /></button>
+          <HomeButton />
+        </span>
       </div>
       {settings.pinHash && <PinPad pinHash={settings.pinHash} onUnlock={() => unlock(card.id)} />}
     </div>
@@ -347,7 +351,10 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
     <MotionConfig reducedMotion="user">
       <div className="editor-scroll">
         <div className="editor-top">
-          <button type="button" className="icon-btn" aria-label="Back" onClick={close}><ArrowLeft size={22} aria-hidden="true" /></button>
+          <span className="editor-lead">
+            <button type="button" className="icon-btn" aria-label="Back" onClick={close}><ArrowLeft size={22} aria-hidden="true" /></button>
+            <HomeButton />
+          </span>
           <div className="notes-tools">
             <button type="button" className="icon-btn" aria-label="Pin note" aria-pressed={card.pinned} onClick={togglePin}>
               {card.pinned ? <PinOff size={20} aria-hidden="true" /> : <Pin size={20} aria-hidden="true" />}
