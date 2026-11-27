@@ -15,7 +15,7 @@ import { EXPENSE_CATEGORIES, INVEST_KINDS, KIND_LABEL, PAY_MODES } from '../../l
 import { DuePill } from '../../ui/CardTile';
 import { ColorPicker, Switch } from '../../ui/bits';
 import { Sheet } from '../../ui/Sheet';
-import { fmtPlain, hasMaturity, isMonthly, paidMessage, parseAmount, REPEAT_LABEL } from './money-util';
+import { billGuess, fmtPlain, hasMaturity, isMonthly, paidMessage, parseAmount, REPEAT_LABEL } from './money-util';
 import './money.css';
 import { isActive } from '../../lib/types';
 import { AutopayFields } from './autopay-ui';
@@ -278,7 +278,13 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
         <div className="field">
           <label htmlFor={`title-${id}`}>{titleLabel}</label>
           <input id={`title-${id}`} className="input" value={c.title} placeholder={titlePh} autoComplete="off"
-            onChange={e => set({ title: e.target.value })} />
+            onChange={e => set({ title: e.target.value })}
+            onBlur={e => {
+              // A new bill's name fills the boring bits: "LIC premium" → yearly, Insurance. Only while untouched.
+              if (c.type !== 'bill' || (c.repeat ?? 'none') !== 'none' || c.category || c.autorenew || c.lastSafe) return;
+              const g = billGuess(e.target.value);
+              if (Object.keys(g).length) set(g);
+            }} />
         </div>
 
         {c.type === 'expense' && (

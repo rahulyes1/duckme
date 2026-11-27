@@ -131,3 +131,14 @@ describe('daySweep + duplicates', () => {
     expect(looksDuplicate([c], { amount: 250, category: 'Food', date: '2026-11-26' }, 1_000_000 + 20 * 60_000)).toBeNull();
   });
 });
+
+import { categoryForNote } from './capture';
+describe('categoryForNote', () => {
+  it('your own past category for the same words wins, else a word guess, else null', () => {
+    const cards = [{ ...ex('1', '2026-11-20', 20, 'Chai'), category: 'Personal care' }, { ...ex('2', '2026-11-10', 20, 'chai'), category: 'Food' }];
+    expect(categoryForNote(cards, ' Chai ')).toBe('Personal care');
+    expect(categoryForNote(cards, 'swiggy biryani')).toBe('Food');
+    expect(categoryForNote(cards, 'gift for mom')).toBeNull();
+    expect(categoryForNote(cards, '')).toBeNull();
+  });
+});

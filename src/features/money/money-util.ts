@@ -12,6 +12,25 @@ export function guessCategory(note: string): string {
   return (EXPENSE_CATEGORIES as readonly string[]).includes(c) ? c : 'Other';
 }
 
+/** What a new bill's name tells us: "LIC premium" repeats yearly, "Netflix" monthly and renews on its own. */
+export interface BillGuess { repeat?: Repeat; category?: string; autorenew?: boolean; lastSafe?: boolean }
+const BILL_RULES: [RegExp, BillGuess][] = [
+  [/\b(netflix|hotstar|spotify|prime ?video|youtube ?premium|sonyliv|zee5|jiocinema|ott)\b/i, { repeat: 'monthly', category: 'Recharge & OTT', autorenew: true }],
+  [/\b(insurance|premium|lic|policy|mediclaim)\b/i, { repeat: 'yearly', category: 'Insurance' }],
+  [/\b(annual|yearly|every year|har saal|amc|domain|membership)\b/i, { repeat: 'yearly' }],
+  [/\b(quarterly|every 3 months|teen mahine)\b/i, { repeat: 'quarterly' }],
+  [/\b(emi|loan)\b/i, { repeat: 'monthly', category: 'EMI' }],
+  [/\b(rent|kiraya|maintenance)\b/i, { repeat: 'monthly', category: 'Rent' }],
+  [/\b(bijli|electricity|wifi|broadband|postpaid|gas|water|paani|dth)\b/i, { repeat: 'monthly', category: 'Bills' }],
+  [/\b(credit ?card|cc bill)\b/i, { repeat: 'monthly', category: 'Bills', lastSafe: true }],
+  [/\b(recharge)\b/i, { category: 'Recharge & OTT' }],
+  [/\b(school|tuition|fees?)\b/i, { category: 'Education' }],
+];
+export function billGuess(title: string): BillGuess {
+  for (const [re, g] of BILL_RULES) if (re.test(title)) return g;
+  return {};
+}
+
 export const monthKey = (d: Date): string => toISO(d).slice(0, 7);
 export const monthStart = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), 1);
 export const shortMonth = (d: Date): string => d.toLocaleDateString('en-IN', { month: 'short' });

@@ -23,7 +23,7 @@ import { catIcon } from './parts';
 import { balanceText, buildSplit, knownPeople, myShare, type SplitDraft } from './split';
 import { EMPTY_SPLIT, SplitPicker } from './splitPicker';
 import { CaptureBar, type Fill } from './CaptureBar';
-import { investKindFromText, looksDuplicate } from '../../lib/capture';
+import { categoryForNote, investKindFromText, looksDuplicate } from '../../lib/capture';
 
 type Day = 'today' | 'yesterday' | 'pick';
 /** 4 columns: 7 8 9 ⌫ | 4 5 6 − | 1 2 3 + | 00 0 . = */
@@ -47,6 +47,8 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
 
   const [amt, setAmt] = useState('');
   const [cat, setCat] = useState<string | null>(null);
+  /** True while the category was picked for you (last time's, or guessed from the note): the note may still change it. */
+  const catAuto = useRef(true);
   const [mode, setMode] = useState<string>('UPI');
   const [day, setDay] = useState<Day>('today');
   const [picked, setPicked] = useState(todayISO());
@@ -68,6 +70,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     setAmt(''); setNote(''); setErr(''); setDay('today'); setPicked(todayISO());
     setSplitOn(false); setSplitDraft(EMPTY_SPLIT); setSplitErr('');
     fillInvest.current = null;
+    catAuto.current = true;
   }, []);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -77,6 +80,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     // Preselect what you used last time (an SMS / voice fill below can still override it).
     const s = settingsRef.current;
     setCat(s.lastExpenseCategory && (EXPENSE_CATEGORIES as readonly string[]).includes(s.lastExpenseCategory) ? s.lastExpenseCategory : null);
+    catAuto.current = true;
     setMode(s.lastExpenseMode && (PAY_MODES as readonly string[]).includes(s.lastExpenseMode) ? s.lastExpenseMode : 'UPI');
   }, [open, reset]);
 
@@ -206,7 +210,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
   /** Fill the form from a pasted SMS, your voice, or a usual-spend chip. You still check and tap Save. */
   const fill = (f: Fill) => {
     if (f.amount) setAmt(String(f.amount));
-    if (f.category) setCat(f.category);
+    if (f.category) { setCat(f.category); catAuto.current = false; }
     if (f.mode) setMode(f.mode);
     if (f.title) setNote(f.title);
     fillInvest.current = f.invest ?? investKindFromText(f.title);
@@ -230,6 +234,17 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       fill({ ...(JSON.parse(raw) as Fill), from: 'sms' });
     } catch { /* storage blocked */ }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Typing the note picks the category for you ("chai" → Food), unless you tapped one yourself. */
+  const onNote = (v: string) => {
+    setNote(v);
+    if (!catAuto.current) return;
+    const g = categoryForNote(cards ?? [], v);
+    if (!g || !(EXPENSE_CATEGORIES as readonly string[]).includes(g)) return;
+    setCat(g);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`.money-qe-cat[data-cat="${CSS.escape(g)}"]`)
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }));
+  };
 
   const another = () => { setSaved(null); setTimeout(() => amtRef.current?.focus(), 30); };
 
@@ -294,6 +309,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
     onClick: () => {
       if (lp.current.fired) { lp.current.fired = false; return; }
+      catAuto.current = false;
       setCat(c => (c === k ? null : k));
     },
   });
@@ -350,7 +366,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
               const Icon = catIcon(k);
               const isFav = favs.includes(k);
               return (
-                <button key={k} type="button" className="chip money-qe-cat" aria-pressed={cat === k}
+                <button key={k} type="button" className="chip money-qe-cat" data-cat={k} aria-pressed={cat === k}
                   aria-label={isFav ? `${k}, pinned` : k} {...catProps(k)}>
                   <Icon size={18} aria-hidden="true" />
                   <span>{k}</span>
@@ -399,7 +415,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
           <div className="field money-qe-note">
             <label htmlFor="qe-note" className="sr-only">Note (optional)</label>
             <input id="qe-note" className="input" value={note} placeholder="Note (optional)" autoComplete="off" enterKeyHint="done"
-              onChange={e => setNote(e.target.value)}
+              onChange={e => onNote(e.target.value)}
               onFocus={e => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }), 250); }} />
           </div>
 

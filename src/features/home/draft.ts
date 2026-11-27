@@ -3,7 +3,7 @@ import type { Card, CardType, InvestInfo, InvestKind } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { addDays, daysBetween, fmtDate, fromISO, inr, toISO, today } from '../../lib/format';
 import { dayToDate, parse } from '../../lib/parse';
-import { DEFAULTS as MONEY_DEFAULTS } from '../money/money-util';
+import { billGuess, DEFAULTS as MONEY_DEFAULTS } from '../money/money-util';
 
 export type Partial0 = Partial<Card> & { type: CardType };
 
@@ -31,14 +31,18 @@ export function buildDraft(text: string, forced: CardType | null, ref: Date = to
     case 'note':
       partial = { type, title: cap(v.replace(/^idea:\s*/i, 'Idea: ')) || 'Your note' };
       break;
-    case 'bill':
+    case 'bill': {
+      const g = billGuess(v);
       partial = {
         type, title: title || 'Your bill', amount,
         due: p.date ?? toISO(addDays(ref, 7)),
-        repeat: monthly ? 'monthly' : 'none',
-        category: cat,
+        repeat: g.repeat ?? (monthly ? 'monthly' : 'none'),
+        category: g.category ?? cat,
+        ...(g.autorenew ? { autorenew: true } : {}),
+        ...(g.lastSafe ? { lastSafe: true } : {}),
       };
       break;
+    }
     case 'task': {
       const due = p.date ?? undefined;
       partial = {
@@ -70,7 +74,7 @@ export function buildDraft(text: string, forced: CardType | null, ref: Date = to
   if (type === 'expense' && partial.category) bits.push(partial.category);
   if (type === 'invest' && partial.invest?.next) bits.push(`next ${fmtDate(partial.invest.next)}`);
   if (type === 'invest' && partial.invest?.maturity) bits.push(`matures ${fmtDate(partial.invest.maturity)}`);
-  if (partial.repeat === 'monthly') bits.push('repeats monthly');
+  if (partial.repeat && partial.repeat !== 'none') bits.push(`repeats ${partial.repeat}`);
 
   return { type, partial, empty: !v, summary: bits.join(' · ') };
 }

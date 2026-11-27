@@ -30,3 +30,23 @@ describe('parseAmount shorthand', () => {
     expect(parseAmount('')).toBeNull();
   });
 });
+
+import { billGuess } from './money-util';
+import { buildDraft } from '../home/draft';
+describe('billGuess', () => {
+  it('reads repeat, category and renewal from a bill name', () => {
+    expect(billGuess('LIC premium')).toEqual({ repeat: 'yearly', category: 'Insurance' });
+    expect(billGuess('Netflix')).toEqual({ repeat: 'monthly', category: 'Recharge & OTT', autorenew: true });
+    expect(billGuess('HDFC credit card')).toEqual({ repeat: 'monthly', category: 'Bills', lastSafe: true });
+    expect(billGuess('Bijli bill')).toEqual({ repeat: 'monthly', category: 'Bills' });
+    expect(billGuess('Domain renewal yearly')).toEqual({ repeat: 'yearly' });
+    expect(billGuess('Rental car')).toEqual({});
+    expect(billGuess('')).toEqual({});
+  });
+  it('quick add uses it: "lic premium 24000 6 jan" repeats yearly', () => {
+    const d = buildDraft('lic premium 24000 6 jan', 'bill', new Date(2026, 10, 27));
+    expect(d.partial.repeat).toBe('yearly');
+    expect(d.partial.category).toBe('Insurance');
+    expect(d.summary).toContain('repeats yearly');
+  });
+});

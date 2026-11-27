@@ -274,3 +274,18 @@ export function looksDuplicate(cards: Card[], s: { amount: number; category?: st
     && (c.category === s.category || (!!s.title && norm(c.title || '') === norm(s.title)))
     && now - (c.createdAt || 0) < 10 * 60 * 1000) ?? null;
 }
+
+/* ---------------- category from what you typed ---------------- */
+
+/**
+ * Category for a spend note as you type it: the category you used last time for the same words
+ * ("chai" → what you filed chai under), else a guess from known words ("swiggy" → Food). Null if unsure.
+ */
+export function categoryForNote(cards: Card[], note: string): string | null {
+  const key = norm(note);
+  if (!key) return null;
+  const past = cards
+    .filter(c => c.type === 'expense' && c.status !== 'trashed' && !!c.category && norm(c.title || '') === key)
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.createdAt - a.createdAt)[0];
+  return past?.category ?? guessCategory(note);
+}
