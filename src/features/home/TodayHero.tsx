@@ -6,7 +6,7 @@ import { useCountUp } from '../../lib/hooks';
 import { cashFlow } from '../money/cashflow';
 import { spendingInsights } from '../money/insights';
 import { linePath, moneyLine } from '../../ui/money-line';
-import { isInvestLog, isSpend } from '../../lib/logic';
+import { SPENT_THIS_MONTH, monthSpend } from '../../lib/logic';
 
 function greeting(h: number): string {
   if (h < 5) return 'Up late';
@@ -37,16 +37,8 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
   const tip = useMemo(() => spendingInsights(cards, ref).find(i => i.kind !== 'bills'), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   // What you spent this month leads, then today. Investments (SIP, MF, FD…) are never "spent".
   const spent = useMemo(() => {
-    const t = toISO(ref), m = t.slice(0, 7);
-    let day = 0, month = 0, count = 0, invested = 0;
-    for (const c of cards) {
-      if (!c.date || !c.date.startsWith(m) || c.date > t) continue;
-      if (isSpend(c)) {
-        month += c.amount ?? 0;
-        if (c.date === t) { day += c.amount ?? 0; count++; }
-      } else if (isInvestLog(c)) invested += c.amount ?? 0;
-    }
-    return { day, month, count, invested };
+    const s = monthSpend(cards, ref);
+    return { day: s.today, month: s.total, count: s.todayCount, invested: s.invested };
   }, [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   const big = useCountUp(spent.month, 800);
   const days = flow.cycle.daysLeft;
@@ -59,7 +51,7 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
         <span className="hero-date">{ref.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
       </div>
 
-      <div className="hero-k">Spent this month</div>
+      <div className="hero-k">{SPENT_THIS_MONTH}</div>
       <div className="hero-big num" aria-live="off">{inr(big)}</div>
       <p className="hero-sub num">
         {spent.count

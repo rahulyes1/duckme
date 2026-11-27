@@ -1,3 +1,4 @@
+import { fmtDate } from '../../lib/format';
 import { describe, expect, it } from 'vitest';
 import type { UdhaarEntry } from '../../lib/types';
 import { settleAll, udhaarMessage, udhaarPeople, udhaarTotals } from './udhaar';
@@ -20,8 +21,8 @@ describe('udhaar', () => {
   });
   it('reminder message with UPI link', () => {
     const m = udhaarMessage(udhaarPeople(list)[0], { id: 'me@okhdfc', name: 'Me' });
-    expect(m).toContain('12-10-2026: I lent you ₹2,000');
-    expect(m).toContain('01-11-2026: you lent me ₹500');
+    expect(m).toContain(`${fmtDate('2026-10-12')}: I lent you ₹2,000`);
+    expect(m).toContain(`${fmtDate('2026-11-01')}: you lent me ₹500`);
     expect(m).toContain('Total: ₹1,500 to me');
     expect(m).toContain('upi://pay?pa=me%40okhdfc');
   });

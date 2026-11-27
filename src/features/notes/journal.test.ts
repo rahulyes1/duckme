@@ -1,3 +1,4 @@
+import { fmtDate } from '../../lib/format';
 import { describe, expect, it } from 'vitest';
 import type { Card } from '../../lib/types';
 import {
@@ -17,9 +18,9 @@ describe('journal dates', () => {
     expect(weekOf('2026-11-29')[0]).toBe('2026-11-23'); // Sunday belongs to the week that started Monday
     expect(weekOf('2026-11-23')[6]).toBe('2026-11-29');
   });
-  it('titles use DD-MM-YYYY', () => {
-    expect(journalTitle('2026-11-25', '2026-11-25')).toBe('Today · 25-11-2026');
-    expect(journalTitle('2026-11-20', '2026-11-25')).toBe('Journal · 20-11-2026');
+  it('titles use friendly dates', () => {
+    expect(journalTitle('2026-11-25', '2026-11-25')).toBe(`Today · ${fmtDate('2026-11-25')}`);
+    expect(journalTitle('2026-11-20', '2026-11-25')).toBe(`Journal · ${fmtDate('2026-11-20')}`);
   });
 });
 
@@ -64,7 +65,7 @@ describe('carry over', () => {
   });
   it('newJournal for today carries items; a past day does not', () => {
     const t = newJournal('2026-11-25', '2026-11-25', prev);
-    expect(t).toMatchObject({ type: 'note', journalDate: '2026-11-25', title: 'Today · 25-11-2026', labels: ['Journal'] });
+    expect(t).toMatchObject({ type: 'note', journalDate: '2026-11-25', title: `Today · ${fmtDate('2026-11-25')}`, labels: ['Journal'] });
     expect(t.checklist?.length).toBe(2);
     expect(newJournal('2026-11-22', '2026-11-25', prev).checklist).toBeUndefined();
     expect(newJournal('2026-11-25', '2026-11-25', undefined).checklist).toBeUndefined();

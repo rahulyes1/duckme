@@ -8,7 +8,7 @@
  *   "kal", "parso", "next monday", "15th", "15 dec", "6pm" → picked up straight from the words
  */
 import type { When } from '../../lib/types';
-import { addDays, fmtDate, fromISO, nextSalary, toISO } from '../../lib/format';
+import { addDays, fmtDate, fromISO, nextSalary, toISO, fmtDayMonth } from '../../lib/format';
 
 export interface SmartState {
   /** Planned day (YYYY-MM-DD). */
@@ -70,7 +70,7 @@ const BILLISH = /\b(pay|paid|renew|file|bill|emi|rent|kiraya|recharge|insurance|
 
 const dayName = (d: Date) => DOW_LABEL[d.getDay()];
 /** "Thu 26-11" */
-export const shortDay = (iso: string) => `${dayName(fromISO(iso))} ${fmtDate(iso).slice(0, 5)}`;
+export const shortDay = (iso: string) => `${dayName(fromISO(iso))} ${fmtDayMonth(iso)}`;
 
 /** Next date (today included) that falls on weekday `dow` (0 = Sunday). */
 export function nextWeekday(dow: number, ref: Date, includeToday = true): Date {

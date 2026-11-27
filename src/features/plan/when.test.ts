@@ -36,13 +36,13 @@ describe('whenLabel', () => {
   it('days', () => {
     expect(whenLabel({ unit: 'day', start: '2026-11-25' }, ref)).toBe('Today');
     expect(whenLabel({ unit: 'day', start: '2026-11-26' }, ref)).toBe('Tomorrow');
-    expect(whenLabel({ unit: 'day', start: '2026-11-28' }, ref)).toBe('Sat 28-11');
-    expect(whenLabel({ unit: 'day', start: '2026-11-20' }, ref)).toBe('Fri 20-11');
+    expect(whenLabel({ unit: 'day', start: '2026-11-28' }, ref)).toBe('Sat 28 Nov');
+    expect(whenLabel({ unit: 'day', start: '2026-11-20' }, ref)).toBe('Fri 20 Nov');
   });
   it('weeks', () => {
     expect(whenLabel({ unit: 'week', start: '2026-11-23' }, ref)).toBe('This week');
     expect(whenLabel({ unit: 'week', start: '2026-11-30' }, ref)).toBe('Next week');
-    expect(whenLabel({ unit: 'week', start: '2026-12-07' }, ref)).toBe('Week of 07-12');
+    expect(whenLabel({ unit: 'week', start: '2026-12-07' }, ref)).toBe('Week of 7 Dec');
   });
   it('months', () => {
     expect(whenLabel({ unit: 'month', start: '2026-11-01' }, ref)).toBe('This month');
@@ -55,7 +55,7 @@ describe('options', () => {
   it('10 weeks from this Monday', () => {
     const w = weekOptions(ref);
     expect(w).toHaveLength(10);
-    expect(w[0]).toEqual({ start: '2026-11-23', label: 'This week', range: '23-11 – 29-11' });
+    expect(w[0]).toEqual({ start: '2026-11-23', label: 'This week', range: '23 Nov – 29 Nov' });
     expect(w[1].label).toBe('Next week');
     expect(w[9].start).toBe('2027-01-25');
   });

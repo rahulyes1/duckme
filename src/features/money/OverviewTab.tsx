@@ -6,8 +6,8 @@ import { weekAllowance } from './allowance';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
 import { useApp } from '../../app-context';
-import { fmtDate, inr, today } from '../../lib/format';
-import { netWorth } from '../../lib/logic';
+import { fmtDate, inr, today, fmtDayMonth } from '../../lib/format';
+import { monthSpend, netWorth } from '../../lib/logic';
 import type { Card, Settings } from '../../lib/types';
 import { Money } from '../../ui/bits';
 import { cashFlow, spentByCategory, type CashFlow } from './cashflow';
@@ -28,7 +28,7 @@ function WeekCardAllowance({ cards, allowance }: { cards: Card[]; allowance: num
     <section className={`money-card money-wk money-lvl-${lvl}`} aria-labelledby="m-wk">
       <div className="money-h-row">
         <h2 id="m-wk" className="money-h">This week</h2>
-        <span className="money-muted num">{fmtDate(w.start).slice(0, 5)} – {fmtDate(w.end).slice(0, 5)}</span>
+        <span className="money-muted num">{fmtDayMonth(w.start)} – {fmtDayMonth(w.end)}</span>
       </div>
       <div className="money-wk-row num">
         <div><span className="money-k">{w.over ? 'Over by' : 'Left'}</span><b className="money-wk-big">{inr(w.over || w.left)}</b></div>
@@ -101,7 +101,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
     const upcoming = openBills(cards).slice(0, 3);
     const nw = netWorth(cards);
     const inv = cards.filter(c => c.type === 'invest');
-    return { flow, byCat, monthTotal, top, upcoming, nw, invCount: inv.length };
+    return { flow, byCat, monthSpent: monthSpend(cards, ref).total, monthTotal, top, upcoming, nw, invCount: inv.length };
   }, [cards, salary, settings.salaryDay, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { flow } = d;
@@ -120,7 +120,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
           <SalaryForm settings={settings} compact={!!salary} onDone={() => setEditSalary(false)} />
         </section>
       ) : (
-        <PaperHero flow={flow} onSpend={onSpend} onEditSalary={() => setEditSalary(true)} />
+        <PaperHero flow={flow} monthSpent={d.monthSpent} onSpend={onSpend} onEditSalary={() => setEditSalary(true)} />
       )}
 
       <PassbookList cards={cards} settings={settings} onSpend={onSpend} />

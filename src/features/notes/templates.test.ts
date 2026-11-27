@@ -1,3 +1,4 @@
+import { fmtDate } from '../../lib/format';
 import { describe, expect, it } from 'vitest';
 import { lineAmount } from '../../lib/parse';
 import type { Card } from '../../lib/types';
@@ -7,12 +8,12 @@ describe('builtinTemplates', () => {
   const list = builtinTemplates(1, '2026-11-25');
   it('dates Month start lines relative to the next salary day', () => {
     const m = list.find(t => t.id === 'month')!;
-    expect(m.title).toBe('Month start · salary 01-12-2026');
-    expect(m.items).toContain('Rent ₹0 · by 06-12-2026');
+    expect(m.title).toBe(`Month start · salary ${fmtDate('2026-12-01')}`);
+    expect(m.items).toContain(`Rent ₹0 · by ${fmtDate('2026-12-06')}`);
   });
   it('puts the next ITR due date in the tax title', () => {
-    expect(list.find(t => t.id === 'tax')!.title).toBe('Tax season · ITR due 31-07-2027');
-    expect(builtinTemplates(1, '2027-03-10').find(t => t.id === 'tax')!.title).toContain('31-07-2027');
+    expect(list.find(t => t.id === 'tax')!.title).toBe(`Tax season · ITR due ${fmtDate('2027-07-31')}`);
+    expect(builtinTemplates(1, '2027-03-10').find(t => t.id === 'tax')!.title).toContain('31 Jul 2027');
   });
   it('placeholder lines never add stray amounts to the list total (dates are not read as ₹)', () => {
     for (const t of list) for (const i of t.items) expect([null, 0]).toContain(lineAmount(i));

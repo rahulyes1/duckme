@@ -42,8 +42,8 @@ export function builtinTemplates(salaryDay: number, todayIso: string): BuiltinTe
       ],
     },
     {
-      id: 'tax', name: 'Tax season', hint: `Proofs, Form 16, ITR due 31-07-${itrYear}`, color: 'white',
-      title: `Tax season · ITR due 31-07-${itrYear}`,
+      id: 'tax', name: 'Tax season', hint: `Proofs, Form 16, ITR due ${fmtDate(`${itrYear}-07-31`)}`, color: 'white',
+      title: `Tax season · ITR due ${fmtDate(`${itrYear}-07-31`)}`,
       items: [
         '80C proofs: PPF, ELSS, LIC, tuition fees, home loan principal',
         'HRA rent receipts and landlord PAN',

@@ -1,3 +1,4 @@
+import { fmtDate } from '../../lib/format';
 import { describe, expect, it } from 'vitest';
 import type { Card } from '../../lib/types';
 import { lastPaidForUpcoming, lastYearThisWeek, resurface } from './resurface';
@@ -44,13 +45,13 @@ describe('lastPaidForUpcoming', () => {
       card({ type: 'expense', title: 'Water bill paid', amount: 300, date: '2026-11-01' }),
     ];
     expect(lastPaidForUpcoming(cards, TODAY)).toEqual([
-      { kind: 'last-paid', cardId: bill.id, lead: 'Last electricity bill', text: '₹2,350 on 12-10-2026' },
+      { kind: 'last-paid', cardId: bill.id, lead: 'Last electricity bill', text: `₹2,350 on ${fmtDate('2026-10-12')}` },
     ]);
   });
   it('falls back to a done bill with the same title', () => {
     const bill = card({ type: 'bill', title: 'Rent', due: '2026-11-30' });
     const old = card({ type: 'bill', title: 'rent', amount: 18000, status: 'done', due: '2026-10-30', doneAt: ms('2026-10-29') });
-    expect(lastPaidForUpcoming([bill, old], TODAY)[0]).toMatchObject({ lead: 'Last rent', text: '₹18,000 on 29-10-2026' });
+    expect(lastPaidForUpcoming([bill, old], TODAY)[0]).toMatchObject({ lead: 'Last rent', text: `₹18,000 on ${fmtDate('2026-10-29')}` });
   });
   it('ignores bills due later than 10 days, overdue, done ones, and bills with no history', () => {
     const cards = [

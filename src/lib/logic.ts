@@ -127,3 +127,23 @@ export function netWorth(cards: Card[]): { value: number; invested: number } {
   }
   return { value, invested };
 }
+
+/** The label every screen uses for the calendar-month spend total. */
+export const SPENT_THIS_MONTH = 'Spent this month';
+
+/**
+ * THE one definition of "spent this month" (Home and Money both use it): real spends dated in the calendar month
+ * of `ref`, up to today, card spends included, investments and card-bill payments never counted.
+ */
+export function monthSpend(cards: Card[], ref: Date): { total: number; count: number; today: number; todayCount: number; invested: number } {
+  const t = toISO(ref), m = t.slice(0, 7);
+  let total = 0, count = 0, today = 0, todayCount = 0, invested = 0;
+  for (const c of cards) {
+    if (!c.date || !c.date.startsWith(m) || c.date > t) continue;
+    if (isSpend(c)) {
+      total += c.amount ?? 0; count++;
+      if (c.date === t) { today += c.amount ?? 0; todayCount++; }
+    } else if (isInvestLog(c)) invested += c.amount ?? 0;
+  }
+  return { total, count, today, todayCount, invested };
+}

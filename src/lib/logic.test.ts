@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './types';
-import { byRank, gainLoss, monthTotalsByCategory, moveId, netWorth, nextDueDate, rankForNewCard, salarySplit } from './logic';
+import { byRank, monthSpend, gainLoss, monthTotalsByCategory, moveId, netWorth, nextDueDate, rankForNewCard, salarySplit } from './logic';
 
 const card = (p: Partial<Card> & { type: Card['type'] }): Card => ({
   id: p.id ?? Math.random().toString(36).slice(2), title: '', body: '', color: 'white', pinned: false, labels: [],
@@ -102,5 +102,29 @@ describe('investments — values only', () => {
       card({ type: 'invest', amount: 20000, invest: { kind: 'Gold', value: 26000 }, status: 'killed' }),
     ];
     expect(netWorth(cards)).toEqual({ value: 242300, invested: 225000 });
+  });
+});
+
+describe('monthSpend: one "spent this month" for Home and Money', () => {
+  const ref = new Date(2026, 10, 27);
+  const exp = (over: Partial<Card>): Card => ({
+    id: Math.random().toString(36), type: 'expense', title: 'x', amount: 100, date: '2026-11-10', status: 'open', category: 'Food', labels: [], links: [],
+    createdAt: 0, updatedAt: 0, ...over,
+  } as Card);
+  it('counts cash and card spends, skips investments, card-bill payments, other months and future days', () => {
+    const cards = [
+      exp({ amount: 200, mode: 'UPI' }),
+      exp({ amount: 300, mode: 'Card' }),
+      exp({ amount: 5000, title: 'SIP 5000', category: 'Investment' }),
+      exp({ amount: 9000, cardPayment: true } as Partial<Card>),
+      exp({ amount: 700, date: '2026-10-31' }),
+      exp({ amount: 800, date: '2026-11-30' }),
+      exp({ amount: 50, date: '2026-11-27' }),
+    ];
+    const s = monthSpend(cards, ref);
+    expect(s.total).toBe(550);
+    expect(s.count).toBe(3);
+    expect(s.today).toBe(50);
+    expect(s.invested).toBe(5000);
   });
 });

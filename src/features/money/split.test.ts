@@ -1,3 +1,4 @@
+import { fmtDate } from '../../lib/format';
 import { describe, expect, it } from 'vitest';
 import { newCard } from '../../lib/actions';
 import type { Card, SplitInfo } from '../../lib/types';
@@ -102,7 +103,7 @@ describe('settle-up links', () => {
   it('message lists items, total and the pay link', () => {
     const b = splitBalances([exp(800, { paidBy: 'me', people: [{ name: 'Rohan', share: 400, settled: false }] })])[0];
     const m = settleMessage(b, { id: 'me@upi', name: 'Me' });
-    expect(m).toContain('Dinner (20-11-2026): your share ₹400');
+    expect(m).toContain(`Dinner (${fmtDate('2026-11-20')}): your share ₹400`);
     expect(m).toContain('Total you owe me: ₹400');
     expect(m).toContain('upi://pay?pa=me%40upi');
     expect(whatsappLink(m)).toMatch(/^https:\/\/wa\.me\/\?text=Hi%20Rohan/);

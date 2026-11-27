@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  addDays, addMonths, addMonthsISO, daysLeft, dueLabel, dueTone, fromISO, inr, inrShort, nextSalary, salarySide, toISO,
+  addDays, addMonths, addMonthsISO, daysLeft, fmtDate, fmtDateY, fmtDayMonth, dueLabel, dueTone, fromISO, inr, inrShort, nextSalary, salarySide, toISO,
 } from './format';
 
 describe('addMonths clamps the day', () => {
@@ -97,5 +97,21 @@ describe('inr — Indian grouping', () => {
     expect(inrShort(142300)).toBe('₹1.42L');
     expect(inrShort(25000000)).toBe('₹2.5Cr');
     expect(inrShort(640)).toBe('₹640');
+  });
+});
+
+describe('friendly dates', () => {
+  const now = new Date(2026, 10, 27);
+  it('drops the year when it is the current year', () => {
+    expect(fmtDate('2026-12-01', now)).toBe('1 Dec');
+    expect(fmtDate('2026-11-28', now)).toBe('28 Nov');
+  });
+  it('adds the year for other years', () => {
+    expect(fmtDate('2027-01-12', now)).toBe('12 Jan 2027');
+    expect(fmtDate('2025-03-05T10:00', now)).toBe('5 Mar 2025');
+  });
+  it('fmtDayMonth never has a year; fmtDateY always does', () => {
+    expect(fmtDayMonth('2027-01-12')).toBe('12 Jan');
+    expect(fmtDateY('2026-12-01')).toBe('1 Dec 2026');
   });
 });

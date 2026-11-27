@@ -2,10 +2,11 @@
  * Passbook look for Money: a cream ledger page for "safe to spend today", and the cycle's passbook
  * with a running balance. Styles in passbook.css.
  */
+import { SPENT_THIS_MONTH } from '../../lib/logic';
 import { useMemo, useState } from 'react';
 import { Check, MoreHorizontal, PenLine as PenIcon, Pencil, Plus } from 'lucide-react';
 import { useApp } from '../../app-context';
-import { fmtDate, inr, today, todayISO } from '../../lib/format';
+import { fmtDate, inr, today, todayISO, fmtDayMonth } from '../../lib/format';
 import { useCountUp } from '../../lib/hooks';
 import { createCard, logInvestment, withUndo } from '../../lib/actions';
 import { investKindFromText, looksDuplicate, parsePenLine } from '../../lib/capture';
@@ -19,7 +20,7 @@ import './passbook.css';
 const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 /** The cream ledger page at the top of Money. */
-export function PaperHero({ flow, onSpend, onEditSalary }: { flow: CashFlow; onSpend: (el: HTMLElement) => void; onEditSalary: () => void }) {
+export function PaperHero({ flow, monthSpent, onSpend, onEditSalary }: { flow: CashFlow; monthSpent: number; onSpend: (el: HTMLElement) => void; onEditSalary: () => void }) {
   const big = useCountUp(flow.safeToday, 800);
   const days = flow.cycle.daysLeft === 1 ? '1 day' : `${flow.cycle.daysLeft} days`;
   const billsLabel = flow.sipsTotal ? 'Bills & SIPs' : 'Bills due';
@@ -34,12 +35,12 @@ export function PaperHero({ flow, onSpend, onEditSalary }: { flow: CashFlow; onS
         <path d="M2 5 Q 40 1 85 4 T 168 3" pathLength={1} />
       </svg>
       <p className="pb-sub num">
-        {flow.overBy ? `Spent ${inr(flow.overBy)} more than this cycle allows` : `${inr(flow.left)} left for ${days}`} · salary on {fmtDate(flow.cycle.end).slice(0, 5)}
+        {flow.overBy ? `Spent ${inr(flow.overBy)} more than this cycle allows` : `${inr(flow.left)} left for ${days}`} · salary on {fmtDayMonth(flow.cycle.end)}
       </p>
       <div className="pb-split num">
         <div><span>Salary</span><b>{inr(flow.salary)}</b></div>
         <div><span>{billsLabel}</span><b>{inr(flow.billsTotal + flow.sipsTotal)}</b></div>
-        <div><span>Spent</span><b>{inr(flow.spent)}</b></div>
+        <div><span>{SPENT_THIS_MONTH}</span><b>{inr(monthSpent)}</b></div>
       </div>
       {flow.onCard > 0 && <p className="pb-oncard num">On card {inr(flow.onCard)} · paid via card bill</p>}
       <button type="button" className="pb-spend" onClick={e => onSpend(e.currentTarget)}><Plus size={18} strokeWidth={2.6} aria-hidden="true" /> Add spend</button>

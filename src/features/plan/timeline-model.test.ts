@@ -29,6 +29,6 @@ describe('buildEvents', () => {
 describe('buildBuckets', () => {
   it('day rows use a short DD-MM date that fits the narrow column', () => {
     const b = buildBuckets(0, 1, ref);
-    expect(b[1]).toMatchObject({ label: 'Tmrw', sub: '28-11' });
+    expect(b[1]).toMatchObject({ label: 'Tmrw', sub: '28 Nov' });
   });
 });

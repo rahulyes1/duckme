@@ -42,15 +42,25 @@ export const addMonthsISO = (s: string, n: number) => toISO(addMonths(fromISO(s)
 export const daysBetween = (a: Date, b: Date): number => Math.round((b.getTime() - a.getTime()) / 864e5);
 export const daysLeft = (iso: string): number => daysBetween(today(), fromISO(iso));
 
-/** DD-MM-YYYY everywhere (BUILD_SPEC). Takes "YYYY-MM-DD" (or a longer ISO string). */
-export const fmtDate = (iso: string): string => {
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthName = (m: string) => MON[+m - 1] ?? m;
+
+/** Friendly date: "1 Dec", "28 Nov". The year is added only when it is not the current year. Storage stays YYYY-MM-DD. */
+export const fmtDate = (iso: string, now: Date = new Date()): string => {
   const [y, m, d] = iso.slice(0, 10).split('-');
-  return `${d}-${m}-${y}`;
+  const base = `${+d} ${monthName(m)}`;
+  return +y === now.getFullYear() ? base : `${base} ${y}`;
 };
-/** DD-MM for tight spaces like the salary strip. */
-export const fmtDayMonth = (iso: string): string => fmtDate(iso).slice(0, 5);
-/** Same as fmtDate; kept as a separate name for places that always want the year. */
-export const fmtDateY = fmtDate;
+/** "1 Dec" with no year, for tight spaces like the salary strip. */
+export const fmtDayMonth = (iso: string): string => {
+  const [, m, d] = iso.slice(0, 10).split('-');
+  return `${+d} ${monthName(m)}`;
+};
+/** Always with the year ("1 Dec 2026"), for maturity dates and similar. */
+export const fmtDateY = (iso: string): string => {
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${+d} ${monthName(m)} ${y}`;
+};
 export const fmtMonth = (d: Date): string => d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
 export const dueLabel = (iso: string): string => {
@@ -92,6 +102,10 @@ export async function sha256(text: string): Promise<string> {
 
 export const prefersReducedMotion = (): boolean =>
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** True on phones/tablets (finger as the main pointer). Used to word hints: "Swipe" vs "Use the buttons". */
+export const isTouchDevice = (): boolean =>
+  typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || matchMedia('(hover: none)').matches);
 
 export const buzz = (p: number | number[]) => {
   try { navigator.vibrate?.(p); } catch { /* not supported */ }
