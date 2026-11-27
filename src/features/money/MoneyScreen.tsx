@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { IndianRupee, Plus, Receipt, Search, TrendingUp } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useApp } from '../../app-context';
-import { prefersReducedMotion } from '../../lib/format';
+import { prefersReducedMotion, today } from '../../lib/format';
 import { useCards, useSettings } from '../../lib/hooks';
 import type { CardType } from '../../lib/types';
 import BillsTab from './BillsTab';
@@ -10,7 +10,7 @@ import ExpensesTab from './ExpensesTab';
 import InvestTab from './InvestTab';
 import { DepositSlip } from './DepositSlip';
 import GoalsTab from './GoalsTab';
-import { DEFAULTS, isLive } from './money-util';
+import { DEFAULTS, isLive, monthStart } from './money-util';
 import OverviewTab from './OverviewTab';
 import { readPref, writePref } from './parts';
 import QuickExpense from './QuickExpense';
@@ -83,6 +83,8 @@ export default function MoneyScreen() {
   const settings = useSettings();
   const [tab, setTabState] = useState<Tab>(() => readPref(TAB_KEY, TABS, 'overview'));
   const [spend, setSpend] = useState(false);
+  // One selected month shared by Expenses and Bills, so switching tabs keeps you in the same month.
+  const [month, setMonth] = useState<Date>(() => monthStart(today()));
   const closeSpend = useCallback(() => setSpend(false), []);
   // "New expense" home-screen shortcut: App sets this flag, then routes here.
   useEffect(() => {
@@ -149,8 +151,8 @@ export default function MoneyScreen() {
       <div role="tabpanel" id={`money-panel-${tab}`} aria-labelledby={`money-tab-${tab}`} className="money-panel">
         <div key={tab} className="money-panel-anim">
         {tab === 'overview' && <OverviewTab cards={live} settings={settings} onSpend={() => setSpend(true)} onTab={setTab} />}
-        {tab === 'expenses' && <ExpensesTab cards={live} settings={settings} />}
-        {tab === 'bills' && <BillsTab cards={live} settings={settings} />}
+        {tab === 'expenses' && <ExpensesTab cards={live} settings={settings} month={month} setMonth={setMonth} />}
+        {tab === 'bills' && <BillsTab cards={live} settings={settings} month={month} setMonth={setMonth} />}
         {tab === 'invest' && <InvestTab cards={live} onAdd={el => add('invest', el)} />}
         {tab === 'goals' && <GoalsTab settings={settings} />}
         </div>

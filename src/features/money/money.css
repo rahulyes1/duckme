@@ -47,6 +47,7 @@
 .money-summary { background: var(--strip); color: var(--strip-ink); border-radius: var(--r-lg); padding: 18px; display: grid; gap: 16px; }
 .money-summary .money-k, .money-summary .money-sk { color: var(--strip-muted); }
 .money-vs { font-size: 15px; color: var(--strip-ink); }
+.money-summary .money-vs + .money-vs { display: block; margin-top: 2px; }
 @media (min-width: 700px) { .money-summary { grid-template-columns: 1.2fr 1fr; align-items: center; } }
 
 /* ---------- overview: cash flow ---------- */
@@ -115,6 +116,16 @@
 .money-lvl-over .money-budget { color: var(--danger); font-weight: 700; }
 .field .help.money-lvl-text-warn { color: var(--warn); font-weight: 600; }
 .field .help.money-lvl-text-over { color: var(--danger); font-weight: 700; }
+/* Tap a category to filter the list. Text + aria-pressed carry the state, not colour alone. */
+.money-cat-btn { all: unset; box-sizing: border-box; display: block; min-height: 44px; padding: 6px 8px; margin: -6px -8px; width: calc(100% + 16px);
+  border-radius: var(--r-sm); cursor: pointer; }
+.money-cat-btn:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.money-cat-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.money-cat-btn[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.money-cat-on { font-size: 13px; font-weight: 700; color: var(--accent); margin-left: 6px; }
+.money-extras-link { justify-self: start; }
+.money-paid-list .money-sub { font-variant-numeric: tabular-nums; }
+.money-cal-toggle { margin-top: 4px; }
 .money-budget-label { display: inline-flex; align-items: center; gap: 6px; }
 
 .money-budget-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
@@ -129,19 +140,20 @@
 .money-filters + .money-muted { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .money-trend { margin: 0; }
+/* SVG units: at 375px the 330-wide chart renders ~0.96×, so 14–15 units stay >= 13px. */
 .money-trend svg { width: 100%; height: auto; display: block; overflow: visible; }
 .money-grid { stroke: var(--line); stroke-width: 1; }
 .money-tbar { fill: color-mix(in srgb, var(--accent) 40%, transparent); }
 .money-tbar.cur { fill: var(--accent); }
-.money-tval { fill: var(--ink); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--f-body); }
-.money-tlab { fill: var(--muted); font-size: 11px; font-family: var(--f-body); }
+.money-tval { fill: var(--ink); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--f-body); }
+.money-tlab { fill: var(--muted); font-size: 15px; font-family: var(--f-body); }
 .money-tlab.cur { fill: var(--ink); font-weight: 700; }
 .money-trend figcaption b { color: var(--ink); }
 
 /* ---------- bills calendar ---------- */
 .money-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 @media (max-width: 420px) { .money-cal { gap: 2px; margin: 0 -10px; } }
-.money-cal-wd { text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 0; }
+.money-cal-wd { text-align: center; font-size: 13px; font-weight: 600; color: var(--muted); padding: 4px 0; }
 .money-cal-day { min-width: 0; min-height: 60px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink);
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; padding: 5px 0 4px; transition: background .15s; }
 .money-cal-day.has { background: color-mix(in srgb, var(--ink) 6%, transparent); }
@@ -151,9 +163,9 @@
   font-size: 15px; font-weight: 600; }
 .money-cal-day.today .money-cal-n { box-shadow: 0 0 0 2px var(--ink); font-weight: 800; }
 .money-cal-day.sal .money-cal-n svg { color: var(--accent); }
-.money-cal-dots { display: flex; align-items: center; gap: 2px; height: 12px; }
-.money-cal-dots b { font-size: 11px; margin-left: 2px; }
-.money-cal-amt { font-size: 11px; font-weight: 700; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.money-cal-dots { display: flex; align-items: center; gap: 2px; height: 14px; }
+.money-cal-dots b { font-size: 13px; margin-left: 2px; }
+.money-cal-amt { font-size: 13px; font-weight: 700; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .k-bill, .k-sip, .k-maturity { display: inline-block; width: 7px; height: 7px; flex: none; }
 .k-bill { border-radius: 50%; background: var(--danger); }
 .k-sip { border-radius: 1px; background: var(--accent); }
@@ -357,3 +369,4 @@
 .money-qe-bhint.money-lvl-text-ok { color: var(--muted); }
 .money-qe-bhint.money-lvl-text-warn { color: var(--warn); }
 .money-qe-bhint.money-lvl-text-over { color: var(--danger); }
+.money-list-card { scroll-margin-top: 128px; }

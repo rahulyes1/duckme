@@ -1,12 +1,12 @@
 /** Small building blocks shared by the Money tabs. */
 import {
-  AlertTriangle, Bus, Check, Clapperboard, Fuel, GraduationCap, HeartPulse, House, Receipt, Shapes, ShoppingBag,
-  ShoppingBasket, Sprout, UserRound, Users, UtensilsCrossed, type LucideIcon,
+  AlertTriangle, Bus, CalendarClock, Check, Clapperboard, Fuel, Gift, GraduationCap, HeartPulse, House, Receipt, Scissors, Shapes,
+  ShieldCheck, ShoppingBag, ShoppingBasket, Smartphone, Sprout, UserRound, Users, UtensilsCrossed, type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '../../app-context';
 import { StaffPaySheet } from './staff-ui';
-import { payBill } from '../../lib/actions';
+import { payBillAsking } from './CardPaySheet';
 import { addDaysISO, dueLabel, dueTone, fmtDate, fromISO, inr, inrShort, salarySide } from '../../lib/format';
 import type { Card } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
@@ -15,7 +15,8 @@ import { longMonth, monthKey, paidMessage, REPEAT_LABEL, shortMonth, sum } from 
 
 export const CAT_ICON: Record<string, LucideIcon> = {
   Food: UtensilsCrossed, Groceries: ShoppingBasket, Travel: Bus, Fuel, Shopping: ShoppingBag, Bills: Receipt, Rent: House,
-  Staff: UserRound, Health: HeartPulse, Education: GraduationCap, Entertainment: Clapperboard, Family: Users, Investment: Sprout, Other: Shapes,
+  Staff: UserRound, Health: HeartPulse, Education: GraduationCap, Entertainment: Clapperboard, Family: Users, Investment: Sprout,
+  EMI: CalendarClock, Insurance: ShieldCheck, 'Recharge & OTT': Smartphone, 'Personal care': Scissors, 'Gifts & festivals': Gift, Other: Shapes,
 };
 export const catIcon = (c: string | undefined): LucideIcon => CAT_ICON[c ?? 'Other'] ?? Shapes;
 
@@ -24,9 +25,10 @@ export function usePayBill() {
   const { burst, toast } = useApp();
   return async (c: Card, el: HTMLElement) => {
     const rect = el.getBoundingClientRect();
-    const r = await payBill(c.id);
+    const r = await payBillAsking(c);
+    if (!r) return;
     burst(rect);
-    toast(paidMessage(c, r.nextDue), r.undo);
+    toast(paidMessage(c, r.nextDue, r.expense), r.undo);
   };
 }
 
@@ -82,15 +84,19 @@ export function MiniRow({ c, right, sub, icon: Icon }: { c: Card; right: string;
 }
 
 /** Spending bar for one category: share of the month, plus budget status in words (never colour alone). */
-export function CategoryBar({ name, amount, total, budget }: { name: string; amount: number; total: number; budget?: number }) {
+export function CategoryBar({ name, amount, total, budget, onSelect, selected }: {
+  name: string; amount: number; total: number; budget?: number;
+  /** When set, the row is a button that filters the expense list to this category. */
+  onSelect?: (name: string) => void; selected?: boolean;
+}) {
   const Icon = catIcon(name);
   const st = budgetStatus(amount, budget);
   const pct = Math.round((amount / Math.max(total, 1)) * 100);
   const fill = st.level === 'none' ? amount / Math.max(total, 1) : Math.min(1, st.frac);
-  return (
-    <li className={`money-cat money-lvl-${st.level}`}>
+  const body = (
+    <>
       <div className="money-cat-top">
-        <span className="money-cat-name"><Icon size={16} aria-hidden="true" /> {name}</span>
+        <span className="money-cat-name"><Icon size={16} aria-hidden="true" /> {name}{selected && <span className="money-cat-on">Showing</span>}</span>
         <span className="num"><b>{inr(amount)}</b> <span className="money-muted">{pct}%</span></span>
       </div>
       <div className="money-bar" aria-hidden="true"><i style={{ transform: `scaleX(${fill})` }} /></div>
@@ -103,13 +109,23 @@ export function CategoryBar({ name, amount, total, budget }: { name: string; amo
               : <>{inr(st.left)} left of {inr(budget)}</>}
         </p>
       )}
+    </>
+  );
+  return (
+    <li className={`money-cat money-lvl-${st.level}`}>
+      {onSelect ? (
+        <button type="button" className="money-cat-btn" aria-pressed={!!selected} aria-label={`Show ${name} expenses, ${inr(amount)}`}
+          onClick={() => onSelect(name)}>
+          {body}
+        </button>
+      ) : body}
     </li>
   );
 }
 
 /** Six-month spending bars with labels on every bar. */
 export function Trend({ months, values, selected }: { months: Date[]; values: number[]; selected: string }) {
-  const W = 330, H = 170, top = 22, bottom = 26, left = 8, right = 8;
+  const W = 330, H = 176, top = 24, bottom = 30, left = 8, right = 8;
   const max = Math.max(...values, 1);
   const bw = (W - left - right) / months.length;
   const ch = H - top - bottom;
@@ -131,7 +147,7 @@ export function Trend({ months, values, selected }: { months: Date[]; values: nu
             <g key={i}>
               <rect className={`money-tbar ${cur ? 'cur' : ''}`} x={x} y={top + ch - h} width={w} height={h} rx={5} />
               <text className="money-tval" x={x + w / 2} y={top + ch - h - 6} textAnchor="middle">{values[i] ? inrShort(values[i]) : '₹0'}</text>
-              <text className={`money-tlab ${cur ? 'cur' : ''}`} x={x + w / 2} y={H - 8} textAnchor="middle">{shortMonth(m)}</text>
+              <text className={`money-tlab ${cur ? 'cur' : ''}`} x={x + w / 2} y={H - 9} textAnchor="middle">{shortMonth(m)}</text>
             </g>
           );
         })}

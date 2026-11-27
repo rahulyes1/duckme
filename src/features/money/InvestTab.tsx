@@ -9,6 +9,17 @@ import { hasMaturity, isMonthly, sum } from './money-util';
 import { MiniRow } from './parts';
 import { refreshInvestValues } from './prices';
 
+/** What you've put in: typed total, or the lump sum. A SIP/RD instalment is never the total. */
+const investedOf = (c: Card): number | undefined =>
+  c.invest?.invested ?? (isMonthly(c.invest?.kind) ? undefined : c.amount);
+
+/** Right-hand figure: current value when known, else "Invested ₹X" — never the monthly instalment. */
+const shownValue = (c: Card): string => {
+  if (c.invest?.value !== undefined && c.invest.value !== null) return inr(c.invest.value);
+  const inv = investedOf(c);
+  return inv ? `Invested ${inr(inv)}` : 'Add value';
+};
+
 const glText = (c: Card): string => {
   const gl = gainLoss(c);
   if (!gl) return '';
@@ -22,12 +33,13 @@ export default function InvestTab({ cards, onAdd }: { cards: Card[]; onAdd: (el:
   const d = useMemo(() => {
     const inv = cards.filter(c => c.type === 'invest' && isActive(c));
     const nw = netWorth(cards);
-    const monthly = sum(inv.filter(c => isMonthly(c.invest?.kind)).map(c => c.amount ?? 0));
+    const sipMonthly = sum(inv.filter(c => c.invest?.kind === 'SIP').map(c => c.amount ?? 0));
+    const rdMonthly = sum(inv.filter(c => c.invest?.kind === 'RD').map(c => c.amount ?? 0));
     const byKind = new Map<string, Card[]>();
     for (const c of inv) { const k = c.invest?.kind ?? 'Other'; byKind.set(k, [...(byKind.get(k) ?? []), c]); }
     const vault = inv.filter(c => c.invest?.maturity && c.invest.maturity >= todayISO())
       .sort((a, b) => (a.invest!.maturity! < b.invest!.maturity! ? -1 : 1));
-    return { inv, nw, monthly, byKind, vault };
+    return { inv, nw, sipMonthly, rdMonthly, byKind, vault };
   }, [cards]);
 
   if (!d.inv.length) {
@@ -46,7 +58,9 @@ export default function InvestTab({ cards, onAdd }: { cards: Card[]; onAdd: (el:
         <div>
           <span className="money-k">Net worth (investments)</span>
           <Money value={d.nw.value} className="money-big" />
-          <span className="money-vs num">Invested {inr(d.nw.invested)}{d.monthly > 0 ? ` · ${inr(d.monthly)}/month in SIP and RD` : ''}</span>
+          <span className="money-vs num">Invested {inr(d.nw.invested)}</span>
+          {d.sipMonthly > 0 && <span className="money-vs num">SIP {inr(d.sipMonthly)}/month</span>}
+          {d.rdMonthly > 0 && <span className="money-vs num">RD {inr(d.rdMonthly)}/month</span>}
         </div>
         <div>
           <span className="money-k">{gl >= 0 ? 'Gain' : 'Loss'} on what you entered</span>
@@ -63,19 +77,19 @@ export default function InvestTab({ cards, onAdd }: { cards: Card[]; onAdd: (el:
         </div>
         {[...d.byKind.entries()].map(([kind, list]) => (
           <div key={kind} className="money-kind">
-            <h3 className="sec-label">{kind} <span className="num">· {inr(sum(list.map(c => c.invest?.value ?? c.invest?.invested ?? c.amount ?? 0)))}</span></h3>
+            <h3 className="sec-label">{kind} <span className="num">· {inr(sum(list.map(c => c.invest?.value ?? investedOf(c) ?? 0)))}</span></h3>
             <ul className="money-list">
               {list.map(c => {
                 const k = c.invest?.kind;
                 const bits = [
-                  isMonthly(k) ? `${inr(c.amount)}/month` : `Invested ${inr(c.invest?.invested ?? c.amount)}`,
+                  isMonthly(k) ? `${k} ${inr(c.amount)}/month` : c.invest?.value !== undefined ? `Invested ${inr(investedOf(c))}` : '',
                   isMonthly(k) && c.invest?.next ? `next ${fmtDate(c.invest.next)}` : '',
                   hasMaturity(k) && c.invest?.maturity ? `matures ${fmtDate(c.invest.maturity)}` : '',
                   glText(c),
                   c.invest?.schemeCode && c.invest.navDate ? `NAV ${fmtDate(c.invest.navDate)}` : '',
                   c.invest?.grams ? `${c.invest.grams} g · ${c.invest.purity ?? 24}K · live price` : '',
                 ].filter(Boolean).join(' · ');
-                return <MiniRow key={c.id} c={c} right={c.invest?.value !== undefined ? inr(c.invest.value) : 'Add value'} sub={bits} />;
+                return <MiniRow key={c.id} c={c} right={shownValue(c)} sub={bits} />;
               })}
             </ul>
           </div>

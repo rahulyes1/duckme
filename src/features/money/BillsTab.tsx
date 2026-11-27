@@ -1,10 +1,12 @@
-import { ChevronLeft, ChevronRight, IndianRupee, Landmark, Receipt, TrendingUp } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, IndianRupee, Landmark, Receipt, TrendingUp, UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useApp } from '../../app-context';
+import { readPref, writePref } from '../../lib/prefs';
 import { addDaysISO, addMonths, daysLeft, fmtDate, fmtMonth, fromISO, inr, inrShort, toISO, today, todayISO } from '../../lib/format';
 import { salarySplit } from '../../lib/logic';
 import type { Card, Settings } from '../../lib/types';
 import { isActive } from '../../lib/types';
-import { bucketByDay, dueItemsInRange, monthGrid, salaryDate, type DueItem, type DueKind } from './cashflow';
+import { bucketByDay, dueItemsInRange, monthGrid, paidThisCycle, salaryDate, type DueItem, type DueKind, type PaidBill } from './cashflow';
 import { monthKey, monthStart, openBills, REPEAT_LABEL, sum, YEAR_MULT } from './money-util';
 import { BillRow, MiniRow } from './parts';
 import { AutopayRegister } from './autopay-ui';
@@ -36,9 +38,36 @@ function DayItem({ it, salaryDay }: { it: DueItem; salaryDay: number }) {
   return <MiniRow c={c} icon={Landmark} right={inr(it.amount)} sub={`${c.invest?.kind ?? ''} matures`} />;
 }
 
-export default function BillsTab({ cards, settings }: { cards: Card[]; settings: Settings }) {
-  const [month, setMonth] = useState<Date>(() => monthStart(today()));
-  const [sel, setSel] = useState<string>(todayISO());
+const CAL_KEY = 'hisaab.bills.cal';
+
+/** "{title} · paid {date} · ₹{amount}" — opens the expense the payment created. */
+function PaidRow({ p }: { p: PaidBill }) {
+  const { openCard } = useApp();
+  const title = p.bill.title || 'Bill';
+  return (
+    <li>
+      <button type="button" className="money-mini" onClick={e => openCard((p.expense ?? p.bill).id, e.currentTarget)}
+        aria-label={`${title}, paid ${fmtDate(p.paidOn)}, ${inr(p.amount)}${p.expense?.cardPayment ? ', card bill' : ''}. Open the payment`}>
+        <span className="money-ico" aria-hidden="true"><CheckCircle2 size={18} /></span>
+        <span className="money-mini-text">
+          <span className="money-row-title">{title}</span>
+          <span className="money-sub num">paid {fmtDate(p.paidOn)}{p.expense?.cardPayment ? ' · card bill, not a spend' : ''}</span>
+        </span>
+        <span className="money-row-amt num">{inr(p.amount)}</span>
+      </button>
+    </li>
+  );
+}
+
+export default function BillsTab({ cards, settings, month, setMonth }: {
+  cards: Card[]; settings: Settings;
+  /** Shared with the Expenses tab (lifted to MoneyScreen). */
+  month: Date; setMonth: (m: Date) => void;
+}) {
+  const [sel, setSel] = useState<string>(() => (monthKey(month) === monthKey(today()) ? todayISO() : toISO(month)));
+  const [calOpen, setCalOpenState] = useState(() => readPref(CAL_KEY, ['open', 'closed'] as const, 'closed') === 'open');
+  const setCalOpen = (v: boolean) => { setCalOpenState(v); writePref(CAL_KEY, v ? 'open' : 'closed'); };
+  const [moreOpen, setMoreOpen] = useState(false);
   const tISO = todayISO();
   const key = monthKey(month);
 
@@ -59,8 +88,11 @@ export default function BillsTab({ cards, settings }: { cards: Card[]; settings:
     const subs = cards.filter(c => c.type === 'bill' && c.autorenew && isActive(c))
       .sort((a, b) => ((a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1));
     const subsYear = sum(subs.map(s => (s.amount ?? 0) * YEAR_MULT[s.repeat ?? 'none']));
-    return { buckets, sal, monthItems, split, before, after, subs, subsYear };
-  }, [cards, from, to, key, settings.salaryDay]); // eslint-disable-line react-hooks/exhaustive-deps
+    const paid = paidThisCycle(cards, settings.salaryDay, today());
+    const hasAutopay = cards.some(c => !!c.autopay && (c.type === 'bill' || c.type === 'invest')) || !!settings.accounts?.length;
+    const hasStaff = cards.some(c => c.type === 'bill' && !!c.staff && isActive(c));
+    return { buckets, sal, monthItems, split, before, after, subs, subsYear, paid, hasAutopay, hasStaff };
+  }, [cards, from, to, key, settings.salaryDay, settings.accounts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = (m: Date) => {
     setMonth(m);
@@ -79,16 +111,49 @@ export default function BillsTab({ cards, settings }: { cards: Card[]; settings:
         <button type="button" className="icon-btn" aria-label={`Next month, ${fmtMonth(addMonths(month, 1))}`} onClick={() => go(addMonths(month, 1))}>
           <ChevronRight size={20} aria-hidden="true" />
         </button>
-        {key !== monthKey(today()) && <button type="button" className="btn ghost money-this" onClick={() => go(monthStart(today()))}>Today</button>}
+        {key !== monthKey(today()) && <button type="button" className="btn ghost money-this" onClick={() => go(monthStart(today()))}>This month</button>}
       </div>
 
       <div className="money-layout">
-        <RecurringSuggest cards={cards} />
+        <section className="money-card money-wide" aria-labelledby="b-split">
+          <h2 id="b-split" className="money-h">Bills around salary</h2>
+          <div className="money-split-cols">
+            <div>
+              <span className="money-k">Due before salary ({fmtDate(d.split.salaryISO)})</span>
+              <span className="money-mid num">{inr(d.split.before)}</span>
+              {d.before.length ? (
+                <ul className="money-list">{d.before.map(b => <BillRow key={b.id} c={b} salaryDay={settings.salaryDay} showSide={false} />)}</ul>
+              ) : <p className="money-muted">Nothing due before salary.</p>}
+            </div>
+            <div>
+              <span className="money-k">Due after salary</span>
+              <span className="money-mid num">{inr(d.split.after)}</span>
+              {d.after.length ? (
+                <ul className="money-list">{d.after.map(b => <BillRow key={b.id} c={b} salaryDay={settings.salaryDay} showSide={false} />)}</ul>
+              ) : <p className="money-muted">Nothing due in the month after salary.</p>}
+            </div>
+          </div>
+        </section>
+
+        <section className="money-card money-wide" aria-labelledby="b-paid">
+          <div className="money-h-row">
+            <h2 id="b-paid" className="money-h">Paid this cycle</h2>
+            {!!d.paid.length && <span className="num money-total">{inr(sum(d.paid.map(p => p.amount)))} · {d.paid.length} {d.paid.length === 1 ? 'bill' : 'bills'}</span>}
+          </div>
+          {d.paid.length
+            ? <ul className="money-list money-paid-list">{d.paid.map(p => <PaidRow key={p.bill.id} p={p} />)}</ul>
+            : <p className="money-muted">Nothing paid since salary yet. Tap Paid on a bill and it shows here.</p>}
+        </section>
+
         <section className="money-card money-wide" aria-labelledby="b-cal">
           <div className="money-h-row">
-            <h2 id="b-cal" className="money-h">Due in {fmtMonth(month)}</h2>
+            <h2 id="b-cal" className="money-h"><CalendarDays size={18} aria-hidden="true" /> Due in {fmtMonth(month)}</h2>
             <span className="num money-total">{inr(monthTotal)} · {d.monthItems.length} {d.monthItems.length === 1 ? 'item' : 'items'}</span>
           </div>
+          <button type="button" className="btn ghost money-cal-toggle" aria-expanded={calOpen} aria-controls="b-cal-body" onClick={() => setCalOpen(!calOpen)}>
+            <ChevronDown size={16} aria-hidden="true" style={{ transform: calOpen ? 'rotate(180deg)' : undefined }} /> {calOpen ? 'Hide calendar' : 'Show calendar'}
+          </button>
+          {calOpen && <div id="b-cal-body">
           <div className="money-cal" role="group" aria-label={`${fmtMonth(month)} calendar`}>
             {WEEK.map(w => <span key={w} className="money-cal-wd" aria-hidden="true">{w}</span>)}
             {grid.map(cell => {
@@ -137,31 +202,9 @@ export default function BillsTab({ cards, settings }: { cards: Card[]; settings:
               ? <ul className="money-list">{selItems.map((it, n) => <DayItem key={`${it.card.id}-${it.kind}-${n}`} it={it} salaryDay={settings.salaryDay} />)}</ul>
               : <p className="money-muted">Nothing due on this day.</p>}
           </div>
+          </div>}
         </section>
 
-        <AutopayRegister cards={cards} settings={settings} />
-
-        <StaffSection cards={cards} />
-
-        <section className="money-card money-wide" aria-labelledby="b-split">
-          <h2 id="b-split" className="money-h">Bills around salary</h2>
-          <div className="money-split-cols">
-            <div>
-              <span className="money-k">Due before salary ({fmtDate(d.split.salaryISO)})</span>
-              <span className="money-mid num">{inr(d.split.before)}</span>
-              {d.before.length ? (
-                <ul className="money-list">{d.before.map(b => <BillRow key={b.id} c={b} salaryDay={settings.salaryDay} showSide={false} />)}</ul>
-              ) : <p className="money-muted">Nothing due before salary.</p>}
-            </div>
-            <div>
-              <span className="money-k">Due after salary</span>
-              <span className="money-mid num">{inr(d.split.after)}</span>
-              {d.after.length ? (
-                <ul className="money-list">{d.after.map(b => <BillRow key={b.id} c={b} salaryDay={settings.salaryDay} showSide={false} />)}</ul>
-              ) : <p className="money-muted">Nothing due in the month after salary.</p>}
-            </div>
-          </div>
-        </section>
 
         <section className="money-card money-wide" aria-labelledby="b-sub">
           <div className="money-h-row">
@@ -178,6 +221,15 @@ export default function BillsTab({ cards, settings }: { cards: Card[]; settings:
             </ul>
           ) : <p className="money-muted">No auto-renewing bills. Turn on "Auto-renews" in a bill to track it here.</p>}
         </section>
+        {(d.hasAutopay || moreOpen) && <AutopayRegister cards={cards} settings={settings} />}
+        {(d.hasStaff || moreOpen) && <StaffSection cards={cards} />}
+        {!moreOpen && !(d.hasAutopay && d.hasStaff) && (
+          <button type="button" className="btn ghost money-extras-link money-wide" onClick={() => setMoreOpen(true)}>
+            <UserRound size={16} aria-hidden="true" /> Track autopay or staff pay
+          </button>
+        )}
+
+        <RecurringSuggest cards={cards} />
       </div>
     </>
   );

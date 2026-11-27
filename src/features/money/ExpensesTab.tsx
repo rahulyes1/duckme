@@ -1,27 +1,26 @@
-import { ChevronLeft, ChevronRight, PiggyBank, Search, Trash2, X } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, HandCoins, PiggyBank, Search, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
-import { trash } from '../../lib/actions';
-import { addMonths, fmtDate, fmtMonth, inr, today, todayISO } from '../../lib/format';
+import { addMonths, fmtDate, fmtMonth, inr, prefersReducedMotion, today, todayISO } from '../../lib/format';
 import type { Card, Settings } from '../../lib/types';
-import { EXPENSE_CATEGORIES, PAY_MODES } from '../../lib/types';
+import { PAY_MODES } from '../../lib/types';
 import { Money } from '../../ui/bits';
 import BudgetSheet from './BudgetSheet';
-import { filterExpenses, groupByDay, spentByCategory } from './cashflow';
+import { filterExpenses, groupByDay, spentByCategory, usedCategories } from './cashflow';
 import { expensesIn, lastMonths, longMonth, monthKey, monthStart, spentIn, sum } from './money-util';
 import { catIcon, CategoryBar, Trend } from './parts';
 import { SmallSpendsCard } from './smallSpends';
+import { smallInMonth } from './small';
+import { splitBalances } from './split';
+import { udhaarPeople } from './udhaar';
 import { SplitsCard } from './splitCard';
 import { UdhaarCard } from './UdhaarCard';
 import './goals.css';
 
+/** One expense. Tap to open; delete lives in the editor (with undo), so a stray tap can't remove it. */
 function ExpenseRow({ c }: { c: Card }) {
-  const { openCard, toast } = useApp();
+  const { openCard } = useApp();
   const Icon = catIcon(c.category);
-  const del = async () => {
-    const undo = await trash(c.id);
-    toast(`Deleted ${c.title || 'expense'} ${inr(c.amount)}`, undo);
-  };
   return (
     <li className="money-exp">
       <button type="button" className="money-mini" onClick={e => openCard(c.id, e.currentTarget)}>
@@ -32,24 +31,27 @@ function ExpenseRow({ c }: { c: Card }) {
         </span>
         <span className="money-row-amt num">{inr(c.amount)}</span>
       </button>
-      <button type="button" className="icon-btn money-del" aria-label={`Delete ${c.title || 'expense'} ${inr(c.amount)}`} onClick={del}>
-        <Trash2 size={18} aria-hidden="true" />
-      </button>
     </li>
   );
 }
 
-export default function ExpensesTab({ cards, settings }: { cards: Card[]; settings: Settings }) {
-  const [month, setMonth] = useState<Date>(() => monthStart(today()));
+export default function ExpensesTab({ cards, settings, month, setMonth }: {
+  cards: Card[]; settings: Settings;
+  /** Shared with the Bills tab (lifted to MoneyScreen). Always the 1st of a month. */
+  month: Date; setMonth: (m: Date) => void;
+}) {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');
   const [mode, setMode] = useState('');
   const [budgetOpen, setBudgetOpen] = useState(false);
   const closeBudget = useCallback(() => setBudgetOpen(false), []);
 
+  const [extras, setExtras] = useState(false);
+  const listRef = useRef<HTMLElement>(null);
   const nowMonth = monthStart(today());
   const key = monthKey(month);
   const isCurrent = key === monthKey(nowMonth);
+  const atLatest = key >= monthKey(nowMonth);
   const prevMonth = addMonths(month, -1);
 
   const d = useMemo(() => {
@@ -62,8 +64,20 @@ export default function ExpensesTab({ cards, settings }: { cards: Card[]; settin
       .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
     const months = lastMonths(month);
     const trend = months.map(m => spentIn(cards, monthKey(m)));
-    return { exp, spent, lastSpent, byCat, cats, months, trend };
+    const used = usedCategories(cards, key);
+    const hasSplits = splitBalances(cards).some(b => b.open.length > 0);
+    const hasSmall = smallInMonth(cards, key).count > 0;
+    return { exp, spent, lastSpent, byCat, cats, months, trend, used, hasSplits, hasSmall };
   }, [cards, key, settings.budgets]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasUdhaar = useMemo(() => udhaarPeople(settings.udhaar ?? []).some(p => p.open.length > 0), [settings.udhaar]);
+  // A category picked from another month may not exist here; drop it so the list never looks empty by mistake.
+  useEffect(() => { if (cat && !d.used.includes(cat)) setCat(''); }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const pickCat = (name: string) => {
+    setCat(c => (c === name ? '' : name));
+    listRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  };
 
   const filtered = filterExpenses(d.exp, { q, category: cat, mode });
   const days = groupByDay(filtered);
@@ -80,7 +94,7 @@ export default function ExpensesTab({ cards, settings }: { cards: Card[]; settin
           <ChevronLeft size={20} aria-hidden="true" />
         </button>
         <span className="money-month-name" aria-live="polite">{fmtMonth(month)}</span>
-        <button type="button" className="icon-btn" aria-label={`Next month, ${fmtMonth(addMonths(month, 1))}`} disabled={isCurrent}
+        <button type="button" className="icon-btn" aria-label={`Next month, ${fmtMonth(addMonths(month, 1))}`} disabled={atLatest}
           onClick={() => setMonth(addMonths(month, 1))}>
           <ChevronRight size={20} aria-hidden="true" />
         </button>
@@ -103,22 +117,14 @@ export default function ExpensesTab({ cards, settings }: { cards: Card[]; settin
           </div>
           {d.cats.length ? (
             <ul className="money-cats">
-              {d.cats.map(c => <CategoryBar key={c.name} name={c.name} amount={c.amount} total={d.spent} budget={c.budget} />)}
+              {d.cats.map(c => <CategoryBar key={c.name} name={c.name} amount={c.amount} total={d.spent} budget={c.budget}
+                onSelect={c.amount > 0 ? pickCat : undefined} selected={cat === c.name} />)}
             </ul>
           ) : <p className="money-muted">No spending in {longMonth(month)}. Set budgets to get a warning at 80%.</p>}
         </section>
 
-        <section className="money-card" aria-labelledby="e-trend">
-          <h2 id="e-trend" className="money-h">Six-month trend</h2>
-          <Trend months={d.months} values={d.trend} selected={key} />
-        </section>
-
-        <SplitsCard cards={cards} settings={settings} />
-        <UdhaarCard cards={cards} settings={settings} />
-        <SmallSpendsCard cards={cards} month={key} monthDate={month} />
-
-        <section className="money-card money-wide" aria-labelledby="e-list">
-          <h2 id="e-list" className="money-h">Expenses in {longMonth(month)}</h2>
+        <section ref={listRef} className="money-card money-wide money-list-card" aria-labelledby="e-list">
+          <h2 id="e-list" className="money-h">{cat ? `${cat} in ${longMonth(month)}` : `Expenses in ${longMonth(month)}`}</h2>
           <div className="money-filters">
             <div className="search">
               <Search size={18} aria-hidden="true" />
@@ -130,7 +136,7 @@ export default function ExpensesTab({ cards, settings }: { cards: Card[]; settin
               <label htmlFor="e-cat-f">Category</label>
               <select id="e-cat-f" className="input" value={cat} onChange={e => setCat(e.target.value)}>
                 <option value="">All categories</option>
-                {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {d.used.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div className="field">
@@ -157,6 +163,19 @@ export default function ExpensesTab({ cards, settings }: { cards: Card[]; settin
             </div>
           )) : <p className="money-muted">{filtering ? 'Nothing matches these filters.' : `No expenses in ${longMonth(month)}.`}</p>}
         </section>
+        <section className="money-card" aria-labelledby="e-trend">
+          <h2 id="e-trend" className="money-h">Six-month trend</h2>
+          <Trend months={d.months} values={d.trend} selected={key} />
+        </section>
+
+        {(d.hasSplits || extras) && <SplitsCard cards={cards} settings={settings} />}
+        {(hasUdhaar || extras) && <UdhaarCard cards={cards} settings={settings} />}
+        {(d.hasSmall || extras) && <SmallSpendsCard cards={cards} month={key} monthDate={month} />}
+        {!extras && !(d.hasSplits && hasUdhaar) && (
+          <button type="button" className="btn ghost money-extras-link money-wide" onClick={() => setExtras(true)}>
+            <HandCoins size={16} aria-hidden="true" /> Track udhaar or splits
+          </button>
+        )}
       </div>
 
       <BudgetSheet open={budgetOpen} onClose={closeBudget} settings={settings} spent={d.byCat} monthName={longMonth(month)} />
