@@ -77,7 +77,7 @@ describe('credit-card bill is a transfer, not a spend', () => {
     const { lines } = passbook(cards, 50000, 1, d(2026, 11, 20));
     const last = lines[0];
     expect(last.balance).toBe(49500);
-    expect(lines.find(l => l.title === 'Swiggy')?.sub).toContain('paid via card bill');
+    expect(lines.find(l => l.title === 'Swiggy')?.sub).toContain('On card');
   });
 });
 

@@ -6,6 +6,8 @@ import { fmtDate, inr, today, todayISO, uid } from '../../lib/format';
 import type { Goal, Loan, Settings } from '../../lib/types';
 import { coinBurst } from '../../ui/fx';
 import { Sheet } from '../../ui/Sheet';
+import { Money } from '../../ui/bits';
+import { InfoTip } from '../../ui/InfoTip';
 import { emiFor, goalProgress, loanStatus, prepaySaving } from './goals';
 import { parseAmount } from './money-util';
 import './goals.css';
@@ -242,7 +244,7 @@ function LoanCard({ l, onEdit }: { l: Loan; onEdit: () => void }) {
       <div className="ln-bar" aria-hidden="true"><i style={{ width: `${Math.round(s.frac * 100)}%` }} /></div>
       {isFinite(s.interestLeft) && s.outstanding > 0 && (
         <div className="ln-foot">
-          <span>Interest still to pay <b className="num">{inr(s.interestLeft)}</b></span>
+          <span>Interest left <b className="num">{inr(s.interestLeft)}</b></span>
           <label className="ln-pre">
             <span>If I prepay</span>
             <span className="money-rupee-input"><span aria-hidden="true">₹</span>
@@ -274,15 +276,21 @@ export default function GoalsTab({ settings }: { settings: Settings }) {
 
   return (
     <div className="gl">
+      <section className="money-summary" aria-label="Goals and loans">
+        <div>
+          <span className="money-k">Saved for goals</span>
+          <Money value={savedAll} className="money-big" />
+          <span className="money-vs num">{loans.length ? `${inr(owed)} loan left · ${inr(emiAll)}/mo EMI` : `${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}`}</span>
+        </div>
+      </section>
       <section className="money-card gl-sec" aria-labelledby="gl-h">
         <header className="gl-h">
           <h2 id="gl-h"><PiggyBank size={18} aria-hidden="true" /> Savings goals</h2>
-          {goals.length > 0 && <span className="num gl-sum">{inr(savedAll)} saved</span>}
         </header>
         {goals.length ? (
           <ul className="gl-list">{goals.map(g => <GoalCard key={g.id} g={g} goals={goals} onEdit={() => openGoal(g)} />)}</ul>
         ) : (
-          <p className="money-muted">A trip, an emergency fund, a new phone. Set a target and a date; Hisaab tells you what to put aside each month.</p>
+          <p className="money-muted">Trip, phone, emergency fund <InfoTip label="How goals work">Set a target and a date; Hisaab shows what to put aside each month.</InfoTip></p>
         )}
         <button type="button" className="btn gl-new" onClick={() => openGoal(null)}><Plus size={16} aria-hidden="true" /> New goal</button>
       </section>
@@ -295,10 +303,10 @@ export default function GoalsTab({ settings }: { settings: Settings }) {
         {loans.length ? (
           <>
             <ul className="gl-list">{loans.map(l => <LoanCard key={l.id} l={l} onEdit={() => openLoan(l)} />)}</ul>
-            <p className="money-muted num">Total still owed: <b>{inr(owed)}</b></p>
+            <p className="money-muted num">Owed <b>{inr(owed)}</b></p>
           </>
         ) : (
-          <p className="money-muted">Add a home, car or education loan to see what's left, when it ends, and what a prepayment would save.</p>
+          <p className="money-muted">Home, car, education loan <InfoTip label="How loans work">See what's left, when it ends, and what a prepayment saves.</InfoTip></p>
         )}
         <button type="button" className="btn gl-new" onClick={() => openLoan(null)}><Plus size={16} aria-hidden="true" /> Add loan</button>
       </section>

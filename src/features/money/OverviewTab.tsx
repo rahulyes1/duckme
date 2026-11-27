@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, CalendarClock, PartyPopper, Coffee, Lightbulb, Pencil, Sparkles, TrendingDown, TrendingUp, Wallet, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarClock, PartyPopper, Coffee, Pencil, Sparkles, TrendingDown, TrendingUp, Wallet, Zap } from 'lucide-react';
 import { spendingInsights, type InsightKind } from './insights';
 import { RecapCard, RecapSheet } from './RecapCard';
 import { PaperHero, PassbookList } from './PassbookView';
@@ -10,6 +10,7 @@ import { fmtDate, inr, today, fmtDayMonth } from '../../lib/format';
 import { monthSpend, netWorth } from '../../lib/logic';
 import type { Card, Settings } from '../../lib/types';
 import { Money } from '../../ui/bits';
+import { InfoTip } from '../../ui/InfoTip';
 import { cashFlow, spentByCategory, type CashFlow } from './cashflow';
 import { longMonth, monthKey, openBills, parseAmount } from './money-util';
 import { BillRow, CategoryBar } from './parts';
@@ -58,7 +59,7 @@ function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?
     <form className="money-salary-form" onSubmit={submit} noValidate
       onKeyDown={e => { if (e.key === 'Escape' && compact && onDone) { e.stopPropagation(); onDone(); } }}>
       <div className="field">
-        <label htmlFor="sal-amt">Monthly take-home salary</label>
+        <label htmlFor="sal-amt">Take-home salary</label>
         <div className="money-rupee-input">
           <span aria-hidden="true">₹</span>
           <input id="sal-amt" className="input num" inputMode="decimal" autoComplete="off" placeholder="65,000" value={text}
@@ -67,10 +68,10 @@ function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?
             onBlur={e => { const n = parseAmount(e.target.value); if (n !== null) setText(n.toLocaleString('en-IN')); }} />
         </div>
         {err ? <span className="err" id="sal-err" role="alert">{err}</span>
-          : <span className="help" id="sal-help">What lands in your account after tax and PF. Private to you.</span>}
+          : <span className="help" id="sal-help">After tax and PF. Stays private.</span>}
       </div>
       <div className="field">
-        <label htmlFor="sal-day">Salary credited on</label>
+        <label htmlFor="sal-day">Credited on</label>
         <select id="sal-day" className="input num" value={day} onChange={e => setDay(Number(e.target.value))}>
           {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Day {d} of the month</option>)}
         </select>
@@ -115,12 +116,12 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
     <div className="money-layout">
       {!salary || editSalary ? (
         <section className="money-card money-wide" aria-labelledby="m-sal">
-          <h2 id="m-sal" className="money-h"><Wallet size={18} aria-hidden="true" /> {salary ? 'Edit salary' : 'Add your monthly take-home salary'}</h2>
-          {!salary && <p className="money-muted">Hisaab then shows what's left after bills and SIPs, and how much is safe to spend each day until the next salary.</p>}
+          <h2 id="m-sal" className="money-h"><Wallet size={18} aria-hidden="true" /> {salary ? 'Edit salary' : 'Your monthly salary'}</h2>
+          {!salary && <InfoTip label="Why salary?">Shows what's left after bills and SIPs, and what's safe to spend each day till next salary.</InfoTip>}
           <SalaryForm settings={settings} compact={!!salary} onDone={() => setEditSalary(false)} />
         </section>
       ) : (
-        <PaperHero flow={flow} monthSpent={d.monthSpent} onSpend={onSpend} onEditSalary={() => setEditSalary(true)} />
+        <PaperHero flow={flow} monthSpent={d.monthSpent} onEditSalary={() => setEditSalary(true)} />
       )}
 
       <PassbookList cards={cards} settings={settings} onSpend={onSpend} />
@@ -133,17 +134,16 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
         : (
           <div className="money-wide money-rv-ask">
             {!payday && <button type="button" className="btn ghost" onClick={() => setRecapOpen(true)}><PartyPopper size={16} aria-hidden="true" /> Last month</button>}
-            <button type="button" className="btn" onClick={() => setWeekOpen(true)}><Sparkles size={16} aria-hidden="true" /> Review my week</button>
+            <button type="button" className="btn" onClick={() => setWeekOpen(true)}><Sparkles size={16} aria-hidden="true" /> Week review</button>
           </div>
         )}
 
       {settings.weeklyAllowance ? <WeekCardAllowance cards={cards} allowance={settings.weeklyAllowance} /> : null}
 
       {insights.length > 0 && (
-        <section className="money-card ins-card" aria-labelledby="m-ins">
-          <h2 id="m-ins" className="money-h"><Lightbulb size={18} aria-hidden="true" /> Insights</h2>
+        <section className="money-card ins-card" aria-label="Insight">
           <ul className="ins-list">
-            {insights.map((x, i) => {
+            {insights.slice(0, 1).map((x, i) => {
               const Icon = INS_ICON[x.kind];
               return <li key={x.text} className={`ins k-${x.kind}`} style={{ animationDelay: `${i * 60}ms` }}><i aria-hidden="true"><Icon size={16} /></i><span>{x.text}</span></li>;
             })}
@@ -153,37 +153,30 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
 
       <section className="money-card" aria-labelledby="m-top">
         <div className="money-h-row">
-          <h2 id="m-top" className="money-h">Top categories <span className="money-muted">{longMonth(ref)}</span></h2>
+          <h2 id="m-top" className="money-h">Top spends</h2>
           <button type="button" className="btn ghost" onClick={() => onTab('expenses')}>All <ArrowRight size={16} aria-hidden="true" /></button>
         </div>
         {d.top.length ? (
           <ul className="money-cats">
             {d.top.map(([name, amount]) => <CategoryBar key={name} name={name} amount={amount} total={d.monthTotal} budget={settings.budgets[name]} />)}
           </ul>
-        ) : <p className="money-muted">Nothing spent yet this month. Tap Spend to add your first expense.</p>}
+        ) : <p className="money-muted">Nothing spent yet</p>}
       </section>
 
 
       <section className="money-card" aria-labelledby="m-nw">
         <div className="money-h-row">
-          <h2 id="m-nw" className="money-h">Net worth</h2>
+          <h2 id="m-nw" className="money-h">Net worth <InfoTip label="About these values">Values are what you enter. Hisaab doesn't give buy/sell advice.</InfoTip></h2>
           <button type="button" className="btn ghost" onClick={() => onTab('invest')}>Invest <ArrowRight size={16} aria-hidden="true" /></button>
         </div>
         {d.invCount ? (
-          <div className="money-inv-tot">
-            <div>
-              <span className="money-k">Current value</span>
-              <Money value={d.nw.value} className="money-mid" />
-              <span className="money-sk num">Invested {inr(d.nw.invested)}</span>
-            </div>
-            <div>
-              <span className="money-k">{gl >= 0 ? 'Gain' : 'Loss'}</span>
-              <span className={`money-mid num money-gl-${gl >= 0 ? 'up' : 'down'}`}>{gl >= 0 ? '+' : '−'}{inr(Math.abs(gl))}</span>
-              <span className="money-sk num">{d.nw.invested ? `${gl >= 0 ? '+' : '−'}${Math.abs((gl / d.nw.invested) * 100).toFixed(1)}%` : 'Add invested amounts'}</span>
-            </div>
+          <div className="money-nw-one">
+            <Money value={d.nw.value} className="money-mid" />
+            <span className={`num money-gl-${gl >= 0 ? 'up' : 'down'}`}>
+              {gl >= 0 ? '+' : '−'}{inr(Math.abs(gl))}{d.nw.invested ? ` · ${gl >= 0 ? '+' : '−'}${Math.abs((gl / d.nw.invested) * 100).toFixed(1)}%` : ''}
+            </span>
           </div>
-        ) : <p className="money-muted">Add SIPs, FDs or PPF to see your net worth here.</p>}
-        <p className="money-note">Values are what you enter. Hisaab doesn't give buy/sell advice.</p>
+        ) : <p className="money-muted">No investments yet</p>}
       </section>
       <RecapSheet open={recapOpen} onClose={() => setRecapOpen(false)} cards={cards} settings={settings} />
     </div>

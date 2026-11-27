@@ -49,7 +49,7 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
     const what = isCardPayment(c) ? 'Card bill paid' : isSpend(c) ? c.category : 'Invested';
     asc.push({
       id: c.id, date: c.date!, title: c.title || c.category || 'Spend',
-      sub: [what, onCard ? 'Card · paid via card bill' : c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
+      sub: [what, onCard ? 'On card' : c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
     });
   }
   // Bills and SIP/RD instalments still due, soonest first, so the projected balance runs in date order.

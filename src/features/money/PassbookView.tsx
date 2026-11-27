@@ -2,9 +2,8 @@
  * Passbook look for Money: a cream ledger page for "safe to spend today", and the cycle's passbook
  * with a running balance. Styles in passbook.css.
  */
-import { SPENT_THIS_MONTH } from '../../lib/logic';
 import { useMemo, useState } from 'react';
-import { Check, MoreHorizontal, PenLine as PenIcon, Pencil, Plus } from 'lucide-react';
+import { Check, MoreHorizontal, PenLine as PenIcon, Pencil } from 'lucide-react';
 import { useApp } from '../../app-context';
 import { fmtDate, inr, today, todayISO, fmtDayMonth } from '../../lib/format';
 import { useCountUp } from '../../lib/hooks';
@@ -20,7 +19,7 @@ import './passbook.css';
 const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 /** The cream ledger page at the top of Money. */
-export function PaperHero({ flow, monthSpent, onSpend, onEditSalary }: { flow: CashFlow; monthSpent: number; onSpend: (el: HTMLElement) => void; onEditSalary: () => void }) {
+export function PaperHero({ flow, monthSpent, onEditSalary }: { flow: CashFlow; monthSpent: number; onEditSalary: () => void }) {
   const big = useCountUp(flow.safeToday, 800);
   const days = flow.cycle.daysLeft === 1 ? '1 day' : `${flow.cycle.daysLeft} days`;
   const billsLabel = flow.sipsTotal ? 'Bills & SIPs' : 'Bills due';
@@ -35,26 +34,25 @@ export function PaperHero({ flow, monthSpent, onSpend, onEditSalary }: { flow: C
         <path d="M2 5 Q 40 1 85 4 T 168 3" pathLength={1} />
       </svg>
       <p className="pb-sub num">
-        {flow.overBy ? `Spent ${inr(flow.overBy)} more than this cycle allows` : `${inr(flow.left)} left for ${days}`} · salary on {fmtDayMonth(flow.cycle.end)}
+        {flow.overBy ? `${inr(flow.overBy)} over` : `${inr(flow.left)} left · ${days}`} · salary {fmtDayMonth(flow.cycle.end)}
       </p>
       <div className="pb-split num">
         <div><span>Salary</span><b>{inr(flow.salary)}</b></div>
         <div><span>{billsLabel}</span><b>{inr(flow.billsTotal + flow.sipsTotal)}</b></div>
-        <div><span>{SPENT_THIS_MONTH}</span><b>{inr(monthSpent)}</b></div>
+        <div><span>Spent</span><b>{inr(monthSpent)}</b></div>
       </div>
-      {flow.onCard > 0 && <p className="pb-oncard num">On card {inr(flow.onCard)} · paid via card bill</p>}
-      <button type="button" className="pb-spend" onClick={e => onSpend(e.currentTarget)}><Plus size={18} strokeWidth={2.6} aria-hidden="true" /> Add spend</button>
+      {flow.onCard > 0 && <p className="pb-oncard num">{inr(flow.onCard)} on card</p>}
     </section>
   );
 }
 
-function Line({ l, onPay }: { l: PassLine; onPay?: (c: Card, el: HTMLElement) => void }) {
+function Line({ l, onPay, mon }: { l: PassLine; onPay?: (c: Card, el: HTMLElement) => void; /** Month shown in the header: rows in it skip the month word. */ mon: number }) {
   const { openCard } = useApp();
   const m = +l.date.slice(5, 7), d = l.date.slice(8, 10);
   return (
     <li className={`pb-row is-${l.kind}`}>
       <button type="button" className="pb-main" disabled={!l.card} onClick={e => l.card && openCard(l.card.id, e.currentTarget)}>
-        <span className="pb-date num"><b>{d}</b><small>{MON[m - 1]}</small></span>
+        <span className="pb-date num"><b>{d}</b>{m !== mon ? <small>{MON[m - 1]}</small> : <small className="sr-only">{MON[m - 1]}</small>}</span>
         <span className="pb-p"><b>{l.title}</b><span>{l.sub}</span></span>
         <span className="pb-amt num">
           <b className={l.amount >= 0 ? 'cr' : 'dr'}>{l.amount >= 0 ? '+' : '−'}{inr(Math.abs(l.amount)).replace('₹', '')}</b>
@@ -68,7 +66,7 @@ function Line({ l, onPay }: { l: PassLine; onPay?: (c: Card, el: HTMLElement) =>
   );
 }
 
-const FIRST = 7;
+const FIRST = 4;
 
 const dayLabel = (iso: string) => {
   const t = today(), d = new Date(iso + 'T00:00:00');
@@ -106,7 +104,7 @@ export function PenLine({ cards, onMore }: { cards: Card[]; onMore?: (el: HTMLEl
       <PenIcon size={16} aria-hidden="true" className="pb-pen-ic" />
       <label htmlFor="pb-pen-in" className="sr-only">Write a spend</label>
       <input id="pb-pen-in" className="pb-pen-in" value={text} autoComplete="off" enterKeyHint="done"
-        placeholder="Write a spend… 250 auto cash yday" onChange={e => setText(e.target.value)} />
+        placeholder="Quick: 250 auto cash yday" onChange={e => setText(e.target.value)} />
       {onMore && !text && <button type="button" className="pb-pen-more" aria-label="Open the number pad" onClick={e => onMore(e.currentTarget)}><MoreHorizontal size={18} aria-hidden="true" /></button>}
       {ready && <button type="submit" className="pb-pen-go" aria-label="Write it"><Check size={18} aria-hidden="true" /></button>}
       {p && (
@@ -133,16 +131,16 @@ export function PassbookList({ cards, settings, onSpend }: { cards: Card[]; sett
     <section className="money-wide pb-book" aria-labelledby="pb-h">
       <div className="pb-book-h">
         <h2 id="pb-h">Passbook</h2>
-        <small>{label} · {settings.salaryAmount ? 'running balance' : 'set salary for balance'}</small>
+        <small>{label}</small>
       </div>
       <div className="pb-ledger">
         <PenLine cards={cards} onMore={onSpend} />
         <ul className="pb-lines">
-          {shown.map(l => <Line key={l.id} l={l} onPay={(c, el) => void pay(c, el)} />)}
+          {shown.map(l => <Line key={l.id} l={l} mon={+cycle.start.slice(5, 7)} onPay={(c, el) => void pay(c, el)} />)}
         </ul>
       </div>
       {lines.length > FIRST && (
-        <button type="button" className="btn ghost pb-more" onClick={() => setAll(a => !a)}>{all ? 'Show less' : `Show full passbook (${lines.length})`}</button>
+        <button type="button" className="btn ghost pb-more" onClick={() => setAll(a => !a)}>{all ? 'Show less' : `See all ${lines.length}`}</button>
       )}
     </section>
   );

@@ -21,7 +21,7 @@ import { openQuickSearch } from '../../ui/QuickSearch';
 type AddType = Extract<CardType, 'expense' | 'bill' | 'invest'>;
 const TABS = ['overview', 'expenses', 'bills', 'invest', 'goals'] as const;
 type Tab = typeof TABS[number];
-const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', expenses: 'Expenses', bills: 'Bills', invest: 'Invest', goals: 'Goals' };
+const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', expenses: 'Spends', bills: 'Bills', invest: 'Invest', goals: 'Goals' };
 const TAB_KEY = 'hisaab.money.tab';
 
 /* ---------------- add menu ---------------- */

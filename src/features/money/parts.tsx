@@ -11,7 +11,7 @@ import { addDaysISO, dueLabel, dueTone, fmtDate, fromISO, inr, inrShort, salaryS
 import type { Card } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { budgetStatus } from './cashflow';
-import { longMonth, monthKey, paidMessage, REPEAT_LABEL, shortMonth, sum } from './money-util';
+import { monthKey, paidMessage, REPEAT_LABEL, shortMonth, sum } from './money-util';
 
 export const CAT_ICON: Record<string, LucideIcon> = {
   Food: UtensilsCrossed, Groceries: ShoppingBasket, Travel: Bus, Fuel, Shopping: ShoppingBag, Bills: Receipt, Rent: House,
@@ -39,6 +39,8 @@ export function BillRow({ c, salaryDay, showSide = true }: { c: Card; salaryDay:
   const side = salarySide(c.due!, salaryDay);
   const tone = dueTone(c.due!);
   const due = fromISO(c.due!);
+  // Monthly is the norm, so only the unusual repeats (quarterly, yearly) get a word.
+  const rare = !!c.repeat && c.repeat !== 'none' && c.repeat !== 'monthly';
   return (
     <li className={`money-row money-bill tone-${tone}`} data-color={c.color}>
       <button type="button" className="money-row-main" onClick={e => openCard(c.id, e.currentTarget)}>
@@ -46,12 +48,12 @@ export function BillRow({ c, salaryDay, showSide = true }: { c: Card; salaryDay:
         <span className="bill-txt">
           <span className="money-row-title">{c.title || 'Untitled bill'}</span>
           <span className="bill-when">{dueLabel(c.due!)}<span className="sr-only">, due {fmtDate(c.due!)}</span></span>
-          {(showSide || (c.repeat && c.repeat !== 'none')) && (
+          {(showSide || rare) && (
             <span className="bill-meta">
-              {[c.repeat && c.repeat !== 'none' ? REPEAT_LABEL[c.repeat] : '', showSide ? (side === 'before' ? 'before salary' : 'after salary') : ''].filter(Boolean).join(' · ')}
+              {[rare ? REPEAT_LABEL[c.repeat!] : '', showSide ? (side === 'before' ? 'before salary' : 'after salary') : ''].filter(Boolean).join(' · ')}
             </span>
           )}
-          {c.lastSafe && <span className="bill-meta">Safe to pay till {fmtDate(addDaysISO(c.due!, 3))}</span>}
+          {c.lastSafe && <span className="bill-meta">Grace till {fmtDate(addDaysISO(c.due!, 3))}</span>}
           {c.penalty && <span className="bill-pen"><AlertTriangle size={12} aria-hidden="true" /> {c.penalty}</span>}
         </span>
       </button>
@@ -130,7 +132,6 @@ export function Trend({ months, values, selected }: { months: Date[]; values: nu
   const bw = (W - left - right) / months.length;
   const ch = H - top - bottom;
   const avg = sum(values) / values.length;
-  const hi = values.indexOf(Math.max(...values));
   const label = months.map((m, i) => `${shortMonth(m)} ${inr(values[i])}`).join(', ');
   const nonZero = values.filter(v => v > 0).length;
   return (
@@ -154,8 +155,8 @@ export function Trend({ months, values, selected }: { months: Date[]; values: nu
       </svg>
       <figcaption className="money-muted">
         {nonZero === 0
-          ? 'No spending recorded in these six months yet.'
-          : <>Average <b className="num">{inr(avg)}</b> a month. Highest was {longMonth(months[hi])} at <b className="num">{inr(values[hi])}</b>.</>}
+          ? 'No spends yet'
+          : <>Avg <b className="num">{inr(avg)}</b>/mo</>}
       </figcaption>
     </figure>
   );

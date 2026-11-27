@@ -126,7 +126,7 @@
 .money-cat-on { font-size: 13px; font-weight: 700; color: var(--accent); margin-left: 6px; }
 .money-extras-link { justify-self: start; }
 .money-paid-list .money-sub { font-variant-numeric: tabular-nums; }
-.money-cal-toggle { margin-top: 4px; }
+.money-cal-toggle { margin: -6px -10px -6px 0; gap: 6px; }
 .money-budget-label { display: inline-flex; align-items: center; gap: 6px; }
 
 .money-budget-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
@@ -137,7 +137,8 @@
 .money-filters { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); margin-bottom: 8px; }
 .money-filters .search { min-height: 48px; }
 .money-filters .search .icon-btn { margin-right: -10px; }
-@media (min-width: 640px) { .money-filters { grid-template-columns: 2fr 1fr 1fr; align-items: end; } }
+.money-filter-row { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.money-filter-btn.is-on { color: var(--accent); }
 .money-filters + .money-muted { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .money-trend { margin: 0; }
@@ -418,3 +419,7 @@
   .qe-usual { display: none; }
   .money-qe .money-qe-key { min-height: 50px; height: 50px; }
 }
+
+.money-split-h { display: flex; justify-content: space-between; margin: 4px 0 8px; }
+.money-split-h + .money-list + .money-split-h, .money-split-h + .money-muted + .money-split-h { margin-top: 18px; }
+.money-nw-one { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }

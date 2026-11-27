@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, HandCoins, PiggyBank, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, HandCoins, PiggyBank, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
 import { addMonths, fmtDate, fmtMonth, inr, prefersReducedMotion, today, todayISO } from '../../lib/format';
@@ -43,6 +43,8 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');
   const [mode, setMode] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [allCats, setAllCats] = useState(false);
   const [budgetOpen, setBudgetOpen] = useState(false);
   const closeBudget = useCallback(() => setBudgetOpen(false), []);
 
@@ -82,10 +84,14 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
   const filtered = filterExpenses(d.exp, { q, category: cat, mode });
   const days = groupByDay(filtered);
   const filtering = !!(q || cat || mode);
+  // Category and mode pickers stay tucked away until asked for (or one is in use).
+  const showFilters = filtersOpen || !!mode;
+  const setShowFilters = (f: (v: boolean) => boolean) => setFiltersOpen(f(showFilters));
   const diff = d.spent - d.lastSpent;
   const prevName = longMonth(prevMonth);
-  const vsText = d.spent === 0 && d.lastSpent === 0 ? `Nothing spent in ${prevName} either`
-    : diff === 0 ? `Same as ${prevName}` : `${inr(Math.abs(diff))} ${diff < 0 ? 'less' : 'more'} than ${prevName}`;
+  const prevShort = prevName.slice(0, 3);
+  const vsText = d.spent === 0 && d.lastSpent === 0 ? `₹0 in ${prevShort} too`
+    : diff === 0 ? `Same as ${prevShort}` : `${diff < 0 ? '↓' : '↑'} ${inr(Math.abs(diff))} vs ${prevShort}`;
 
   return (
     <>
@@ -104,7 +110,7 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
       <div className="money-layout">
         <section className="money-summary money-wide" aria-label="Month total">
           <div>
-            <span className="money-k">Spent in {longMonth(month)}</span>
+            <span className="money-k">Spent</span>
             <Money value={d.spent} className="money-big" />
             <span className="money-vs">{vsText} · {d.exp.length} {d.exp.length === 1 ? 'entry' : 'entries'}</span>
           </div>
@@ -115,23 +121,27 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
             <h2 id="e-cat" className="money-h">By category</h2>
             <button type="button" className="btn ghost" onClick={() => setBudgetOpen(true)}><PiggyBank size={16} aria-hidden="true" /> Budgets</button>
           </div>
-          {d.cats.length ? (
+          {d.cats.length ? (<>
             <ul className="money-cats">
-              {d.cats.map(c => <CategoryBar key={c.name} name={c.name} amount={c.amount} total={d.spent} budget={c.budget}
+              {(allCats ? d.cats : d.cats.slice(0, 3)).map(c => <CategoryBar key={c.name} name={c.name} amount={c.amount} total={d.spent} budget={c.budget}
                 onSelect={c.amount > 0 ? pickCat : undefined} selected={cat === c.name} />)}
             </ul>
-          ) : <p className="money-muted">No spending in {longMonth(month)}. Set budgets to get a warning at 80%.</p>}
+            {d.cats.length > 3 && <button type="button" className="btn ghost money-more-cats" aria-expanded={allCats} onClick={() => setAllCats(v => !v)}>{allCats ? 'Top 3' : `All ${d.cats.length}`}</button>}
+          </>) : <p className="money-muted">No spends yet</p>}
         </section>
 
         <section ref={listRef} className="money-card money-wide money-list-card" aria-labelledby="e-list">
-          <h2 id="e-list" className="money-h">{cat ? `${cat} in ${longMonth(month)}` : `Expenses in ${longMonth(month)}`}</h2>
+          <h2 id="e-list" className="money-h">{cat || 'All spends'}</h2>
           <div className="money-filters">
             <div className="search">
               <Search size={18} aria-hidden="true" />
               <label className="sr-only" htmlFor="e-q">Search expenses</label>
-              <input id="e-q" type="search" placeholder="Search note, category, amount" value={q} onChange={e => setQ(e.target.value)} autoComplete="off" />
+              <input id="e-q" type="search" placeholder="Search spends" value={q} onChange={e => setQ(e.target.value)} autoComplete="off" />
               {q && <button type="button" className="icon-btn" aria-label="Clear search" onClick={() => setQ('')}><X size={18} aria-hidden="true" /></button>}
+              <button type="button" className={`icon-btn money-filter-btn ${cat || mode ? 'is-on' : ''}`} aria-label="Filter by category or payment mode"
+                aria-expanded={showFilters} aria-controls="e-filters" onClick={() => setShowFilters(v => !v)}><SlidersHorizontal size={18} aria-hidden="true" /></button>
             </div>
+            {showFilters && <div id="e-filters" className="money-filter-row">
             <div className="field">
               <label htmlFor="e-cat-f">Category</label>
               <select id="e-cat-f" className="input" value={cat} onChange={e => setCat(e.target.value)}>
@@ -146,6 +156,7 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
                 {PAY_MODES.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
+            </div>}
           </div>
           {filtering && (
             <p className="money-muted num" aria-live="polite">
@@ -157,14 +168,14 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
             <div key={g.date} className="money-day">
               <h3 className="money-day-h">
                 <span className="num">{g.date === todayISO() ? `Today · ${fmtDate(g.date)}` : fmtDate(g.date)}</span>
-                <span className="num">{inr(g.total)}</span>
+                {g.items.length > 1 && <span className="num">{inr(g.total)}</span>}
               </h3>
               <ul className="money-list">{g.items.map(c => <ExpenseRow key={c.id} c={c} />)}</ul>
             </div>
-          )) : <p className="money-muted">{filtering ? 'Nothing matches these filters.' : `No expenses in ${longMonth(month)}.`}</p>}
+          )) : <p className="money-muted">{filtering ? 'Nothing matches these filters.' : 'No spends yet'}</p>}
         </section>
         <section className="money-card" aria-labelledby="e-trend">
-          <h2 id="e-trend" className="money-h">Six-month trend</h2>
+          <h2 id="e-trend" className="money-h">6 months</h2>
           <Trend months={d.months} values={d.trend} selected={key} />
         </section>
 
@@ -173,7 +184,7 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
         {(d.hasSmall || extras) && <SmallSpendsCard cards={cards} month={key} monthDate={month} />}
         {!extras && !(d.hasSplits && hasUdhaar) && (
           <button type="button" className="btn ghost money-extras-link money-wide" onClick={() => setExtras(true)}>
-            <HandCoins size={16} aria-hidden="true" /> Track udhaar or splits
+            <HandCoins size={16} aria-hidden="true" /> Udhaar & splits
           </button>
         )}
       </div>

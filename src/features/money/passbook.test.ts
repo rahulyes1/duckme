@@ -26,7 +26,7 @@ describe('passbook', () => {
       ['Salary', 65000, 65000, 'salary'],
     ]);
     expect(lines[0].sub).toBe('Due · Late fee ₹900');
-    expect(lines[2].sub).toBe('Fuel · Card · paid via card bill');
+    expect(lines[2].sub).toBe('Fuel · On card');
   });
   it('without a salary: no balance, no salary line', () => {
     const { lines } = passbook(cards, 0, 1, REF);
