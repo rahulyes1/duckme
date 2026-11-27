@@ -90,19 +90,42 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
   const restore = () => {
     const w = wrap.current, m = mover.current;
     if (w) { w.getAnimations().forEach(a => a.cancel()); w.style.overflow = ''; }
-    if (m) { m.style.transition = ''; m.style.transform = ''; m.style.opacity = ''; }
+    if (m) {
+      m.getAnimations().forEach(a => a.cancel());
+      m.style.transition = ''; m.style.transform = ''; m.style.opacity = ''; m.style.willChange = ''; m.style.transformOrigin = '';
+    }
     if (trail.current) trail.current.style.opacity = '0';
     g.current.busy = false;
   };
 
   /** Fly the card off-screen, collapse its slot, then run the action. */
-  const flyOut = (dir: 1 | -1, then: () => Promise<void>) => {
+  const flyOut = (dir: 1 | -1, then: () => Promise<void>, mode: 'fly' | 'crumple' = 'fly') => {
     const m = mover.current, w = wrap.current, t = trail.current;
     if (!m || !w) { void then(); return; }
     g.current.busy = true;
-    m.style.transition = `transform ${T(220)}ms var(--ease-in), opacity ${T(220)}ms`;
-    m.style.transform = `translateX(${dir * 130}%) rotate(${dir * 12}deg)`;
-    m.style.opacity = '0';
+    const crumple = mode === 'crumple' && !prefersReducedMotion();
+    let wait = T(200);
+    if (crumple) {
+      // Kill: the card scrunches up like paper and drops away.
+      const from = m.style.transform || 'none';
+      m.style.transition = 'none';
+      m.style.willChange = 'transform, opacity';
+      m.style.transformOrigin = '50% 60%';
+      m.animate(
+        [
+          { transform: from, opacity: 1 },
+          { transform: 'scale(.85) rotate(-6deg)', opacity: 1, offset: 0.3 },
+          { transform: 'translateY(160px) scale(.3, .25) rotate(-28deg)', opacity: 0 },
+        ],
+        { duration: 380, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' },
+      );
+      m.style.opacity = '0';
+      wait = 360;
+    } else {
+      m.style.transition = `transform ${T(220)}ms var(--ease-in), opacity ${T(220)}ms`;
+      m.style.transform = `translateX(${dir * 130}%) rotate(${dir * 12}deg)`;
+      m.style.opacity = '0';
+    }
     if (t) { t.style.transition = `opacity ${T(220)}ms`; t.style.opacity = '0'; }
     const run = () => { then().catch(restore); };
     window.setTimeout(() => {
@@ -114,7 +137,7 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
         { duration: 240, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' },
       );
       a.onfinish = run;
-    }, T(200));
+    }, wait);
   };
 
   const doRight = async (rect: DOMRect, opts?: PayOpts) => {
@@ -169,7 +192,7 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
         void askCardPayment(card).then(opts => { if (opts) flyOut(1, () => doRight(rect, opts)); });
       } else flyOut(1, () => doRight(rect));
     } else if (z === 'kill') {
-      flyOut(-1, doKill);
+      flyOut(-1, doKill, 'crumple');
     } else if (z === 'delay') {
       snapBack();
       window.setTimeout(() => { void doDelay(); }, T(250));

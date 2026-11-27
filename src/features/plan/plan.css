@@ -380,3 +380,14 @@
 .plan-ahead { display: flex; margin: 4px auto 8px; color: var(--accent); }
 
 @media (min-width: 1280px) { .plan-wm { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; } }
+
+/* ---------- tick: the check draws itself in, then the row slides off ----------
+   `translate` (not `transform`) so it isn't overridden by Framer's inline transform on the row. */
+.plan-pcheck svg path { stroke-dasharray: 24; stroke-dashoffset: 0; }
+.plan-prow-wrap.is-ticked .plan-pcheck svg path, .plan-prow-wrap.is-leaving .plan-pcheck svg path { animation: tick-draw .28s var(--ease-out) both; }
+.plan-prow-wrap.is-leaving { transform: none; translate: 60px 0; opacity: 0; transition: opacity .28s var(--ease-in), translate .28s var(--ease-in); }
+@keyframes tick-draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .plan-prow-wrap.is-ticked .plan-pcheck svg path, .plan-prow-wrap.is-leaving .plan-pcheck svg path { animation: none; }
+  .plan-prow-wrap.is-leaving { translate: none; transition: none; }
+}

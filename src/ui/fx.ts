@@ -41,3 +41,22 @@ export function coinBurst(rect: DOMRect) {
   };
   requestAnimationFrame(frame);
 }
+
+/** A digit floats up from a keypad key and fades (450ms), then is removed. Skipped with reduced motion. */
+export function floatText(rect: DOMRect, text: string) {
+  if (prefersReducedMotion() || typeof document === 'undefined') return;
+  const s = document.createElement('span');
+  s.className = 'fx-float';
+  s.setAttribute('aria-hidden', 'true');
+  s.textContent = text;
+  s.style.left = `${rect.left + rect.width / 2}px`;
+  s.style.top = `${rect.top + rect.height / 2}px`;
+  document.body.appendChild(s);
+  if (typeof s.animate !== 'function') { s.remove(); return; }
+  const a = s.animate(
+    [{ transform: 'translate(-50%, -50%) translateY(0)', opacity: 1 }, { transform: 'translate(-50%, -50%) translateY(-36px)', opacity: 0 }],
+    { duration: 450, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' },
+  );
+  a.onfinish = () => s.remove();
+  a.oncancel = () => s.remove();
+}

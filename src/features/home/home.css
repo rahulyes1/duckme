@@ -30,8 +30,8 @@
 .home-trail-ic { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; transition: transform .18s var(--spring); }
 .home-trail-ic.is-armed { transform: scale(1.25); }
 
-.home-newpop { animation: home-newpop .5s var(--spring); }
-@keyframes home-newpop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.home-newpop { animation: home-newpop .42s var(--spring); }
+@keyframes home-newpop { from { opacity: 0; transform: translateY(-14px) scale(.97); } to { opacity: 1; transform: none; } }
 
 /* ---------- dock: salary strip + FAB ---------- */
 .home-dock { position: fixed; left: 0; right: 0; z-index: calc(var(--z-nav) - 1);
@@ -205,7 +205,14 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
 .tp-empty { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin: 0; padding: 0 4px;
   font-size: 16px; color: var(--muted); }
 .tp-more { margin-left: 4px; }
+/* Tick: the check draws itself in, then the row slides off (`translate`, so Framer's inline transform can't cancel it). */
+.tp-check svg path { stroke-dasharray: 24; stroke-dashoffset: 0; }
+.tp-row.is-ticked .tp-check svg path, .tp-row.is-leaving .tp-check svg path { animation: tp-tick-draw .28s var(--ease-out) both; }
+.tp-row.is-leaving { transform: none; translate: 60px 0; transition: opacity .28s var(--ease-in), translate .28s var(--ease-in); }
+@keyframes tp-tick-draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) {
+  .tp-row.is-ticked .tp-check svg path, .tp-row.is-leaving .tp-check svg path { animation: none; }
+  .tp-row.is-leaving { translate: none; }
   .tp { animation: none; }
   .tp-title, .tp-row.is-leaving { transition: none; }
   .tp-row.is-leaving { transform: none; }

@@ -381,3 +381,38 @@ body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); botto
 /* Kalam sits a little small and high: give ink numbers room */
 .num, .money-big, .pb-big, .hero-big, .rc-big, .money-mid { line-height: 1.15; }
 .hero-big, .pb-big { letter-spacing: 0; }
+
+/* ---------- bottom nav: a small dot glides to the active tab, the icon gives a little hop ---------- */
+.nav a .ico { position: relative; }
+.nav-dot { position: absolute; top: -5px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent); pointer-events: none; }
+.nav a[aria-current="page"] .ico svg { animation: nav-hop .4s var(--spring); }
+@keyframes nav-hop { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-3px) scale(1.08); } 100% { transform: none; } }
+@media (min-width: 1024px) { .nav-dot { display: none; } }
+@media (prefers-reduced-motion: reduce) { .nav a[aria-current="page"] .ico svg { animation: none; } }
+.fx-float { position: fixed; z-index: var(--z-fx); pointer-events: none; font-family: var(--f-display); font-weight: 700; font-size: 22px;
+  color: var(--accent); transform: translate(-50%, -50%); will-change: transform, opacity; font-variant-numeric: tabular-nums; }
+
+/* ---------- background life: line-art birds / kite / balloon / fireflies behind the page (src/ui/AmbientLife.tsx) ---------- */
+.ambient .life { position: absolute; inset: 0; color: var(--ink); overflow: hidden; contain: strict; }
+@media (min-width: 1024px) { .ambient .life { left: 232px; } }
+.life-ink, .life-glow, .life-scene { position: absolute; inset: 0; }
+.life-ink { opacity: .14; }
+.life-glow { --ff-a: .22; }
+:root[data-theme="dark"] .life-ink, :root[data-theme="oldpage"] .life-ink { opacity: .18; }
+:root[data-theme="dark"] .life-glow, :root[data-theme="oldpage"] .life-glow { --ff-a: .3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .life-ink { opacity: .18; } :root:not([data-theme="light"]) .life-glow { --ff-a: .3; } }
+.life-sp { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.life-sp svg { display: block; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.life-flap { animation: life-flap .6s ease-in-out infinite alternate; transform-origin: 50% 65%; }
+.life-bird.is-fast .life-flap { animation-duration: .3s; }
+@keyframes life-flap { from { transform: scaleY(1); } to { transform: scaleY(.6); } }
+.life-sway4 { animation: life-sway4 3s ease-in-out infinite alternate; transform-origin: 50% 30%; }
+@keyframes life-sway4 { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+.life-sway6 { animation: life-sway6 4s ease-in-out infinite alternate; transform-origin: 50% 31%; }
+@keyframes life-sway6 { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+.life-string { position: absolute; left: 0; top: 0; width: 1px; height: 1.5px; margin-top: -.75px; background: currentColor; transform-origin: 0 50%; will-change: transform; }
+.life-shard { position: absolute; left: 13px; top: 12px; width: 6px; height: 1.5px; margin-top: -.75px; border-radius: 1px; background: currentColor; transform-origin: 0 50%; }
+.life-ff { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: var(--gold); opacity: 0; animation: life-blink 3s ease-in-out infinite; }
+@keyframes life-blink { 0%, 100% { opacity: 0; } 50% { opacity: var(--ff-a); } }
+.life.is-paused * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .ambient .life { display: none; } }

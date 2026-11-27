@@ -83,7 +83,7 @@ export function Sheet({ open, onClose, title, hideTitle, children }: Props) {
             initial={wide ? { opacity: 0, scale: 0.96, x: '-50%' } : { y: '100%' }}
             animate={wide ? { opacity: 1, scale: 1, x: '-50%' } : { y: 0 }}
             exit={wide ? { opacity: 0, scale: 0.97, x: '-50%', transition: { duration: 0.15 } } : { y: '100%', transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
-            transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+            transition={wide ? { type: 'spring', stiffness: 420, damping: 38 } : { type: 'spring', stiffness: 380, damping: 30 }}
             drag={wide ? false : 'y'}
             // Drag-to-close starts ONLY from the grab bar. Before, any finger wobble on a button inside
             // the sheet started a drag and swallowed the tap (the "switches don't work" bug).

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { parseBankSms } from './lib/capture';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { QuickSearch, openQuickSearch } from './ui/QuickSearch';
@@ -14,6 +14,7 @@ import { createCard, purgeOldTrash, type Undo } from './lib/actions';
 import { useCard } from './lib/hooks';
 import { prefersReducedMotion } from './lib/format';
 import { coinBurst } from './ui/fx';
+import { startTapFx } from './ui/tapfx';
 import { Ambient } from './ui/Ambient';
 import { clearIncomingShare, readIncomingShare, shareToNote } from './features/notes/share';
 
@@ -101,6 +102,7 @@ export default function App() {
   const [, force] = useState(0);
   const settings = useLiveQuery(() => getSettings(), []);
   const toastTimer = useRef<number>();
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const on = () => setRoute(readRoute());
@@ -180,6 +182,7 @@ export default function App() {
 
   // Must stay above the early returns below (hooks run in the same order every render).
   useEffect(() => (settings?.consentAt ? startReminderLoop() : undefined), [settings?.consentAt]);
+  useEffect(() => startTapFx(), []);
   useEffect(() => {
     const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
     const t = w.requestIdleCallback ? w.requestIdleCallback(prefetchScreens) : window.setTimeout(prefetchScreens, 1500);
@@ -192,14 +195,20 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={api}>
-      <Ambient />
+      <Ambient life={settings.backgroundLife !== false} />
       <div className="shell">
         <nav className="nav" aria-label="Main">
           <div className="brand">Hisaab<span>.</span></div>
           <button type="button" className="nav-search" onClick={openQuickSearch}><Search size={18} aria-hidden="true" /><span>Search</span><kbd>Ctrl K</kbd></button>
           {NAV.map(({ r, label, Icon }) => (
             <a key={r} href={`#${r}`} aria-current={route === r ? 'page' : undefined}>
-              <span className="ico"><Icon size={22} strokeWidth={2} aria-hidden="true" /></span>{label}
+              <span className="ico">
+                <Icon size={22} strokeWidth={2} aria-hidden="true" />
+                {route === r && (
+                  <motion.span layoutId="nav-dot" className="nav-dot" aria-hidden="true"
+                    transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 32 }} />
+                )}
+              </span>{label}
             </a>
           ))}
         </nav>

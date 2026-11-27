@@ -14,6 +14,7 @@ import type { Card, InvestKind } from '../../lib/types';
 import { EXPENSE_CATEGORIES, PAY_MODES } from '../../lib/types';
 import { Money, Switch } from '../../ui/bits';
 import { Sheet } from '../../ui/Sheet';
+import { floatText } from '../../ui/fx';
 import {
   budgetCrossing, budgetStatus, cashFlow, padDisplay, padHasOp, padPress, padValue, quickCategories, spentByCategory, toggleFav, usedCategories,
 } from './cashflow';
@@ -404,7 +405,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
           <div className="money-qe-pad" role="group" aria-label="Number pad">
             {PAD.map(k => (
               <button key={k} type="button" className={`money-qe-key num${/^[+\-=]$|^back$/.test(k) ? ' op' : ''}`}
-                onClick={() => press(k)} disabled={k === 'back' && !amt} aria-label={KEY_LABEL[k] ?? k}>
+                onClick={e => { if (/^\d+$/.test(k)) floatText(e.currentTarget.getBoundingClientRect(), k); press(k); }} disabled={k === 'back' && !amt} aria-label={KEY_LABEL[k] ?? k}>
                 {k === 'back' ? <Delete size={22} aria-hidden="true" /> : k === '-' ? '−' : k}
               </button>
             ))}
