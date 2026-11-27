@@ -17,6 +17,7 @@ import { coinBurst } from './ui/fx';
 import { startTapFx } from './ui/tapfx';
 import { Ambient } from './ui/Ambient';
 import { clearIncomingShare, readIncomingShare, shareToNote } from './features/notes/share';
+import { NAV_RESET, clearNavReset, markNavReset } from './lib/prefs';
 
 import HomeScreen from './features/home/HomeScreen';
 // Home ships in the first download; the other screens load when first opened
@@ -172,7 +173,10 @@ export default function App() {
       if (back) back.click(); else setEditor(null);
     }
     const same = readRoute() === r;
-    if (!same) { location.hash = r; setRoute(r); }
+    // Land on the screen's default state: a screen being opened reads the flag as it mounts,
+    // the screen already open hears the reset event (clears search/filters, default tab).
+    if (same) { clearNavReset(); window.dispatchEvent(new CustomEvent(NAV_RESET, { detail: r })); }
+    else { markNavReset(r); location.hash = r; setRoute(r); }
     window.scrollTo({ top: 0, behavior: same && !reduceMotion ? 'smooth' : 'auto' });
   }, [reduceMotion]);
   useEffect(() => {

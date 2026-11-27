@@ -4,7 +4,7 @@ import { Archive, Bell, BookOpen, CheckSquare, ImagePlus, LayoutGrid, LayoutTemp
 import './notes.css';
 import { useApp } from '../../app-context';
 import { archive, restore } from '../../lib/actions';
-import { matchesQuery, useCards, useSettings } from '../../lib/hooks';
+import { matchesQuery, useCards, useNavReset, useSettings } from '../../lib/hooks';
 import type { Card, CardColor } from '../../lib/types';
 import { CARD_COLORS } from '../../lib/types';
 import { CardTile } from '../../ui/CardTile';
@@ -39,6 +39,8 @@ export default function NotesScreen() {
   const [showColors, setShowColors] = useState(false);
   const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  // Notes tab tapped again: no search, no filter, no colour.
+  useNavReset('notes', () => { setQ(''); setFilter('all'); setColor(null); setShowColors(false); setConfirmEmpty(false); setShowTemplates(false); });
   const fileRef = useRef<HTMLInputElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 

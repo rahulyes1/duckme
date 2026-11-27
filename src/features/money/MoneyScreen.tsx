@@ -3,7 +3,8 @@ import { IndianRupee, Plus, Receipt, Search, TrendingUp } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useApp } from '../../app-context';
 import { prefersReducedMotion, today } from '../../lib/format';
-import { useCards, useSettings } from '../../lib/hooks';
+import { useCards, useNavReset, useSettings } from '../../lib/hooks';
+import { peekNavReset } from '../../lib/prefs';
 import type { CardType } from '../../lib/types';
 import BillsTab from './BillsTab';
 import ExpensesTab from './ExpensesTab';
@@ -81,7 +82,9 @@ export default function MoneyScreen() {
   const { createAndOpen } = useApp();
   const cards = useCards();
   const settings = useSettings();
-  const [tab, setTabState] = useState<Tab>(() => readPref(TAB_KEY, TABS, 'overview'));
+  // Opened from the bottom menu: always Overview. Otherwise (a link, coming back from an editor) the last tab.
+  const [tab, setTabState] = useState<Tab>(() => (peekNavReset('money') ? 'overview' : readPref(TAB_KEY, TABS, 'overview')));
+  const [gen, setGen] = useState(0);
   const [spend, setSpend] = useState(false);
   // One selected month shared by Expenses and Bills, so switching tabs keeps you in the same month.
   const [month, setMonth] = useState<Date>(() => monthStart(today()));
@@ -93,6 +96,8 @@ export default function MoneyScreen() {
     window.addEventListener('hisaab:spend', check);
     return () => window.removeEventListener('hisaab:spend', check);
   }, []);
+  // Money tab tapped again: back to Overview, this month, filters cleared (the panel remounts).
+  useNavReset('money', () => { setTabState('overview'); setMonth(monthStart(today())); setSlip(false); setGen(g => g + 1); });
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const setTab = (t: Tab) => { setTabState(t); writePref(TAB_KEY, t); };
@@ -149,7 +154,7 @@ export default function MoneyScreen() {
       </header>
 
       <div role="tabpanel" id={`money-panel-${tab}`} aria-labelledby={`money-tab-${tab}`} className="money-panel">
-        <div key={tab} className="money-panel-anim">
+        <div key={`${tab}:${gen}`} className="money-panel-anim">
         {tab === 'overview' && <OverviewTab cards={live} settings={settings} onSpend={() => setSpend(true)} onTab={setTab} />}
         {tab === 'expenses' && <ExpensesTab cards={live} settings={settings} month={month} setMonth={setMonth} />}
         {tab === 'bills' && <BillsTab cards={live} settings={settings} month={month} setMonth={setMonth} />}

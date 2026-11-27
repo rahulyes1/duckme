@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
 import { db, DEFAULT_SETTINGS, getSettings } from './db';
 import type { Card, Settings } from './types';
+import { NAV_RESET, clearNavReset } from './prefs';
 
 /** Live list of all cards (re-renders on any change). Undefined while loading. */
 export function useCards(): Card[] | undefined {
@@ -60,4 +61,19 @@ export function useLongPress(onLong: () => void, ms = 430) {
       onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
     },
   };
+}
+
+/**
+ * Runs `reset` when the user taps this screen's tab again (or Home from an editor while on Home),
+ * so the screen goes back to its default state. Also clears the "just opened from nav" flag.
+ */
+export function useNavReset(route: string, reset: () => void) {
+  const ref = useRef(reset);
+  ref.current = reset;
+  useEffect(() => {
+    clearNavReset();
+    const on = (e: Event) => { if ((e as CustomEvent).detail === route) ref.current(); };
+    window.addEventListener(NAV_RESET, on);
+    return () => window.removeEventListener(NAV_RESET, on);
+  }, [route]);
 }

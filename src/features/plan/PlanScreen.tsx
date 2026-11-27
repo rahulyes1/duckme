@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { openQuickSearch } from '../../ui/QuickSearch';
 import { Search } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useCards, useSettings } from '../../lib/hooks';
+import { useCards, useNavReset, useSettings } from '../../lib/hooks';
 import { MyOrder } from './MyOrder';
 import { Timeline } from './Timeline';
 import { Board } from './Board';
@@ -28,6 +28,7 @@ export default function PlanScreen() {
   const settings = useSettings();
   const reduce = useReducedMotion();
   const [view, setViewState] = useState<View>(loadView);
+  useNavReset('plan', () => setViewState(loadView()));
   const setView = (v: View) => {
     setViewState(v);
     try { localStorage.setItem(VIEW_KEY, v); } catch { /* storage blocked */ }
