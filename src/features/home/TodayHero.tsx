@@ -81,9 +81,9 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
 
       <div className="hero-stats">
         <div>
-          <small>Due before salary</small>
+          <small>Before salary</small>
           <b className="num">{inr(flow.billsTotal)}</b>
-          <em>{flow.bills.length} bill{flow.bills.length === 1 ? '' : 's'}</em>
+          <em>{flow.bills.length} bill{flow.bills.length === 1 ? '' : 's'} due</em>
         </div>
         <div>
           <small>{salary ? 'Left this cycle' : 'Salary'}</small>

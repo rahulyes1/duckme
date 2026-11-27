@@ -5,6 +5,7 @@ import { PaperHero, PassbookList } from './PassbookView';
 import { weekAllowance } from './allowance';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
+import { useApp } from '../../app-context';
 import { fmtDate, inr, today } from '../../lib/format';
 import { netWorth } from '../../lib/logic';
 import type { Card, Settings } from '../../lib/types';
@@ -44,15 +45,18 @@ function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?
   const [text, setText] = useState(settings.salaryAmount ? settings.salaryAmount.toLocaleString('en-IN') : '');
   const [day, setDay] = useState(settings.salaryDay || 1);
   const [err, setErr] = useState('');
+  const { toast } = useApp();
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const n = parseAmount(text);
     if (n === null || n <= 0) { setErr('Enter your monthly take-home pay, like 65,000'); return; }
     await saveSettings({ salaryAmount: Math.round(n), salaryDay: day });
+    toast('Salary saved');
     onDone?.();
   };
   return (
-    <form className="money-salary-form" onSubmit={submit} noValidate>
+    <form className="money-salary-form" onSubmit={submit} noValidate
+      onKeyDown={e => { if (e.key === 'Escape' && compact && onDone) { e.stopPropagation(); onDone(); } }}>
       <div className="field">
         <label htmlFor="sal-amt">Monthly take-home salary</label>
         <div className="money-rupee-input">
@@ -125,7 +129,7 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
       {payday && <PaydayCard cards={cards} settings={settings} flow={flow} />}
 
       {weekOpen
-        ? <WeekCard cards={cards} settings={settings} safePerDay={salary ? flow.safeToday : 0} onClose={isSunday(ref) ? undefined : () => setWeekOpen(false)} />
+        ? <WeekCard cards={cards} settings={settings} safePerDay={salary ? flow.safeToday : 0} leftNow={salary ? flow.left : undefined} onClose={isSunday(ref) ? undefined : () => setWeekOpen(false)} />
         : (
           <div className="money-wide money-rv-ask">
             {!payday && <button type="button" className="btn ghost" onClick={() => setRecapOpen(true)}><PartyPopper size={16} aria-hidden="true" /> Last month</button>}

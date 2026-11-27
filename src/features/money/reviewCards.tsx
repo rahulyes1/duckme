@@ -117,12 +117,12 @@ export function PaydayCard({ cards, settings, flow }: { cards: Card[]; settings:
 
 /* ---------- week in money ---------- */
 
-export function WeekCard({ cards, settings, safePerDay, onClose }: {
-  cards: Card[]; settings: Settings; safePerDay: number; onClose?: () => void;
+export function WeekCard({ cards, settings, safePerDay, leftNow, onClose }: {
+  cards: Card[]; settings: Settings; safePerDay: number; leftNow?: number; onClose?: () => void;
 }) {
   const ref = today();
   const iso = toISO(ref);
-  const w = useMemo(() => weekSummary(cards, ref, safePerDay), [cards, safePerDay]); // eslint-disable-line react-hooks/exhaustive-deps
+  const w = useMemo(() => weekSummary(cards, ref, safePerDay, leftNow), [cards, safePerDay, leftNow]); // eslint-disable-line react-hooks/exhaustive-deps
   const already = reviewedThisWeek(settings.lastReviewISO, iso);
   const streak = liveStreak(settings.reviewStreak, settings.lastReviewISO, iso);
   const [celebrate, setCelebrate] = useState(false);
@@ -183,7 +183,9 @@ export function WeekCard({ cards, settings, safePerDay, onClose }: {
           transition={{ duration: 0.28, ease: [0.3, 1.5, 0.5, 1] }} aria-live="polite">
           <span className="money-rv-flame" aria-hidden="true"><Flame size={20} /></span>
           <span>
-            <b className="num">{shown}</b> {shown === 1 ? 'Sunday' : 'Sundays'} in a row
+            {shown > 0
+              ? <><b className="num">{shown}</b> {shown === 1 ? 'Sunday' : 'Sundays'} in a row</>
+              : 'Review on Sundays to start a streak'}
             {celebrate && <span className="money-sk">Reviewed. See you next Sunday.</span>}
           </span>
         </motion.div>

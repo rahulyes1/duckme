@@ -75,7 +75,9 @@ export interface WeekSummary {
   smallTotal: number;
 }
 
-export function weekSummary(cards: Card[], ref: Date, safePerDay: number): WeekSummary {
+/** `leftNow`: money left this salary cycle. The 7-day allowance never exceeds it (plus what was already
+ *  spent this week), so near payday it can't promise more than you actually have. */
+export function weekSummary(cards: Card[], ref: Date, safePerDay: number, leftNow?: number): WeekSummary {
   const range = weekRange(ref);
   const soon = toISO(addDays(ref, 7));
   const cats = new Map<string, number>();
@@ -96,10 +98,13 @@ export function weekSummary(cards: Card[], ref: Date, safePerDay: number): WeekS
   let topCategory: WeekSummary['topCategory'] = null;
   for (const [name, total] of cats) if (!topCategory || total > topCategory.total) topCategory = { name, total };
   return {
-    range, spent, allowance: Math.max(0, safePerDay) * 7, topCategory, billsDue,
+    range, spent, allowance: capAllowance(Math.max(0, safePerDay) * 7, spent, leftNow), topCategory, billsDue,
     billsTotal: billsDue.reduce((s, b) => s + (b.amount ?? 0), 0), smallCount, smallTotal,
   };
 }
+
+const capAllowance = (a: number, spent: number, leftNow?: number): number =>
+  leftNow === undefined ? a : Math.max(0, Math.min(a, Math.max(0, leftNow) + spent));
 
 /* ---------- payday ---------- */
 

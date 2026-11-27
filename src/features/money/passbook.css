@@ -19,7 +19,7 @@
 .pb-page::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 0; width: 4px;
   border-left: 1px solid var(--paper-margin); border-right: 1px solid var(--paper-margin); }
 .pb-page-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.pb-k { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--paper-accent); }
+.pb-k { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: color-mix(in srgb, var(--paper-accent) 78%, var(--paper-ink)); }
 .pb-edit { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; border: 0; border-radius: 999px;
   background: color-mix(in srgb, var(--paper-ink) 8%, transparent); color: var(--paper-muted); font-size: 13px; font-weight: 600; }
 .pb-big { display: block; font-family: var(--f-serif); font-weight: 700; font-size: 54px; line-height: 1; margin: 8px 0 0; letter-spacing: -.02em; color: var(--paper-ink); }
@@ -141,7 +141,7 @@
 
 /* ---------- pencil: what's still due is written lightly until you ink it ---------- */
 .pb-row.is-due { background: transparent; }
-.pb-row.is-due .pb-p b, .pb-row.is-due .pb-amt b, .pb-row.is-due .pb-date b { color: color-mix(in srgb, var(--ink) 48%, transparent); font-style: italic; }
+.pb-row.is-due .pb-p b, .pb-row.is-due .pb-amt b, .pb-row.is-due .pb-date b { color: color-mix(in srgb, var(--ink) 64%, transparent); font-style: italic; }
 .pb-row.is-due .pb-p span { color: color-mix(in srgb, var(--warn) 80%, var(--muted)); }
 .pb-row.is-due .pb-main { background-image: linear-gradient(to right, color-mix(in srgb, var(--ink) 22%, transparent) 50%, transparent 0);
   background-size: 8px 1px; background-repeat: repeat-x; background-position: 0 100%; }

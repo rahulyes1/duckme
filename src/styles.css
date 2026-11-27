@@ -136,7 +136,8 @@ img { max-width: 100%; display: block; }
   background: color-mix(in srgb, var(--ink) 9%, transparent); color: color-mix(in srgb, var(--ink) 85%, transparent); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .pill.urgent { background: var(--warn); color: #fff; }
 .pill.late { background: var(--danger); color: #fff; }
-:root[data-theme="dark"] .pill.urgent, :root[data-theme="dark"] .pill.late { color: #1a0d05; }
+:root[data-theme="dark"] .pill.urgent, :root[data-theme="dark"] .pill.late,
+:root[data-theme="oldpage"] .pill.urgent, :root[data-theme="oldpage"] .pill.late { color: #1a0d05; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill.urgent, :root:not([data-theme="light"]) .pill.late { color: #1a0d05; } }
 .pill.pen { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); white-space: normal; }
 .pill.outline { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--muted); }

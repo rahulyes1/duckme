@@ -66,6 +66,11 @@ describe('weekSummary', () => {
     expect(w.billsTotal).toBe(1300);
     expect(w.smallCount).toBe(1);
   });
+  it('allowance never promises more than is left this cycle (plus spent this week)', () => {
+    expect(weekSummary(cards, d(2026, 11, 25), 400, 1000).allowance).toBe(2250);
+    expect(weekSummary(cards, d(2026, 11, 25), 400, 99999).allowance).toBe(2800);
+    expect(weekSummary(cards, d(2026, 11, 25), 400, -50).allowance).toBe(1250);
+  });
 });
 
 describe('payday', () => {
