@@ -40,6 +40,13 @@ export default function HomeScreen() {
   const [view, setView] = useState<View>('tracker');
   const [adding, setAdding] = useState<'expense' | 'income' | null>(null);
   const [tasking, setTasking] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 120);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   /** The add screen loads the first time it is asked for, then stays mounted so it can animate closed. */
   const [addLoaded, setAddLoaded] = useState(false);
   const [fanOpen, setFanOpen] = useState(false);
@@ -198,7 +205,7 @@ export default function HomeScreen() {
         </>
       )}
 
-      <div className="home-dock">
+      <div className={`home-dock${tracker && !scrolled && !fanOpen ? ' is-tucked' : ''}`}>
         <Fab fanOpen={fanOpen} active={fanOpen} items={tracker ? ['spend', 'note'] : ['spend', 'note', 'task']}
           onOpen={() => setFanOpen(true)} onPick={pick} onCloseFan={closeFan} />
       </div>
