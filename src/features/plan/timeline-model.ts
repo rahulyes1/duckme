@@ -1,6 +1,6 @@
 /** Timeline maths: dated events from cards, and buckets per zoom level. Pure. */
 import type { Card } from '../../lib/types';
-import { addDays, addMonths, addMonthsISO, fmtDate, nextSalary, toISO, today } from '../../lib/format';
+import { addDays, addMonths, addMonthsISO, fmtDayMonth, nextSalary, toISO, today } from '../../lib/format';
 import { isActive } from '../../lib/types';
 
 export const LEVELS = ['Day', 'Week', 'Month', 'Year'] as const;
@@ -60,6 +60,11 @@ export function buildEvents(cards: Card[], ref: Date = today()): TEvent[] {
       if (inv?.maturity) push(c, inv.maturity, `${title} matures`, 0, false, 99);
       continue;
     }
+    // A task or note planned for a day ("Call mummy kal 7pm") but with no deadline shows on that day.
+    if ((c.type === 'task' || c.type === 'note') && !c.due && c.when?.unit === 'day') {
+      push(c, c.when.start, title, 0, false, 0);
+      continue;
+    }
     if ((c.type === 'bill' || c.type === 'task') && c.due) {
       const amt = c.amount ?? 0, isOut = c.type === 'bill';
       const step = STEP[c.repeat ?? 'none'] ?? 0;
@@ -98,7 +103,7 @@ export function buildBuckets(level: Level, salaryDay: number, ref: Date = today(
     for (let i = 0; i < 14; i++) {
       const s = addDays(ref, i);
       const label = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : s.toLocaleDateString('en-IN', { weekday: 'short' });
-      add(s, addDays(s, 1), label, fmtDate(toISO(s)), i, toISO(s) === sal ? sal : null);
+      add(s, addDays(s, 1), label, fmtDayMonth(toISO(s)), i, toISO(s) === sal ? sal : null);
     }
   } else if (level === 1) {
     const mon = addDays(ref, -((ref.getDay() + 6) % 7));

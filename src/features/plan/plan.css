@@ -156,7 +156,7 @@
 .plan-wsec-h { padding: 0 4px 8px; }
 .plan-wsec-h h2 { margin: 0; font-family: var(--f-display); font-size: 18px; font-weight: 700; }
 .plan-wsec-h p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
-.plan-plist { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 8px; }
+.plan-plist { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .plan-prow-wrap { border-radius: var(--r-md); background: var(--c, var(--c-white)); border: 1px solid var(--card-line); box-shadow: var(--shadow-1);
   transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
 .plan-prow-wrap.is-leaving { opacity: 0; transform: translateX(16px); }
@@ -331,7 +331,7 @@
 .plan-dchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 
 /* ---------- smart add: suggestions, pills, warnings ---------- */
-.plan-smart { display: grid; gap: 8px; margin-top: 4px; }
+.plan-smart { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 4px; }
 .plan-pills { display: flex; flex-wrap: wrap; gap: 6px; min-height: 0; }
 .plan-pills:empty { display: none; }
 .plan-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 4px 0 10px; border-radius: 999px;
