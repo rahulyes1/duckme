@@ -3,7 +3,7 @@
  * category, Save. Everything fits on one screen. Stays open after saving so you can add another.
  */
 import { motion } from 'framer-motion';
-import { CalendarDays, Check, Delete, Plus, Star } from 'lucide-react';
+import { Check, ChevronDown, Delete, Plus, Star, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
 import { createCard, logInvestment, newCard, withUndo } from '../../lib/actions';
@@ -12,7 +12,7 @@ import { addDaysISO, buzz, fmtDate, inr, prefersReducedMotion, today, todayISO }
 import { useCards, useSettings } from '../../lib/hooks';
 import type { Card, InvestKind } from '../../lib/types';
 import { EXPENSE_CATEGORIES, PAY_MODES } from '../../lib/types';
-import { Money, Switch } from '../../ui/bits';
+import { Money } from '../../ui/bits';
 import { Sheet } from '../../ui/Sheet';
 import { floatText } from '../../ui/fx';
 import {
@@ -325,82 +325,82 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
         </div>
       ) : (
         <div className="money-qe">
-          <CaptureBar cards={cards ?? []} onFill={fill} onError={msg => setErr(msg)} />
-          <div className="money-qe-display">
-            <label htmlFor="qe-amt" className="money-k">Amount spent</label>
-            <div className={`money-qe-amt${isSum ? ' is-sum' : ''}`}>
-              <span aria-hidden="true">₹</span>
-              <input
-                ref={amtRef} id="qe-amt" data-pad="1" className="num" readOnly inputMode="none" placeholder="0" autoComplete="off"
-                value={amt ? padDisplay(amt) : ''} aria-invalid={!!err || sumBad} aria-describedby={err ? 'qe-err' : 'qe-hint'}
-              />
+          <div className="qe-head">
+            <div className="money-qe-display">
+              <label htmlFor="qe-amt" className="sr-only">Amount spent</label>
+              <div className={`money-qe-amt${isSum ? ' is-sum' : ''}`}>
+                <span aria-hidden="true">₹</span>
+                <input
+                  ref={amtRef} id="qe-amt" data-pad="1" className="num" readOnly inputMode="none" placeholder="0" autoComplete="off"
+                  value={amt ? padDisplay(amt) : ''} aria-invalid={!!err || sumBad} aria-describedby={err ? 'qe-err' : 'qe-hint'}
+                />
+              </div>
             </div>
-            <span className={`money-qe-total num${sumBad ? ' bad' : ''}`} aria-live="polite">
-              {isSum ? (sumBad ? "Total can't be zero or less" : `= ${inr(value)}`) : ''}
-            </span>
-            {err ? <span className="money-qe-err" id="qe-err" role="alert">{err}</span>
-              : <span className="sr-only" id="qe-hint">Use the number pad below or your keyboard. Plus and minus add up several amounts.</span>}
+            <CaptureBar cards={cards ?? []} onFill={fill} onError={msg => setErr(msg)} />
           </div>
+          {/* One short line under the amount: an error, the running sum, or the category budget. */}
+          {err ? <span className="money-qe-err qe-line" id="qe-err" role="alert">{err}</span>
+            : isSum ? <span className={`money-qe-total qe-line num${sumBad ? ' bad' : ''}`} aria-live="polite">{sumBad ? "Total can't be zero or less" : `= ${inr(value)}`}</span>
+              : budgetHint ? <span className={`money-qe-bhint qe-line money-lvl-text-${budgetHint.level}`} aria-live="polite">{budgetHint.text}</span>
+                : null}
+          <span className="sr-only" id="qe-hint">Use the number pad below or your keyboard. Plus and minus add up several amounts. Hold a category to pin it.</span>
+
+          <div className="chips money-qe-chips" role="group" aria-label="Category (hold to pin)">
+            {order.map(k => {
+              const Icon = catIcon(k);
+              const isFav = favs.includes(k);
+              return (
+                <button key={k} type="button" className="chip money-qe-cat" aria-pressed={cat === k}
+                  aria-label={isFav ? `${k}, pinned` : k} {...catProps(k)}>
+                  <Icon size={18} aria-hidden="true" />
+                  <span>{k}</span>
+                  {isFav && <Star size={12} className="money-qe-star" aria-hidden="true" fill="currentColor" />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="qe-opts">
+            <label className="qe-sel">
+              <span className="sr-only">Paid with</span>
+              <select value={mode} onChange={e => setMode(e.target.value)}>
+                {modes.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <ChevronDown size={16} aria-hidden="true" />
+            </label>
+            <label className="qe-sel">
+              <span className="sr-only">When</span>
+              <select value={day} onChange={e => {
+                const v = e.target.value as Day;
+                setDay(v);
+                if (v === 'pick') setTimeout(() => document.getElementById('qe-date')?.focus(), 30);
+              }}>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="pick">Other day…</option>
+              </select>
+              <ChevronDown size={16} aria-hidden="true" />
+            </label>
+            {day === 'pick' && (
+              <>
+                <label htmlFor="qe-date" className="sr-only">Date</label>
+                <input id="qe-date" type="date" className="input num money-qe-date" value={picked} max={todayISO()} onChange={e => setPicked(e.target.value)} />
+              </>
+            )}
+            <button type="button" className="chip qe-split" aria-pressed={splitOn} onClick={() => { setSplitOn(v => !v); setSplitErr(''); }}>
+              <Users size={16} aria-hidden="true" /> Split
+            </button>
+          </div>
+          {splitOn && (
+            <SplitPicker amount={value} draft={splitDraft} known={splitNames} saved={settings.splitPeople} error={splitErr}
+              onChange={dft => { setSplitDraft(dft); setSplitErr(''); }} />
+          )}
 
           <div className="field money-qe-note">
             <label htmlFor="qe-note" className="sr-only">Note (optional)</label>
             <input id="qe-note" className="input" value={note} placeholder="Note (optional)" autoComplete="off" enterKeyHint="done"
               onChange={e => setNote(e.target.value)}
               onFocus={e => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }), 250); }} />
-          </div>
-
-          <div className="money-qe-sec">
-            <span className="money-qe-label" id="qe-cat">Category <span>Hold to pin</span></span>
-            {budgetHint && <span className={`money-qe-bhint money-lvl-text-${budgetHint.level}`} aria-live="polite">{budgetHint.text}</span>}
-            <div className="chips money-qe-chips" role="group" aria-labelledby="qe-cat">
-              {order.map(k => {
-                const Icon = catIcon(k);
-                const isFav = favs.includes(k);
-                return (
-                  <button key={k} type="button" className="chip money-qe-cat" aria-pressed={cat === k}
-                    aria-label={isFav ? `${k}, pinned` : k} {...catProps(k)}>
-                    <Icon size={18} aria-hidden="true" />
-                    <span>{k}</span>
-                    {isFav && <Star size={12} className="money-qe-star" aria-hidden="true" fill="currentColor" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="money-qe-sec">
-            <span className="money-qe-label" id="qe-mode">Paid with</span>
-            <div className="chips money-qe-chips" role="group" aria-labelledby="qe-mode">
-              {modes.map(m => (
-                <button key={m} type="button" className="chip" aria-pressed={mode === m} onClick={() => setMode(m)}>{m}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="money-qe-sec">
-            <span className="money-qe-label" id="qe-when">When</span>
-            <div className="money-qe-when">
-              <div className="chips money-qe-chips" role="group" aria-labelledby="qe-when">
-                <button type="button" className="chip" aria-pressed={day === 'today'} onClick={() => setDay('today')}>Today</button>
-                <button type="button" className="chip" aria-pressed={day === 'yesterday'} onClick={() => setDay('yesterday')}>Yesterday</button>
-                {day === 'pick' ? (
-                  <>
-                    <label htmlFor="qe-date" className="sr-only">Date</label>
-                    <input id="qe-date" type="date" className="input num money-qe-date" value={picked} max={todayISO()} onChange={e => setPicked(e.target.value)} />
-                  </>
-                ) : (
-                  <button type="button" className="chip" aria-pressed={false}
-                    onClick={() => { setDay('pick'); setTimeout(() => document.getElementById('qe-date')?.focus(), 30); }}>
-                    <CalendarDays size={16} aria-hidden="true" /> Other day
-                  </button>
-                )}
-              </div>
-              <Switch checked={splitOn} label="Split" onChange={v => { setSplitOn(v); setSplitErr(''); }} />
-            </div>
-            {splitOn && (
-              <SplitPicker amount={value} draft={splitDraft} known={splitNames} saved={settings.splitPeople} error={splitErr}
-                onChange={dft => { setSplitDraft(dft); setSplitErr(''); }} />
-            )}
           </div>
 
           <div className="money-qe-pad" role="group" aria-label="Number pad">

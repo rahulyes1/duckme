@@ -383,3 +383,38 @@
 .money-opt > summary span { font-weight: 500; font-size: 14px; color: var(--muted); }
 .money-opt > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
 .money-opt[open] > summary { margin-bottom: 6px; }
+
+/* ---------- quick expense, round 3: one screen, no scroll (360x740 and up) ----------
+   amount + Paste/Speak icons → category row → [Paid with ▾] [Today ▾] [Split] → note → keypad → Save */
+.money-qe { gap: 8px; }
+.sheet:has(.money-qe) .grab-zone { padding: 8px 0 8px; margin-bottom: 0; }
+.qe-head { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 6px; min-width: 0; }
+.qe-head .money-qe-display { flex: 1 1 0; min-width: 0; }
+.qe-cap { display: contents; }
+.qe-cap-row { flex: none; display: flex; gap: 6px; flex-wrap: nowrap; }
+.money-qe .qe-cap-btn { width: 44px; min-height: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 14px; }
+.qe-heard, .qe-paste, .qe-usual { flex: 1 1 100%; min-width: 0; }
+.money-qe-amt input { height: 52px; font-size: 44px; }
+.money-qe-amt.is-sum input { font-size: 30px; }
+.qe-line { display: block; min-height: 0; margin-top: -4px; font-size: 14px; }
+.money-qe .money-qe-chips { padding-top: 0; padding-bottom: 0; }
+.qe-opts { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+.qe-opts::-webkit-scrollbar { display: none; }
+.qe-opts > * { flex: none; }
+.qe-sel { position: relative; display: inline-flex; align-items: center; }
+.qe-sel select { appearance: none; -webkit-appearance: none; min-height: 44px; padding: 0 32px 0 14px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.qe-sel svg { position: absolute; right: 10px; pointer-events: none; color: var(--muted); }
+.qe-sel select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.qe-split { gap: 6px; font-weight: 600; color: var(--ink); min-height: 44px; }
+.qe-split[aria-pressed="true"] { color: var(--bg); }
+.money-qe-note .input { min-height: 44px; height: 44px; }
+.money-qe-pad { gap: 6px; }
+.money-qe .money-qe-key { min-height: 52px; height: 52px; font-size: 22px; }
+.money-qe .sheet-actions { margin-top: 0; padding-top: 8px; }
+.money-qe .sheet-actions .btn { min-height: 52px; }
+/* Short phones: your usual-spend chips give way so Save stays on screen without scrolling. */
+@media (max-height: 760px) and (max-width: 719px) {
+  .qe-usual { display: none; }
+  .money-qe .money-qe-key { min-height: 50px; height: 50px; }
+}

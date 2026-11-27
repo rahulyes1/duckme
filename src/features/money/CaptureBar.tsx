@@ -76,12 +76,15 @@ export function CaptureBar({ cards, onFill, onError }: { cards: Card[]; onFill: 
   };
 
   return (
+    // `display: contents`: the two icon buttons sit at the end of the amount row; the paste box,
+    // what was heard and your usual spends wrap onto full-width lines below it (see .qe-head).
     <div className="qe-cap">
       <div className="qe-cap-row">
-        <button type="button" className="qe-cap-btn" onClick={paste}><ClipboardPaste size={16} aria-hidden="true" /> Paste SMS</button>
+        <button type="button" className="qe-cap-btn" onClick={paste} aria-label="Paste bank SMS" title="Paste bank SMS"><ClipboardPaste size={20} aria-hidden="true" /></button>
         {canSpeak && (
-          <button type="button" className={`qe-cap-btn ${listening ? 'is-on' : ''}`} aria-pressed={listening} onClick={speak}>
-            {listening ? <MicOff size={16} aria-hidden="true" /> : <Mic size={16} aria-hidden="true" />}{listening ? 'Listening… tap to stop' : 'Speak'}
+          <button type="button" className={`qe-cap-btn ${listening ? 'is-on' : ''}`} aria-pressed={listening} onClick={speak}
+            aria-label={listening ? 'Listening. Tap to stop' : 'Speak the spend'} title={listening ? 'Stop' : 'Speak'}>
+            {listening ? <MicOff size={20} aria-hidden="true" /> : <Mic size={20} aria-hidden="true" />}
           </button>
         )}
       </div>
@@ -97,7 +100,7 @@ export function CaptureBar({ cards, onFill, onError }: { cards: Card[]; onFill: 
               if (pasted) useSms(v);
             }} />
           <div className="qe-paste-foot">
-            <span className="help">{text.length > 20 && !parseBankSms(text) ? 'No spend found yet. It needs an amount like Rs.250 and a word like debited or sent.' : 'Works with HDFC, ICICI, SBI, Axis, Kotak and UPI apps.'}</span>
+            <span className="help">{text.length > 20 && !parseBankSms(text) ? 'No amount found yet.' : 'Any bank or UPI SMS.'}</span>
             <button type="button" className="btn" disabled={!parseBankSms(text)} onClick={() => useSms(text)}>Read SMS</button>
           </div>
         </div>
