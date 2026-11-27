@@ -29,6 +29,8 @@ import { categoryForNote, investKindFromText, looksDuplicate } from '../../lib/c
 
 type Day = 'today' | 'yesterday' | 'pick';
 const nowTime = () => new Date().toTimeString().slice(0, 5);
+/** Small names under the round icons; long ones are shortened to fit. */
+const SHORT_CAT: Record<string, string> = { Entertainment: 'Fun', 'Recharge & OTT': 'Recharge', 'Personal care': 'Care', 'Gifts & festivals': 'Gifts', Investment: 'Invest' };
 /** 4 columns: 7 8 9 ⌫ | 4 5 6 − | 1 2 3 + | 00 0 . = */
 const PAD = ['7', '8', '9', 'back', '4', '5', '6', '-', '1', '2', '3', '+', '00', '0', '.', '='];
 const KEY_LABEL: Record<string, string> = { back: 'Delete last', '-': 'Minus', '+': 'Plus', '=': 'Equals, show the total', '.': 'Decimal point', '00': 'Double zero' };
@@ -430,7 +432,6 @@ export default function QuickExpense({ open, onClose, kind = 'expense' }: { open
 
           {!isIncome && (
             <>
-              <p className="qe-label">Category{cat ? <b> · {cat}</b> : null}</p>
               <div className="chips money-qe-chips qe-rounds" role="group" aria-label="Category (hold to pin)">
                 {order.map(k => {
                   const Icon = catIcon(k);
@@ -439,12 +440,13 @@ export default function QuickExpense({ open, onClose, kind = 'expense' }: { open
                   return (
                     <button key={k} type="button" className="money-qe-cat qe-round" data-cat={k} aria-pressed={cat === k} title={k}
                       aria-label={isFav ? `${k}, pinned` : k} {...catProps(k)}>
-                      {own ? <span aria-hidden="true">{k.slice(0, 2)}</span> : <Icon size={20} aria-hidden="true" />}
+                      <i aria-hidden="true">{own ? k.slice(0, 2) : <Icon size={20} />}</i>
+                      <small aria-hidden="true">{SHORT_CAT[k] ?? k}</small>
                       {isFav && <Star size={11} className="money-qe-star" aria-hidden="true" fill="currentColor" />}
                     </button>
                   );
                 })}
-                <button type="button" className="qe-round is-add" aria-label="New category" onClick={() => setNewCat(v => (v === null ? '' : null))}><Plus size={20} aria-hidden="true" /></button>
+                <button type="button" className="qe-round is-add" aria-label="New category" onClick={() => setNewCat(v => (v === null ? '' : null))}><i aria-hidden="true"><Plus size={20} /></i><small aria-hidden="true">Add new</small></button>
               </div>
               {newCat !== null && (
                 <form className="qe-type" onSubmit={e => { e.preventDefault(); void addCategory(); }}>

@@ -39,7 +39,7 @@
 
 .ln-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent); }
 .ln-bar { height: 6px; border-radius: 99px; margin: 10px 0 4px; background: color-mix(in srgb, var(--ink) 10%, transparent); overflow: hidden; }
-.ln-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .8s var(--ease-out); }
+.ln-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent-fill, var(--accent)); transition: width .8s var(--ease-out); }
 .ln-foot { display: grid; gap: 8px; margin-top: 8px; font-size: 14px; color: var(--muted); }
 .ln-foot b { color: var(--ink); }
 .ln-pre { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }

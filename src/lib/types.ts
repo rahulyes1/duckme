@@ -10,6 +10,7 @@ export type InvestKind = 'SIP' | 'FD' | 'RD' | 'PPF' | 'MF' | 'Stock' | 'Gold' |
 
 /** The 4-box priorities (urgent × important), named for one person's day. */
 export type Quadrant = 'do' | 'schedule' | 'quick' | 'later';
+export type Level = 1 | 2 | 3;
 export const QUADRANTS: { id: Quadrant; title: string; hint: string }[] = [
   { id: 'do', title: 'Do now', hint: 'Urgent and important' },
   { id: 'schedule', title: 'Schedule', hint: 'Important, not urgent' },
@@ -147,6 +148,8 @@ export interface Card {
 
   /** 4-box priority. Unset = not placed on the board yet. */
   quadrant?: Quadrant;
+  /** How much it matters: 1 important, 2 very, 3 very very. Higher sits on top. */
+  level?: Level;
   /** Planned day / week / month (weekly and monthly priorities). */
   when?: When;
   /** Set on the daily journal note ("Today page"): one note per date, YYYY-MM-DD. */

@@ -4,7 +4,7 @@
 .set-onb { min-height: 100dvh; display: grid; place-items: center; background: var(--bg);
   padding: calc(env(safe-area-inset-top, 0px) + 24px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left, 0px)); }
 .set-onb-card { width: min(520px, 100%); display: grid; gap: 20px; }
-.set-onb-mark { width: 56px; height: 56px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.set-onb-mark { width: 56px; height: 56px; border-radius: 16px; background: var(--accent-fill, var(--accent)); color: var(--accent-ink); display: grid; place-items: center; }
 .set-onb-title { font-family: var(--f-display); font-weight: 700; font-size: 40px; letter-spacing: -.02em; margin: 0; line-height: 1.05; }
 .set-onb-title span { color: var(--accent); }
 .set-onb-promise { font-size: 19px; line-height: 1.45; margin: -8px 0 0; color: var(--ink); text-wrap: pretty; }
@@ -20,7 +20,7 @@
 .set-notice h2 svg { color: var(--accent); }
 .set-notice ul { margin: 0; padding: 0 0 0 4px; list-style: none; display: grid; gap: 6px; }
 .set-notice li { font-size: 15px; color: var(--ink); padding-left: 18px; position: relative; }
-.set-notice li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.set-notice li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-fill, var(--accent)); }
 .set-notice li svg { display: none; }
 
 /* ---------- settings screen ---------- */
@@ -81,7 +81,7 @@
 /* ---------- account & sync (AccountSection) ---------- */
 .set-acct-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .set-acct-avatar { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--accent); color: var(--accent-ink); font-family: var(--f-display); font-weight: 700; font-size: 20px; }
+  background: var(--accent-fill, var(--accent)); color: var(--accent-ink); font-family: var(--f-display); font-weight: 700; font-size: 20px; }
 .set-acct-id { display: grid; gap: 2px; min-width: 0; }
 .set-acct-name { font-weight: 700; }
 .set-acct-email { overflow-wrap: anywhere; }
@@ -126,7 +126,7 @@
 .set-theme-l svg { flex: none; }
 /* The tick sits on the preview corner so a long name like "Charcoal" never pushes it out on a 360px phone. */
 .set-theme-l .set-theme-ok { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; padding: 3px; border-radius: 50%;
-  background: var(--accent); color: var(--accent-ink, #0b1f17); }
+  background: var(--accent-fill, var(--accent)); color: var(--accent-ink, #0b1f17); }
 
 /* ---------- reminders ---------- */
 .set-rem-ask { display: grid; gap: 12px; justify-items: start; }
@@ -138,6 +138,6 @@
 .set-switch { flex: none; width: 48px; height: 28px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 18%, transparent); position: relative; transition: background .2s; }
 .set-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface);
   box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .22s var(--spring); }
-.set-toggle input:checked + .set-switch { background: var(--accent); }
+.set-toggle input:checked + .set-switch { background: var(--accent-fill, var(--accent)); }
 .set-toggle input:checked + .set-switch::after { transform: translateX(20px); }
 .set-toggle input:focus-visible + .set-switch { outline: 2px solid var(--accent); outline-offset: 2px; }

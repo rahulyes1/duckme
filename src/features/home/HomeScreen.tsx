@@ -8,9 +8,10 @@ import { saveSettings } from '../../lib/db';
 import { isTouchDevice, today, todayISO } from '../../lib/format';
 import { EmptyState } from '../../ui/bits';
 import { NotesBento } from './NotesBento';
+import { topFirst } from '../notes/importance';
 import { TrackerCards } from './TrackerCards';
 import { openQuickSearch } from '../../ui/QuickSearch';
-import { byRank, isSpend } from '../../lib/logic';
+import { isSpend } from '../../lib/logic';
 import { cashFlow } from '../money/cashflow';
 import { AheadList, DueList, RecentSpends } from './HomeLists';
 import { aheadItems } from './helpers';
@@ -88,7 +89,7 @@ export default function HomeScreen() {
         // Locked notes only match on their title, never on hidden text.
         return matchesQuery(isHidden(c) ? { ...withKind, body: '', checklist: undefined, category: undefined } : withKind, query);
       })
-      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || byRank(a, b));
+      .sort(topFirst);
   }, [open, filter, q, isHidden]);
 
   /** Note button: a blank note straight into the editor. */
@@ -189,8 +190,8 @@ export default function HomeScreen() {
             <div className="home-hint" role="note">
               <span>
                 {isTouchDevice()
-                  ? <>Hold a box to resize. Swipe right: done. Left: later {settings.delayDays === 1 ? '(1 day)' : '(1 week)'}.</>
-                  : <>Right-click a box to resize.</>}
+                  ? <>Hold a box to pin, rank or resize. Swipe right: done. Left: later {settings.delayDays === 1 ? '(1 day)' : '(1 week)'}.</>
+                  : <>Right-click a box to pin, rank or resize.</>}
               </span>
               <button type="button" className="btn ghost" onClick={retireHint}>Got it</button>
             </div>
@@ -200,7 +201,7 @@ export default function HomeScreen() {
       )}
 
       <div className="home-dock">
-        <Fab fanOpen={fanOpen} active={fanOpen} items={tracker ? ['spend', 'note'] : ['note', 'task']}
+        <Fab fanOpen={fanOpen} active={fanOpen} items={tracker ? ['spend', 'note'] : ['spend', 'note', 'task']}
           onOpen={() => setFanOpen(true)} onPick={pick} onCloseFan={closeFan} />
       </div>
 

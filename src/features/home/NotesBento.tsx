@@ -3,11 +3,13 @@
  * hold one to choose its size. Swipe actions stay (the Tracker | Notes switch is tap only).
  */
 import { useRef, useState } from 'react';
+import { Pin, PinOff } from 'lucide-react';
 import type { Card, Settings, TileSize } from '../../lib/types';
 import { updateCard } from '../../lib/actions';
 import { buzz } from '../../lib/format';
 import { Sheet } from '../../ui/Sheet';
 import { SwipeCard } from './SwipeCard';
+import { LevelChips } from '../notes/LevelChips';
 import { tileSize } from './bento';
 
 const SIZES: [TileSize | undefined, string][] = [[undefined, 'Auto'], ['small', 'Small'], ['wide', 'Wide'], ['tall', 'Tall'], ['big', 'Big']];
@@ -19,6 +21,7 @@ export function NotesBento({ cards, settings, isHidden, newId, onSwiped }: {
   const press = useRef<{ t?: number; fired: boolean; x: number; y: number }>({ fired: false, x: 0, y: 0 });
   const cancel = () => clearTimeout(press.current.t);
   const firstPinned = cards.find(c => c.pinned)?.id;
+  const change = (p: Partial<Card>) => { if (sizing) void updateCard(sizing.id, p); setSizing(null); };
 
   const hold = (c: Card) => ({
     onPointerDownCapture: (e: React.PointerEvent) => {
@@ -41,11 +44,21 @@ export function NotesBento({ cards, settings, isHidden, newId, onSwiped }: {
           </div>
         ))}
       </div>
-      <Sheet open={!!sizing} onClose={() => setSizing(null)} title="Box size">
+      <Sheet open={!!sizing} onClose={() => setSizing(null)} title={sizing?.title || 'Box options'}>
+        {sizing && (
+          <>
+            <button type="button" className="btn block" aria-pressed={sizing.pinned} onClick={() => change({ pinned: !sizing.pinned })}>
+              {sizing.pinned ? <PinOff size={18} aria-hidden="true" /> : <Pin size={18} aria-hidden="true" />}{sizing.pinned ? 'Unpin' : 'Pin to top'}
+            </button>
+            <p className="qe-label">Importance</p>
+            <LevelChips card={sizing} save={change} />
+          </>
+        )}
+        <p className="qe-label">Box size</p>
         <div className="chips" role="group" aria-label="Box size">
           {SIZES.map(([v, label]) => (
             <button key={label} type="button" className="chip" aria-pressed={sizing?.tile === v}
-              onClick={() => { if (sizing) void updateCard(sizing.id, { tile: v }); setSizing(null); }}>{label}</button>
+              onClick={() => change({ tile: v })}>{label}</button>
           ))}
         </div>
       </Sheet>

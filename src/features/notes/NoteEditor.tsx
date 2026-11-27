@@ -27,6 +27,7 @@ import { BodyEditor, LIVE_LIMIT } from './BodyEditor';
 import { countWords, fmtWords } from './text-stats';
 import { useDebounced } from './use-debounced';
 import { PlanRow } from './PlanRow';
+import { LevelChips } from './LevelChips';
 import { hasMarkup } from './md-lite';
 import { calcLineTexts } from './calc';
 import {
@@ -448,6 +449,7 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
           </div>
         )}
 
+        {!isJournal && isActive(card) && (card.type === 'note' || card.type === 'task') && <LevelChips card={card} save={p => { void save(p); }} />}
         {!isJournal && isActive(card) && <PlanRow card={card} save={save} />}
 
         {chips.length > 0 && (

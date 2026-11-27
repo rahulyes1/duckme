@@ -37,7 +37,7 @@ export function PlanRow({ card, save }: { card: Card; save: (p: Partial<Card>) =
         <button type="button" className={`notes-plan-btn ${q ? 'is-set' : ''}`} data-q={q} aria-expanded={qOpen} aria-controls={qId}
           onClick={() => setQOpen(o => !o)}>
           {q ? <span className="notes-quad-dot" aria-hidden="true" /> : <Flag size={16} aria-hidden="true" />}
-          {q ? SHORT[q] : 'Priority'}
+          {q ? SHORT[q] : '4-box'}
           <ChevronDown size={14} aria-hidden="true" className={`notes-plan-chev ${qOpen ? 'is-open' : ''}`} />
         </button>
         {card.type === 'note' && (

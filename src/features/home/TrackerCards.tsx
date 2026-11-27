@@ -1,4 +1,4 @@
-/** Tracker home: the yellow "Spent this month" card with daily bars, and the Income / Expense cards. */
+/** Tracker home: the maroon "Spent this month" card with daily bars, and the Income / Expense cards. */
 import { ArrowRight, Plus } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Card, Settings } from '../../lib/types';

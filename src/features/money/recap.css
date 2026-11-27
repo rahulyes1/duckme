@@ -16,7 +16,7 @@
 .rc-cat-top { display: flex; justify-content: space-between; gap: 10px; font-weight: 600; }
 .rc-cat-top span { display: inline-flex; align-items: center; gap: 6px; }
 .rc-bar { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 10%, transparent); overflow: hidden; }
-.rc-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left; animation: rc-grow .7s var(--ease-out) both; }
+.rc-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent-fill, var(--accent)); transform-origin: left; animation: rc-grow .7s var(--ease-out) both; }
 .rc-facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
 .rc-facts li { display: grid; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); }
 .rc-facts b { font-family: var(--f-display); font-size: 20px; }

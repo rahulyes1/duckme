@@ -4,6 +4,7 @@ import { KIND_LABEL, HORIZON_LABEL } from '../lib/types';
 import { addDaysISO, daysLeft, dueLabel, dueTone, fmtDate, fmtDateY, inr, salarySide } from '../lib/format';
 import { gainLoss } from '../lib/logic';
 import { tileColor } from './tile-color';
+import { levelLabel } from '../features/notes/importance';
 import { NoteBody } from '../features/notes/NoteBody';
 import { lineAmount } from '../lib/parse';
 import { isActive } from '../lib/types';
@@ -126,6 +127,8 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
           {c.locked && <Lock size={11} aria-label="Locked" />}
         </div>
       )}
+
+      {c.level && (c.type === 'note' || c.type === 'task') && <span className="lvl" data-level={c.level}>{levelLabel(c.level)}</span>}
 
       {hidden ? (
         <>

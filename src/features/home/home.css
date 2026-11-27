@@ -48,7 +48,7 @@
 .home-strip b em { font-style: normal; font-size: 13px; font-family: var(--f-body); font-weight: 500; color: var(--strip-muted); margin-left: 5px; }
 
 .home-fab { position: absolute; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(100% + 12px);
-  width: 58px; height: 58px; border-radius: 20px; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center;
+  width: 58px; height: 58px; border-radius: 20px; border: 0; background: var(--accent-fill, var(--accent)); color: var(--accent-ink); display: grid; place-items: center;
   box-shadow: 0 10px 24px -6px color-mix(in srgb, var(--accent) 70%, transparent);
   transition: transform .2s var(--spring), border-radius .2s var(--ease-out);
   touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -117,7 +117,7 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
   stroke-dasharray: 1; stroke-dashoffset: 1; animation: ml-draw 1.8s cubic-bezier(.45, .05, .2, 1) .25s forwards; }
 .hl-ink.is-neutral { opacity: .4; }
 .hl-rest { stroke: var(--accent); stroke-width: 1.2; opacity: .3; stroke-dasharray: 2 6; vector-effect: non-scaling-stroke; }
-.hl-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--accent); opacity: 0;
+.hl-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--accent-fill, var(--accent)); opacity: 0;
   --ink-line: var(--accent);
   animation: ml-dot-in .4s ease-out 2s forwards, ml-breathe 4s ease-in-out 2.4s infinite; }
 .hero.is-over .hl-ink, .hero.is-over .hl-rest { stroke: var(--danger); }
@@ -176,7 +176,7 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
 .tp-check svg { position: relative; }
 .tp-check:hover, .tp-check:focus-visible { color: var(--ink); }
 .tp-row.is-ticked .tp-check, .tp-row.is-leaving .tp-check { color: var(--accent-ink); }
-.tp-row.is-ticked .tp-check::before, .tp-row.is-leaving .tp-check::before { background: var(--accent); border-color: var(--accent); animation: tp-pop .35s var(--spring); }
+.tp-row.is-ticked .tp-check::before, .tp-row.is-leaving .tp-check::before { background: var(--accent-fill, var(--accent)); border-color: var(--accent); animation: tp-pop .35s var(--spring); }
 @keyframes tp-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .tp-main { flex: 1; min-width: 0; min-height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 4px;
   border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; border-radius: 10px; }
@@ -225,7 +225,7 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
 .hq { flex: 1 1 0; min-width: 0; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px;
   border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
 .hq svg { flex: none; color: var(--accent); }
-.hq.is-main { flex-grow: 1.3; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.hq.is-main { flex-grow: 1.3; background: var(--accent-fill, var(--accent)); border-color: var(--accent); color: var(--accent-ink); }
 .hq.is-main svg { color: var(--accent-ink); }
 .hq:active { transform: scale(.97); }
 .hq:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -263,5 +263,5 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
 @media (prefers-reduced-motion: reduce) { .hl { animation: none; } .hq:active, .hl-again-chip:active { transform: none; } }
 
 /* + picker: Spend is first (nearest the thumb) and biggest */
-.home-pick.is-main span { font-size: 16px; padding: 8px 14px; background: var(--accent); color: var(--accent-ink); }
+.home-pick.is-main span { font-size: 16px; padding: 8px 14px; background: var(--accent-fill, var(--accent)); color: var(--accent-ink); }
 .home-pick.is-main i { width: 58px; height: 58px; border-radius: 20px; }

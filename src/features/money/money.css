@@ -65,7 +65,7 @@
 .money-wf-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 15px; }
 .money-wf-top span { display: inline-flex; align-items: center; gap: 6px; }
 .money-wf-track { height: 12px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; margin-top: 4px; }
-.money-wf-track i { display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left center;
+.money-wf-track i { display: block; width: 100%; height: 100%; background: var(--accent-fill, var(--accent)); transform-origin: left center;
   transition: transform .3s var(--ease-out); will-change: transform; }
 .money-wf-bills i { background: var(--warn); }
 .money-wf-sips i { background: color-mix(in srgb, var(--accent) 55%, var(--ink)); }
@@ -108,7 +108,7 @@
 .money-cat-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .money-cat-name { font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
 .money-bar { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; margin-top: 6px; }
-.money-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left center; transition: transform .3s var(--ease-out); }
+.money-bar i { display: block; height: 100%; background: var(--accent-fill, var(--accent)); transform-origin: left center; transition: transform .3s var(--ease-out); }
 .money-lvl-ok .money-bar i { background: var(--ok); }
 .money-lvl-warn .money-bar i { background: var(--warn); }
 .money-lvl-over .money-bar i { background: var(--danger); }
@@ -170,7 +170,7 @@
 .money-cal-amt { font-size: 13px; font-weight: 700; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .k-bill, .k-sip, .k-maturity { display: inline-block; width: 7px; height: 7px; flex: none; }
 .k-bill { border-radius: 50%; background: var(--danger); }
-.k-sip { border-radius: 1px; background: var(--accent); }
+.k-sip { border-radius: 1px; background: var(--accent-fill, var(--accent)); }
 .k-maturity { background: var(--warn); transform: rotate(45deg) scale(.9); }
 .money-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 0; margin: 12px 0 0; font-size: 13px; color: var(--muted); }
 .money-legend li { display: inline-flex; align-items: center; gap: 6px; }

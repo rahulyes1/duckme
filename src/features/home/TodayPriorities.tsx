@@ -14,6 +14,7 @@ import { askCardPayment } from '../money/CardPaySheet';
 import { buzz, inr } from '../../lib/format';
 import { DuePill, TYPE_ICON } from '../../ui/CardTile';
 import { whenLabel } from '../../ui/WhenPicker';
+import { levelLabel } from '../notes/importance';
 
 const titleOf = (c: Card) =>
   c.type === 'note' && c.locked ? 'Locked note'
@@ -72,8 +73,9 @@ function Row({ card: c }: { card: Card }) {
           <span className="sr-only">{KIND_LABEL[c.type]}: </span>
           <span className="tp-title">{title}</span>
         </span>
-        {(c.due || c.when || !!c.amount) && (
+        {(c.level || c.due || c.when || !!c.amount) && (
           <span className="pills tp-pills">
+            {c.level && <span className="lvl" data-level={c.level}>{levelLabel(c.level)}</span>}
             {c.due ? <DuePill due={c.due} /> : null}
             {c.when && <span className="pill accent">{whenLabel(c.when)}</span>}
             {!!c.amount && <span className="pill outline num">{inr(c.amount)}</span>}

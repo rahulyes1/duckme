@@ -116,7 +116,7 @@ img { max-width: 100%; display: block; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px;
   border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 15px; transition: transform .12s var(--ease-out), background .15s; }
 .btn:active { filter: brightness(.92); }
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary { background: var(--accent-fill, var(--accent)); color: var(--accent-ink); border-color: var(--accent); }
 .btn.dark { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: transparent; }
 .btn.ghost { background: transparent; border-color: transparent; }
@@ -162,7 +162,7 @@ img { max-width: 100%; display: block; }
 .switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; border: 0; background: transparent; font-weight: 600; padding: 0; }
 .switch i { width: 40px; height: 24px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 22%, transparent); position: relative; transition: background .2s; flex: none; }
 .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); transition: transform .2s var(--ease-out); }
-.switch[aria-checked="true"] i { background: var(--accent); }
+.switch[aria-checked="true"] i { background: var(--accent-fill, var(--accent)); }
 .switch[aria-checked="true"] i::after { transform: translateX(16px); }
 
 /* ---------- masonry grid + card tile ---------- */
@@ -387,7 +387,7 @@ body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); botto
 
 /* ---------- bottom nav: a small dot glides to the active tab, the icon gives a little hop ---------- */
 .nav a .ico { position: relative; }
-.nav-dot { position: absolute; top: -5px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent); pointer-events: none; }
+.nav-dot { position: absolute; top: -5px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent-fill, var(--accent)); pointer-events: none; }
 .nav a[aria-current="page"] .ico svg { animation: nav-hop .4s var(--spring); }
 @keyframes nav-hop { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-3px) scale(1.08); } 100% { transform: none; } }
 @media (min-width: 1024px) { .nav-dot { display: none; } }

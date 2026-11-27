@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { byLevel } from './importance';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'framer-motion';
 import { Archive, Bell, BookOpen, CheckSquare, ImagePlus, LayoutGrid, LayoutTemplate, List, Lock, Palette, Search, ShieldCheck, StickyNote, Trash2, Undo2, X } from 'lucide-react';
 import './notes.css';
@@ -80,10 +81,10 @@ export default function NotesScreen() {
     if (q.trim()) l = l.filter(c => (hiddenOf(c) ? matchesQuery({ ...c, body: '', checklist: undefined }, q) : matchesQuery(c, q)));
     if (filter === 'reminders') l.sort((a, b) => (a.reminder ?? '').localeCompare(b.reminder ?? ''));
     else if (filter === 'docs') l.sort((a, b) => (a.expiry ?? '9999').localeCompare(b.expiry ?? '9999') || b.updatedAt - a.updatedAt);
-    else if (filter === 'tasks') l.sort((a, b) => (a.rank || 0) - (b.rank || 0));
+    else if (filter === 'tasks') l.sort((a, b) => byLevel(a, b) || (a.rank || 0) - (b.rank || 0));
     else if (filter === 'trash') l.sort((a, b) => (b.trashedAt ?? 0) - (a.trashedAt ?? 0));
     else if (filter === 'journal') l.sort((a, b) => (b.journalDate ?? '').localeCompare(a.journalDate ?? '') || b.updatedAt - a.updatedAt);
-    else l.sort((a, b) => b.updatedAt - a.updatedAt);
+    else l.sort((a, b) => byLevel(a, b) || b.updatedAt - a.updatedAt);
     return l;
   })();
 

@@ -151,7 +151,7 @@
 .notes-key { min-height: 60px; border-radius: 18px; border: 1px solid var(--card-line); background: color-mix(in srgb, var(--surface) 75%, transparent);
   font-size: 22px; font-weight: 600; color: var(--ink); display: grid; place-items: center; font-variant-numeric: tabular-nums; transition: transform .1s var(--ease-out); }
 .notes-key:active { filter: brightness(.92); }
-.notes-key-go { font-size: 16px; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.notes-key-go { font-size: 16px; background: var(--accent-fill, var(--accent)); color: var(--accent-ink); border-color: var(--accent); }
 
 /* =====================================================================
    Today page (daily journal)
@@ -163,7 +163,7 @@
   background: transparent; color: var(--ink); text-align: left; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   transition: transform .12s var(--ease-out); }
 .notes-today-main:active { filter: brightness(.92); }
-.notes-today-ico { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); }
+.notes-today-ico { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--accent-fill, var(--accent)); color: var(--accent-ink); }
 .notes-today-text { flex: 1; min-width: 0; display: grid; gap: 1px; }
 .notes-today-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, var(--ink) 78%, transparent); }
 .notes-today-date { font-family: var(--f-display); font-size: 22px; font-weight: 700; line-height: 1.2; letter-spacing: -.01em; }
@@ -176,7 +176,7 @@
 .notes-day:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 7%, transparent); }
 .notes-day:disabled { cursor: default; color: color-mix(in srgb, var(--ink) 60%, transparent); }
 .notes-day-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--ink) 55%, transparent); transition: transform .2s var(--spring); }
-.notes-day.has .notes-day-dot { background: var(--accent); border-color: var(--accent); }
+.notes-day.has .notes-day-dot { background: var(--accent-fill, var(--accent)); border-color: var(--accent); }
 .notes-day.is-today { background: var(--surface); box-shadow: var(--shadow-1); }
 .notes-day.is-today .notes-day-w { color: var(--accent); }
 .notes-day:active:not(:disabled) .notes-day-dot { filter: brightness(.92); }
@@ -196,7 +196,7 @@
 .notes-swipe-bg { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-radius: 16px;
   background: color-mix(in srgb, var(--ink) 10%, var(--bg)); color: var(--ink); font-size: 14px; font-weight: 700; transition: background .15s; }
 .notes-swipe-bg.is-l { justify-content: flex-end; }
-.notes-swipe-bg.is-armed { background: var(--accent); color: var(--accent-ink); }
+.notes-swipe-bg.is-armed { background: var(--accent-fill, var(--accent)); color: var(--accent-ink); }
 .notes-swipe-bg svg { flex: none; transition: transform .18s var(--spring); }
 .notes-swipe-bg.is-armed svg { transform: scale(1.15); }
 .notes-swipe-hint { text-align: center; font-size: 13px; color: var(--muted); margin: 16px 0 0; }
