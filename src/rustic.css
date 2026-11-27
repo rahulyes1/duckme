@@ -5,9 +5,9 @@
   --paper: var(--surface); --paper-ink: var(--ink); --paper-muted: var(--muted); --paper-accent: var(--accent);
   --paper-rule: rgba(255, 255, 255, .05); --paper-margin: transparent; --ul: var(--accent); --rule: transparent; --margin-line: transparent;
 }
-/* The Tracker and Money use a clean font; the handwritten fonts belong to Notes. */
-:root:root:root[data-theme="dark"] :is(.money .screen-title, .money-h, .pb-book-h h2, .sheet h2, .home.is-tracker :is(.screen-title, h2)),
-:root:root:root[data-theme="dark"] :is(.money, .home.is-tracker) :is(.pb-big, .money-big, .money-mid, .hl-amt) { font-family: var(--f-body); letter-spacing: 0; }
+/* Money uses a clean font. Home (Tracker and Notes) shares the rustic lettering. */
+:root:root:root[data-theme="dark"] :is(.money .screen-title, .money-h, .pb-book-h h2, .sheet h2),
+:root:root:root[data-theme="dark"] .money :is(.pb-big, .money-big, .money-mid, .hl-amt) { font-family: var(--f-body); letter-spacing: 0; }
 
 /* ---------- Tracker | Notes switch ---------- */
 .home-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 4px; background: var(--surface-2); border-radius: 999px; }
@@ -17,13 +17,6 @@
 
 /* ---------- Tracker cards ---------- */
 .trk { display: grid; gap: 10px; margin: 8px 0 14px; }
-.trk-hero { display: grid; justify-items: center; gap: 2px; padding: 18px 12px 12px; border-radius: 24px; background: #6E1A2A; color: #fff; text-decoration: none; border: 1px solid #A8475A; }
-.trk-k { font-size: 14px; font-weight: 600; }
-.trk-big { font-size: 42px; font-weight: 700; line-height: 1.15; }
-.trk-track { display: block; width: 100%; height: 10px; margin-top: 12px; border-radius: 9px; overflow: hidden; background: repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 4px, rgba(255,255,255,.1) 4px 8px); }
-.trk-track i { display: block; height: 100%; background: #fff; }
-.trk-legend { display: flex; justify-content: space-between; gap: 8px; width: 100%; margin-top: 6px; font-size: 12.5px; color: #F3D5DA; }
-.trk-note-line { margin-top: 8px; font-size: 14px; font-weight: 600; text-align: center; }
 .trk-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .trk-box { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px 6px; padding: 12px 12px 14px; border-radius: 20px; color: #fff; font-weight: 600; }
 .trk-box.is-income { background: var(--inc); }
@@ -170,3 +163,55 @@
 /* The header (title and Tracker | Notes switch) is identical in both views, so nothing jumps when you switch. */
 :root:root:root[data-theme="dark"] .home .topbar .screen-title { font-family: var(--f-body); font-size: 26px; font-weight: 700; line-height: 1.25; letter-spacing: 0; }
 .home .home-brand { min-height: 48px; }
+
+/* ---------- Tracker: the Month Map on rustic paper ---------- */
+.map { display: grid; gap: 10px; padding: 16px 12px 12px; border-radius: 8px; background: #302A25; color: #F2E9D8; border: 1px solid rgba(230, 217, 188, .14); box-shadow: inset 0 0 34px rgba(0, 0, 0, .35); }
+.map-head { display: grid; gap: 2px; padding: 0 4px; color: inherit; text-decoration: none; }
+.map-k { font-family: var(--f-display); font-size: 15px; color: #D8C9A8; }
+.map-big { font-family: var(--f-chalk); font-size: 40px; line-height: 1.15; }
+.map-sub { font-size: 13px; color: #D8C9A8; }
+.map-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.map-wd { text-align: center; font-size: 11px; color: #A99C84; }
+.map-day { position: relative; min-width: 0; height: 40px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: rgba(255, 255, 255, .055); color: #CFC2A8; font: inherit; font-size: 13px; cursor: pointer; }
+.map-day.heat-1 { background: #503039; color: #fff; }
+.map-day.heat-2 { background: #6E3140; color: #fff; }
+.map-day.heat-3 { background: #8E3347; color: #fff; }
+.map-day.heat-4 { background: #B83F58; color: #fff; }
+.map-day.is-future { background: transparent; border: 1px dashed rgba(230, 217, 188, .2); color: #A99C84; }
+.map-day.is-today { border: 2px solid #F2E9D8; font-weight: 700; }
+.map-day[aria-pressed="true"] { outline: 2px solid #F2A3AF; outline-offset: 1px; }
+.map-day:focus-visible, .map-line:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.map-day.has-bill::after, .map-day.has-salary::before { content: ""; position: absolute; bottom: 4px; width: 7px; height: 7px; border-radius: 50%; }
+.map-day.has-bill::after { left: calc(50% - 3.5px); background: #F2B35F; }
+.map-day.has-salary::before { left: calc(50% - 3.5px); background: #8FD18A; }
+.map-day.has-bill.has-salary::after { left: calc(50% + 1px); }
+.map-day.has-bill.has-salary::before { left: calc(50% - 8px); }
+.map-day:is(.has-bill, .has-salary) span { position: relative; top: -4px; }
+.map-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0 2px; font-size: 11.5px; color: #A99C84; }
+.map-key span { display: inline-flex; align-items: center; gap: 5px; }
+.map-key i { width: 8px; height: 8px; border-radius: 50%; }
+.map-key .k-spend { width: 18px; border-radius: 3px; background: linear-gradient(90deg, #503039, #B83F58); }
+.map-key .k-bill { background: #F2B35F; }
+.map-key .k-salary { background: #8FD18A; }
+/* The tapped day, on a torn paper slip. */
+.map-slip { padding: 10px 12px 14px; background: #D9CDB4; color: #2B241A; border-radius: 4px 4px 0 0;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; }
+.map-slip-head { display: flex; justify-content: space-between; gap: 8px; font-family: var(--f-chalk); font-size: 18px; }
+.map-pay { margin: 4px 0 0; font-size: 14px; font-weight: 700; color: #2D5A1D; }
+.map-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0; border: 0; border-top: 1px dashed rgba(43, 36, 26, .3); margin-top: 4px; background: none; color: inherit; font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.map-line:focus-visible { outline-color: #2B241A; }
+.map-line small { margin-left: 8px; font-size: 12px; font-weight: 700; color: #8A3B14; }
+.map-more { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: #6E1A2A; font-size: 14px; }
+/* Everything below the map becomes rustic tiles too. */
+.home.is-tracker .trk-box { border-radius: 8px; box-shadow: inset 0 0 30px rgba(0, 0, 0, .3); font-family: var(--f-display); }
+.home.is-tracker .trk-box.is-income { background: #3F5230; }
+.home.is-tracker .trk-box.is-expense { background: #6C3628; }
+.home.is-tracker .trk-box b { font-family: var(--f-chalk); font-size: 26px; }
+.home.is-tracker .trk-plus { background: #E6D9BC; color: #2B241A; }
+.home.is-tracker :is(.pace, .hl, .tp, .close-day) { border-radius: 8px; border: 1px solid rgba(230, 217, 188, .14); box-shadow: inset 0 0 30px rgba(0, 0, 0, .28); font-family: var(--f-display); }
+.home.is-tracker .pace { margin: -4px 0 14px; background: #34322C; }
+.home.is-tracker .hl { background: #33302A; }
+.home.is-tracker section.hl[aria-labelledby="hl-due"] { background: #493625; }
+.home.is-tracker .tp { background: #3B3C2D; }
+.home.is-tracker .tp-row { background: rgba(0, 0, 0, .16); border-radius: 6px; }
+.home.is-tracker :is(.hl-head h2, .tp-head h2) { font-family: var(--f-chalk); font-size: 19px; }
