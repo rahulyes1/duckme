@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { expensesCsv } from '../money/goals';
 import {
-  ArrowRight, Check, Download, HardDriveDownload, Info, KeyRound, Moon, ScrollText, Pencil, Smartphone, Sun, Tag, Trash2, Upload, X,
+  ArrowRight, Check, Download, HardDriveDownload, Info, KeyRound, Moon, ScrollText, Pencil, ShieldCheck, Smartphone, Sun, Tag, Trash2, Upload, X,
 } from 'lucide-react';
 import { useApp } from '../../app-context';
-import { db, saveSettings } from '../../lib/db';
-import { deleteEverything, exportAll } from '../../lib/actions';
+import { db, getSettings, saveSettings } from '../../lib/db';
+import { deleteEverything } from '../../lib/actions';
+import { runBackup, storageIsPersisted } from '../../lib/backup';
+import { mergeRestoredSettings, versionsToRestore } from '../../lib/backup-logic';
 import { useCards, useSettings } from '../../lib/hooks';
 import { sha256, todayISO } from '../../lib/format';
 import { removeSampleData, SAMPLE_LABEL } from '../../lib/seed';
@@ -262,10 +264,83 @@ function isCardLike(x: unknown): x is Card {
   return !!c && typeof c === 'object' && typeof c.id === 'string' && typeof c.type === 'string' && typeof c.title === 'string';
 }
 
-function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
+function storageHint(state: boolean | null | undefined): string {
+  const iPhone = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (state === true) return 'Storage: protected';
+  if (state === false) return `Storage: may be cleared by iOS${iPhone ? '. Add to Home Screen helps.' : ''}`;
+  return '';
+}
+
+/** Backup to file / Restore from file: the first thing in More, because everything lives on this device. */
+function BackupSection({ cards, settings }: { cards: Card[]; settings: Settings }) {
   const { toast } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importErr, setImportErr] = useState('');
+  const [stored, setStored] = useState<boolean | null | undefined>(undefined);
+
+  useEffect(() => { let on = true; void storageIsPersisted().then(v => { if (on) setStored(v); }); return () => { on = false; }; }, []);
+
+  const doExport = async () => {
+    try {
+      const r = await runBackup();
+      if (r === 'cancelled') return;
+      toast(r === 'shared' ? 'Backup ready. Keep the file somewhere safe.' : 'Backup saved');
+    } catch {
+      toast('Could not make the backup. Try again.');
+    }
+  };
+
+  const doImport = async (file: File) => {
+    setImportErr('');
+    try {
+      const data = JSON.parse(await file.text());
+      if (!data || data.app !== 'hisaab' || !Array.isArray(data.cards)) {
+        setImportErr('This file is not a Hisaab backup.');
+        return;
+      }
+      const incoming = (data.cards as unknown[]).filter(isCardLike).map(c => ({
+        ...c, labels: Array.isArray(c.labels) ? c.labels : [], links: Array.isArray(c.links) ? c.links : [],
+      }));
+      const hadCards = (await db.cards.count()) > 0;
+      const existing = await db.versions.toArray();
+      await db.cards.bulkPut(incoming);
+      const history = versionsToRestore(existing, data.versions);
+      if (history.length) await db.versions.bulkPut(history);
+      // Read stored settings fresh: the screen's copy may be a render behind.
+      const mine = await getSettings();
+      await saveSettings(mergeRestoredSettings(mine, data.settings, hadCards, incoming.flatMap(c => c.labels)));
+      toast(`Restored ${incoming.length} ${incoming.length === 1 ? 'card' : 'cards'} and your settings`);
+    } catch {
+      setImportErr('Could not read this file. Pick a .json backup made by Hisaab.');
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const last = settings.lastBackupAt;
+  const lastText = last
+    ? `Last backup: ${new Date(last).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
+    : cards.length ? 'Never backed up' : '';
+  const hint = storageHint(stored);
+
+  return (
+    <div className="set-stack">
+      <p className="set-text">Everything lives in this browser on this device. Back up to a file now and then, and before clearing browser data or changing phones.</p>
+      <div className="set-btnrow">
+        <button type="button" className="btn primary" onClick={doExport}><Download size={18} aria-hidden="true" />Backup to file</button>
+        <button type="button" className="btn" onClick={() => fileRef.current?.click()}><Upload size={18} aria-hidden="true" />Restore from file</button>
+        <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" tabIndex={-1} aria-hidden="true"
+          onChange={e => { const f = e.target.files?.[0]; if (f) doImport(f); }} />
+      </div>
+      {(lastText || hint) && <p className="set-small">{[lastText, hint].filter(Boolean).join(' · ')}</p>}
+      <p className="set-small">Restore merges cards by id: matching cards are replaced, new ones are added. Nothing is deleted. Your PIN is never in the file.</p>
+      {importErr && <p className="set-err" role="alert">{importErr}</p>}
+    </div>
+  );
+}
+
+function YourData({ cards }: { cards: Card[] }) {
+  const { toast } = useApp();
   const [confirmSample, setConfirmSample] = useState(false);
   const [wipe, setWipe] = useState(false);
   const [typed, setTyped] = useState('');
@@ -278,19 +353,6 @@ function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
     ['Cards', live.length], ['Notes', count('note')], ['Tasks', count('task')], ['Bills', count('bill')],
     ['Expenses', count('expense')], ['Investments', count('invest')], ['In trash', cards.length - live.length],
   ];
-
-  const doExport = async () => {
-    const json = await exportAll();
-    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `hisaab-${todayISO()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('Export saved');
-  };
 
   const doCsv = () => {
     // BOM so Excel reads ₹ and Indian names correctly.
@@ -305,37 +367,6 @@ function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
     toast('Expenses CSV saved');
   };
 
-  const doImport = async (file: File) => {
-    setImportErr('');
-    try {
-      const data = JSON.parse(await file.text());
-      if (!data || data.app !== 'hisaab' || !Array.isArray(data.cards)) {
-        setImportErr('This file is not a Hisaab export.');
-        return;
-      }
-      const incoming = (data.cards as unknown[]).filter(isCardLike).map(c => ({
-        ...c, labels: Array.isArray(c.labels) ? c.labels : [], links: Array.isArray(c.links) ? c.links : [],
-      }));
-      await db.cards.bulkPut(incoming);
-      const labels = new Set(settings.labels);
-      for (const l of (Array.isArray(data.settings?.labels) ? data.settings.labels : [])) if (typeof l === 'string') labels.add(l);
-      for (const c of incoming) c.labels.forEach(l => labels.add(l));
-      const budgets = { ...(data.settings?.budgets && typeof data.settings.budgets === 'object' ? data.settings.budgets : {}), ...settings.budgets };
-      // Goals and loans: keep yours, add ones from the file you don't have yet (matched by id).
-      const byId = <T extends { id: string }>(mine: T[] | undefined, theirs: unknown): T[] => {
-        const list = [...(mine ?? [])];
-        for (const x of (Array.isArray(theirs) ? theirs : []) as T[]) if (x && typeof x.id === 'string' && !list.some(m => m.id === x.id)) list.push(x);
-        return list;
-      };
-      await saveSettings({ labels: [...labels], budgets, goals: byId(settings.goals, data.settings?.goals), loans: byId(settings.loans, data.settings?.loans) });
-      toast(`Imported ${incoming.length} ${incoming.length === 1 ? 'card' : 'cards'}`);
-    } catch {
-      setImportErr('Could not read this file. Pick a .json file exported from Hisaab.');
-    } finally {
-      if (fileRef.current) fileRef.current.value = '';
-    }
-  };
-
   const doWipe = async () => {
     setBusy(true);
     await deleteEverything();
@@ -348,17 +379,9 @@ function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
       <dl className="set-stats">
         {stats.map(([k, v]) => <div key={k}><dt>{k}</dt><dd className="num">{v}</dd></div>)}
       </dl>
-      <p className="set-text">Everything lives in this browser on this device. Export a copy now and then, especially before clearing browser data.</p>
-
       <div className="set-btnrow">
-        <button type="button" className="btn primary" onClick={doExport}><Download size={18} aria-hidden="true" />Export JSON</button>
-        <button type="button" className="btn" onClick={() => fileRef.current?.click()}><Upload size={18} aria-hidden="true" />Import JSON</button>
         <button type="button" className="btn" onClick={doCsv}><Download size={18} aria-hidden="true" />Expenses CSV</button>
-        <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" tabIndex={-1} aria-hidden="true"
-          onChange={e => { const f = e.target.files?.[0]; if (f) doImport(f); }} />
       </div>
-      <p className="set-small">Import merges cards by id: matching cards are replaced, new ones are added. Nothing is deleted.</p>
-      {importErr && <p className="set-err" role="alert">{importErr}</p>}
 
       {sampleCount > 0 && (
         confirmSample ? (
@@ -380,7 +403,7 @@ function YourData({ cards, settings }: { cards: Card[]; settings: Settings }) {
 
       <div className="set-danger-zone">
         <h3 className="set-danger-title">Delete everything</h3>
-        <p className="set-text">Removes every card, note history and setting from this device. This cannot be undone. Export first if you may need it.</p>
+        <p className="set-text">Removes every card, note history and setting from this device. This cannot be undone. Back up to a file first if you may need it.</p>
         {wipe ? (
           <form className="set-stack" onSubmit={e => { e.preventDefault(); if (typed === 'DELETE') doWipe(); }}>
             <div className="field">
@@ -415,6 +438,10 @@ export default function SettingsScreen() {
   return (
     <div className="screen set-screen">
       <header className="topbar"><div className="topbar-row"><h1 className="screen-title">More</h1></div></header>
+
+      <Section id="set-backup" title="Backup" icon={<ShieldCheck size={18} aria-hidden="true" />}>
+        <BackupSection cards={cards} settings={settings} />
+      </Section>
 
       {canInstall && (
         <div className="set-install">
@@ -471,7 +498,7 @@ export default function SettingsScreen() {
       </Section>
 
       <Section id="set-data" title="Your data" icon={<HardDriveDownload size={18} aria-hidden="true" />}>
-        <YourData cards={cards} settings={settings} />
+        <YourData cards={cards} />
       </Section>
 
       <Section id="set-about" title="About" icon={<Info size={18} aria-hidden="true" />}>

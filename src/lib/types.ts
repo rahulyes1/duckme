@@ -218,6 +218,8 @@ export interface Settings {
   udhaar?: UdhaarEntry[];
   /** Optional weekly spending allowance in ₹ (Mon–Sun). */
   weeklyAllowance?: number;
+  /** Last time "Backup to file" finished (ms). Drives the Home backup nudge. */
+  lastBackupAt?: number;
 }
 
 export interface UdhaarEntry { id: string; name: string; dir: 'lent' | 'borrowed'; amount: number; note?: string; /** YYYY-MM-DD */ date: string; settled?: boolean; settledAt?: number; createdAt: number }

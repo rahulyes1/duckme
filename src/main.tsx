@@ -4,6 +4,7 @@ import App from './App';
 import './styles.css';
 import { registerSW } from './features/settings/pwa';
 import { startSync } from './lib/sync';
+import { requestPersistentStorage } from './lib/backup';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -13,3 +14,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 registerSW();
 startSync();
+// Ask the browser not to clear our data under storage pressure (iOS evicts unprotected sites).
+void requestPersistentStorage();
