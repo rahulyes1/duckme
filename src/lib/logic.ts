@@ -5,6 +5,7 @@
 import type { Card, Repeat } from './types';
 import { isActive } from './types';
 import { addMonths, addMonthsISO, fromISO, nextSalary, toISO } from './format';
+import { investKindFromText } from './capture';
 
 /* ---------- ranking: userRank is the ONLY order ---------- */
 
@@ -65,13 +66,25 @@ export function salarySplit(cards: Card[], salaryDay: number, ref: Date): Salary
 
 /* ---------- money totals ---------- */
 
-/** Expense totals for one month ("YYYY-MM"), per category, biggest first. Trashed/killed expenses don't count. */
+const counts = (c: Pick<Card, 'type' | 'status'>) => c.type === 'expense' && c.status !== 'trashed' && c.status !== 'killed';
+const looksInvested = (c: Pick<Card, 'category' | 'title'>) => c.category === 'Investment' || !!investKindFromText(c.title);
+
+/** A real spend: a live expense that is not money put into an investment (SIP, MF, FD, PPF…). */
+export function isSpend(c: Pick<Card, 'type' | 'status' | 'category' | 'title'>): boolean {
+  return counts(c) && !looksInvested(c);
+}
+
+/** A live expense line that records money invested (category Investment, or a title like "SIP 5000"). */
+export function isInvestLog(c: Pick<Card, 'type' | 'status' | 'category' | 'title'>): boolean {
+  return counts(c) && looksInvested(c);
+}
+
+/** Spend totals for one month ("YYYY-MM"), per category, biggest first. Trashed/killed expenses and investments don't count. */
 export function monthTotalsByCategory(cards: Card[], month: string): { total: number; byCategory: [string, number][] } {
   const map = new Map<string, number>();
   let total = 0;
   for (const c of cards) {
-    if (c.type !== 'expense' || !c.date || !c.date.startsWith(month)) continue;
-    if (c.status === 'trashed' || c.status === 'killed') continue;
+    if (!isSpend(c) || !c.date || !c.date.startsWith(month)) continue;
     const a = c.amount ?? 0;
     total += a;
     const k = c.category || 'Other';

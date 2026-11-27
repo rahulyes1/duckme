@@ -10,7 +10,7 @@ import type { Card } from '../../lib/types';
 import { isActive } from '../../lib/types';
 import { addDays, daysBetween, fromISO, toISO } from '../../lib/format';
 import { salaryCycle } from './cashflow';
-import { isLive } from './money-util';
+import { isSpend } from '../../lib/logic';
 import { isSmall } from './small';
 
 /* ---------- weeks ---------- */
@@ -82,7 +82,7 @@ export function weekSummary(cards: Card[], ref: Date, safePerDay: number): WeekS
   let spent = 0, smallCount = 0, smallTotal = 0;
   const billsDue: Card[] = [];
   for (const c of cards) {
-    if (c.type === 'expense' && isLive(c) && c.date && c.date >= range.start && c.date < range.end) {
+    if (isSpend(c) && c.date && c.date >= range.start && c.date < range.end) {
       const a = c.amount ?? 0;
       spent += a;
       const k = c.category || 'Other';
@@ -117,7 +117,7 @@ export function lastCycleLeftover(cards: Card[], salary: number, salaryDay: numb
   const prev = salaryCycle(salaryDay, addDays(fromISO(cur.start), -1));
   let spent = 0;
   for (const c of cards) {
-    if (c.type === 'expense' && isLive(c) && c.date && c.date >= prev.start && c.date < prev.end) spent += c.amount ?? 0;
+    if (isSpend(c) && c.date && c.date >= prev.start && c.date < prev.end) spent += c.amount ?? 0;
   }
   return salary - spent;
 }

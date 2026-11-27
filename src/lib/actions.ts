@@ -1,9 +1,10 @@
 /** All writes go through here so undo, versions and links stay consistent. */
 import { db, getSettings } from './db';
-import type { Card, CardType, Version } from './types';
-import { DEFAULT_COLOR } from './types';
-import { addDaysISO, todayISO, uid } from './format';
+import type { Card, CardType, InvestKind, Version } from './types';
+import { DEFAULT_COLOR, isActive } from './types';
+import { addDaysISO, addMonthsISO, todayISO, uid } from './format';
 import { nextDueDate, rankForNewCard } from './logic';
+import { investKindFromText } from './capture';
 
 export type Undo = () => Promise<void>;
 
@@ -101,7 +102,9 @@ export async function payBill(id: string): Promise<{ undo: Undo; expense: Card; 
     if (!bill) return;
     expense = newCard({
       type: 'expense', title: `${bill.title} paid`, amount: bill.amount ?? 0, date: todayISO(),
-      category: bill.category ?? (bill.autorenew ? 'Entertainment' : 'Bills'), mode: 'UPI', links: [bill.id],
+      // A bill that is really an investment (SIP, PPF, NPS…) is logged as one, never as a spend.
+      category: investKindFromText(bill.title) ? 'Investment' : bill.category ?? (bill.autorenew ? 'Entertainment' : 'Bills'),
+      mode: 'UPI', links: [bill.id],
       rank: await nextRank(),
     });
     await db.cards.add(expense);
@@ -121,11 +124,86 @@ export async function payBill(id: string): Promise<{ undo: Undo; expense: Card; 
   return { undo, expense, nextDue: nd, nextBill };
 }
 
+/* ---------- investments: logged, never "spent" ---------- */
+
+export interface InvestLogInput { amount: number; date: string; title: string; kind: InvestKind; mode?: string }
+export type InvestPlan = { update: string; patch: Partial<Card> } | { create: Partial<Card> & { type: 'invest' } };
+
+const monthlyKind = (k: InvestKind | undefined) => k === 'SIP' || k === 'RD';
+const normTitle = (s: string | undefined) => (s ?? '').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/** The next instalment date after paying one: one month on from the current next date (or `from`). */
+export const nextInstalment = (c: Pick<Card, 'invest'>, from: string): string => addMonthsISO(c.invest?.next ?? from, 1);
+
+/**
+ * Where a logged investment goes (pure): onto a live investment card of the same kind with the same
+ * name (or the only live card of that kind) — invested goes up, a SIP/RD moves to next month — or a new card.
+ */
+export function planInvestLog(cards: Card[], input: InvestLogInput): InvestPlan {
+  const same = cards.filter(c => c.type === 'invest' && isActive(c) && c.invest?.kind === input.kind);
+  const name = normTitle(input.title);
+  const hit = (name && same.find(c => normTitle(c.title) === name)) || (same.length === 1 ? same[0] : undefined);
+  if (hit && hit.invest) {
+    const inv = hit.invest;
+    return {
+      update: hit.id,
+      patch: { invest: { ...inv, invested: (inv.invested ?? 0) + input.amount, ...(monthlyKind(inv.kind) ? { next: nextInstalment(hit, input.date) } : {}) } },
+    };
+  }
+  return {
+    create: {
+      type: 'invest', title: input.title.trim() || input.kind, amount: input.amount,
+      invest: { kind: input.kind, invested: input.amount, start: input.date, ...(monthlyKind(input.kind) ? { next: addMonthsISO(input.date, 1) } : {}) },
+    },
+  };
+}
+
+/** Adds the dated "money invested" line, linked both ways to its investment card. */
+async function addInvestLine(investId: string, input: InvestLogInput): Promise<Card> {
+  const line = newCard({
+    type: 'expense', title: input.title.trim() || input.kind, amount: input.amount, date: input.date,
+    category: 'Investment', mode: input.mode ?? 'UPI', links: [investId], rank: await nextRank(),
+  });
+  await db.cards.add(line);
+  const inv = await db.cards.get(investId);
+  if (inv) await db.cards.update(investId, { links: [...inv.links, line.id], updatedAt: Date.now() });
+  return line;
+}
+
+/**
+ * Logs money put into an investment (a SIP, MF, FD…): updates or creates the investment card and
+ * keeps a dated "Investment" line so the cycle's cash flow still sees the money leave. Not a spend.
+ */
+export async function logInvestment(input: InvestLogInput): Promise<Undo> {
+  return withUndo(async () => {
+    const plan = planInvestLog(await db.cards.toArray(), input);
+    let investId: string;
+    if ('update' in plan) {
+      await db.cards.update(plan.update, { ...plan.patch, updatedAt: Date.now() });
+      investId = plan.update;
+    } else {
+      investId = (await createCard(plan.create)).id;
+    }
+    await addInvestLine(investId, input);
+  });
+}
+
 export async function markDone(id: string): Promise<Undo> {
   return withUndo(async () => {
     const c = await db.cards.get(id);
     if (!c) return;
     if (c.type === 'bill') { await payBill(id); return; }
+    if (c.type === 'invest' && c.invest && monthlyKind(c.invest.kind)) {
+      // Done on a SIP/RD = this instalment is paid. The card stays; next moves a month on.
+      const date = todayISO();
+      const amount = c.amount ?? 0;
+      await db.cards.update(id, {
+        invest: { ...c.invest, invested: (c.invest.invested ?? 0) + amount, next: nextInstalment(c, date) },
+        status: 'open', updatedAt: Date.now(),
+      });
+      if (amount > 0) await addInvestLine(id, { amount, date, title: c.title || c.invest.kind, kind: c.invest.kind });
+      return;
+    }
     if (c.type === 'task' && c.due && c.repeat && c.repeat !== 'none') {
       await db.cards.update(id, { due: nextDue(c.due, c.repeat)!, updatedAt: Date.now() });
       return;

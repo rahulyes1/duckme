@@ -4,7 +4,7 @@
 import type { Card } from '../../lib/types';
 import { daysBetween, fromISO, toISO } from '../../lib/format';
 import { salaryCycle } from './cashflow';
-import { isLive } from './money-util';
+import { isSpend } from '../../lib/logic';
 
 export interface RecapCat { name: string; amount: number; prev: number }
 export interface Recap {
@@ -45,7 +45,7 @@ const inRange = (c: Card, s: string, e: string) => !!c.date && c.date >= s && c.
 export function monthRecap(cards: Card[], salary: number, salaryDay: number, ref: Date): Recap {
   const { start, end } = cycleBounds(salaryDay, ref, 1);
   const prev = cycleBounds(salaryDay, ref, 2);
-  const exp = cards.filter(c => c.type === 'expense' && isLive(c) && (c.amount ?? 0) > 0);
+  const exp = cards.filter(c => isSpend(c) && (c.amount ?? 0) > 0);
   const now = exp.filter(c => inRange(c, start, end));
   const then = exp.filter(c => inRange(c, prev.start, prev.end));
   const sum = (l: Card[]) => l.reduce((s, c) => s + (c.amount ?? 0), 0);

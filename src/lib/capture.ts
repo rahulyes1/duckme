@@ -6,8 +6,9 @@
  *  - recurringCandidates: the same payment in 3+ months with no bill tracking it ("Netflix ₹649")
  * Pure functions; tested in capture.test.ts.
  */
-import type { Card } from './types';
+import type { Card, InvestKind } from './types';
 import { toISO } from './format';
+import { isSpend } from './logic';
 
 /* ---------------- categories from words ---------------- */
 
@@ -31,6 +32,28 @@ export function guessCategory(text: string): string | null {
 }
 
 const titleCase = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, m => m.toUpperCase()).trim();
+
+/* ---------------- investments are not spends ---------------- */
+
+const INVEST_WORDS: [InvestKind, RegExp][] = [
+  ['SIP', /\bsips?\b/i],
+  ['MF', /\b(mutual ?funds?|mf|groww|zerodha|kuvera|et ?money|paytm ?money|indmoney|bse ?star|nse ?mf)\b/i],
+  ['NPS', /\bnps\b/i],
+  ['PPF', /\bppf\b/i],
+  ['RD', /\b(recurring ?deposit|rd)\b/i],
+  ['FD', /\b(fixed ?deposit|fd)\b/i],
+  ['Gold', /\b(sgb|gold ?bonds?)\b/i],
+];
+
+/**
+ * "SIP 50000", "Groww mutual fund 5000", "NACH debit BSE STAR MF" → the kind of investment, else null.
+ * Whole words only; plain "gold" (earrings, jewellery) stays a spend.
+ */
+export function investKindFromText(text: string | undefined | null): InvestKind | null {
+  if (!text) return null;
+  for (const [kind, re] of INVEST_WORDS) if (re.test(text)) return kind;
+  return null;
+}
 
 /* ---------------- bank / UPI SMS ---------------- */
 
@@ -236,7 +259,7 @@ export interface DaySweep { total: number; count: number; missed: Usual[]; lastA
 /** Today so far: total, count, usual spends you normally log by now but haven't, and when you last logged one. */
 export function daySweep(cards: Card[], now: Date): DaySweep {
   const t = toISO(now);
-  const today = cards.filter(c => c.type === 'expense' && c.status !== 'trashed' && c.status !== 'killed' && c.date === t);
+  const today = cards.filter(c => isSpend(c) && c.date === t);
   const logged = new Set(today.map(c => norm(c.title || '')));
   const missed = usualSpends(cards, now).filter(u => !logged.has(norm(u.title)));
   const lastAt = today.reduce<number | null>((m, c) => (c.createdAt && (!m || c.createdAt > m) ? c.createdAt : m), null);

@@ -1,7 +1,7 @@
 /** Weekly allowance (Mon–Sun): spent so far, what's left, and a fair per-day amount. Pure; tested in allowance.test.ts. */
 import type { Card } from '../../lib/types';
 import { toISO } from '../../lib/format';
-import { isLive } from './money-util';
+import { isSpend } from '../../lib/logic';
 
 export interface WeekAllowance { start: string; end: string; spent: number; left: number; perDay: number; daysLeft: number; frac: number; over: number }
 
@@ -11,7 +11,7 @@ export function weekAllowance(cards: Card[], allowance: number, ref: Date): Week
   const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
   const start = toISO(mon), end = toISO(sun);
   const spent = cards
-    .filter(c => c.type === 'expense' && isLive(c) && c.date && c.date >= start && c.date <= end && c.category !== 'Bills' && c.category !== 'Rent')
+    .filter(c => isSpend(c) && c.date && c.date >= start && c.date <= end && c.category !== 'Bills' && c.category !== 'Rent')
     .reduce((s, c) => s + (c.amount ?? 0), 0);
   const daysLeft = 7 - dow; // including today
   const left = Math.max(0, allowance - spent);

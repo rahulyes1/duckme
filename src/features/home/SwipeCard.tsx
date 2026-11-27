@@ -3,8 +3,9 @@ import { Archive, CalendarClock, Check, X } from 'lucide-react';
 import type { Card, Settings } from '../../lib/types';
 import { CardTile } from '../../ui/CardTile';
 import { useApp } from '../../app-context';
-import { delay, kill, markDone, payBill } from '../../lib/actions';
-import { buzz, fmtDate, inr, prefersReducedMotion, salarySide } from '../../lib/format';
+import { delay, kill, markDone, nextInstalment, payBill } from '../../lib/actions';
+import { investKindFromText } from '../../lib/capture';
+import { buzz, fmtDate, inr, prefersReducedMotion, salarySide, todayISO } from '../../lib/format';
 
 type Zone = 'right' | 'delay' | 'kill' | null;
 type Dir = 'r' | 'l';
@@ -38,9 +39,11 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
 
   const hasDue = !!(card.due || card.invest?.next);
   // A paid repeating bill becomes a NEW card (spec §5), so only repeating tasks stay in place.
-  const repeats = card.type === 'task' && !!card.due && !!card.repeat && card.repeat !== 'none';
+  // A SIP/RD instalment marked paid keeps its card too: only the next date moves.
+  const sip = card.type === 'invest' && (card.invest?.kind === 'SIP' || card.invest?.kind === 'RD');
+  const repeats = sip || (card.type === 'task' && !!card.due && !!card.repeat && card.repeat !== 'none');
   const delayText = settings.delayDays === 1 ? '1 day' : '1 week';
-  const rightLabel = card.type === 'bill' ? 'Paid' : card.type === 'task' ? 'Done' : 'Archive';
+  const rightLabel = card.type === 'bill' || sip ? 'Paid' : card.type === 'task' ? 'Done' : 'Archive';
 
   const onPointerDown = (e: RPointerEvent<HTMLDivElement>) => {
     if (hidden || g.current.busy || e.button > 0) return;
@@ -117,7 +120,13 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
       app.burst(rect);
       buzz([12, 40, 12]);
       const { undo, nextDue } = await payBill(card.id);
-      app.toast(`Paid ${inr(card.amount)}. Logged as an expense.${nextDue ? ` Next bill due ${fmtDate(nextDue)}.` : ''}`, undo);
+      const what = investKindFromText(card.title) ? 'Paid. Logged as investment.' : `Paid ${inr(card.amount)}. Logged as an expense.`;
+      app.toast(`${what}${nextDue ? ` Next bill due ${fmtDate(nextDue)}.` : ''}`, undo);
+    } else if (sip) {
+      const next = nextInstalment(card, todayISO());
+      buzz(15);
+      const undo = await markDone(card.id);
+      app.toast(`${card.invest?.kind ?? 'SIP'} paid. Next on ${fmtDate(next)}`, undo);
     } else {
       const undo = await markDone(card.id);
       if (card.type === 'task') buzz(15);
@@ -177,7 +186,7 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
     s.state = null;
   };
 
-  const RightIcon = card.type === 'bill' || card.type === 'task' ? Check : Archive;
+  const RightIcon = card.type === 'bill' || card.type === 'task' || sip ? Check : Archive;
   const Icon = vis.dir === 'r' ? RightIcon : vis.zone === 'kill' ? X : CalendarClock;
   const label = vis.dir === 'r' ? rightLabel : vis.zone === 'kill' ? 'Kill' : hasDue ? `Delay ${delayText}` : 'Keep going to kill';
 

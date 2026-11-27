@@ -1,7 +1,7 @@
 /** Small building blocks shared by the Money tabs. */
 import {
   AlertTriangle, Bus, Check, Clapperboard, Fuel, GraduationCap, HeartPulse, House, Receipt, Shapes, ShoppingBag,
-  ShoppingBasket, UserRound, Users, UtensilsCrossed, type LucideIcon,
+  ShoppingBasket, Sprout, UserRound, Users, UtensilsCrossed, type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '../../app-context';
@@ -15,7 +15,7 @@ import { longMonth, monthKey, paidMessage, REPEAT_LABEL, shortMonth, sum } from 
 
 export const CAT_ICON: Record<string, LucideIcon> = {
   Food: UtensilsCrossed, Groceries: ShoppingBasket, Travel: Bus, Fuel, Shopping: ShoppingBag, Bills: Receipt, Rent: House,
-  Staff: UserRound, Health: HeartPulse, Education: GraduationCap, Entertainment: Clapperboard, Family: Users, Other: Shapes,
+  Staff: UserRound, Health: HeartPulse, Education: GraduationCap, Entertainment: Clapperboard, Family: Users, Investment: Sprout, Other: Shapes,
 };
 export const catIcon = (c: string | undefined): LucideIcon => CAT_ICON[c ?? 'Other'] ?? Shapes;
 
@@ -145,13 +145,4 @@ export function Trend({ months, values, selected }: { months: Date[]; values: nu
   );
 }
 
-/** Reads/writes a small UI preference; storage can be blocked, so every access is guarded. */
-export function readPref<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
-  try {
-    const v = localStorage.getItem(key) as T | null;
-    return v && allowed.includes(v) ? v : fallback;
-  } catch { return fallback; }
-}
-export function writePref(key: string, v: string) {
-  try { localStorage.setItem(key, v); } catch { /* storage blocked */ }
-}
+export { readPref, writePref } from '../../lib/prefs';

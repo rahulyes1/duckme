@@ -5,10 +5,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { ClipboardPaste, Mic, MicOff, Repeat } from 'lucide-react';
 import { inr } from '../../lib/format';
-import { parseBankSms, parseSpoken, usualSpends, type Usual } from '../../lib/capture';
-import type { Card } from '../../lib/types';
+import { investKindFromText, parseBankSms, parseSpoken, usualSpends, type Usual } from '../../lib/capture';
+import type { Card, InvestKind } from '../../lib/types';
 
-export interface Fill { amount?: number | null; category?: string | null; mode?: string | null; title?: string; date?: string | null; from: 'sms' | 'voice' | 'usual' }
+export interface Fill {
+  amount?: number | null; category?: string | null; mode?: string | null; title?: string; date?: string | null; from: 'sms' | 'voice' | 'usual';
+  /** Set when the SMS or words are an investment (SIP, MF, PPF…): saved as an investment, not a spend. */
+  invest?: InvestKind | null;
+}
 
 type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; abort: () => void;
   onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
@@ -34,7 +38,8 @@ export function CaptureBar({ cards, onFill, onError }: { cards: Card[]; onFill: 
   const useSms = (raw: string): boolean => {
     const s = parseBankSms(raw);
     if (!s) return false;
-    onFill({ amount: s.amount, category: s.category, mode: s.mode, title: s.merchant, date: s.date, from: 'sms' });
+    const invest = investKindFromText(`${s.merchant} ${raw}`);
+    onFill({ amount: s.amount, category: invest ? 'Investment' : s.category, mode: s.mode, title: s.merchant || invest || '', date: s.date, from: 'sms', invest });
     setPasteOpen(false); setText('');
     return true;
   };
@@ -61,7 +66,8 @@ export function CaptureBar({ cards, onFill, onError }: { cards: Card[]; onFill: 
       if (!last.trim()) return;
       const s = parseSpoken(last);
       if (!s.amount) { onError(`Heard “${last}” but no amount. Try “250 auto”.`); return; }
-      onFill({ amount: s.amount, category: s.category, mode: s.mode, title: s.title, from: 'voice' });
+      const invest = investKindFromText(last);
+      onFill({ amount: s.amount, category: invest ? 'Investment' : s.category, mode: s.mode, title: s.title, from: 'voice', invest });
       setTimeout(() => setHeard(''), 2500);
     };
     recRef.current = rec;

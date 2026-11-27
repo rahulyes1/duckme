@@ -7,8 +7,8 @@ import { Check, MoreHorizontal, PenLine as PenIcon, Pencil, Plus } from 'lucide-
 import { useApp } from '../../app-context';
 import { fmtDate, inr, today, todayISO } from '../../lib/format';
 import { useCountUp } from '../../lib/hooks';
-import { createCard, withUndo } from '../../lib/actions';
-import { looksDuplicate, parsePenLine } from '../../lib/capture';
+import { createCard, logInvestment, withUndo } from '../../lib/actions';
+import { investKindFromText, looksDuplicate, parsePenLine } from '../../lib/capture';
 import { buzz } from '../../lib/format';
 import type { Card, Settings } from '../../lib/types';
 import type { CashFlow } from './cashflow';
@@ -83,6 +83,14 @@ export function PenLine({ cards, onMore }: { cards: Card[]; onMore?: (el: HTMLEl
 
   const save = async () => {
     if (!p?.amount) return;
+    const kind = investKindFromText(text);
+    if (kind) {
+      const undo = await logInvestment({ amount: p.amount, date: p.date, title: p.title || kind, kind, mode: p.mode ?? 'UPI' });
+      buzz(10);
+      setText('');
+      toast(`Saved as investment (${kind} ${inr(p.amount)}), not a spend.`, undo);
+      return;
+    }
     const category = p.category ?? 'Other', title = p.title || category;
     const dup = looksDuplicate(cards, { amount: p.amount, category, title, date: p.date }, Date.now());
     const undo = await withUndo(async () => { await createCard({ type: 'expense', title, amount: p.amount!, date: p.date, category, mode: p.mode ?? 'UPI' }); });

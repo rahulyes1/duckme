@@ -6,11 +6,11 @@ import { motion } from 'framer-motion';
 import { CalendarDays, Check, ChevronDown, ChevronUp, Delete, PencilLine, Plus, Star, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
-import { createCard, withUndo } from '../../lib/actions';
+import { createCard, logInvestment, newCard, withUndo } from '../../lib/actions';
 import { saveSettings } from '../../lib/db';
 import { addDaysISO, buzz, fmtDate, inr, prefersReducedMotion, today, todayISO } from '../../lib/format';
 import { useCards, useSettings } from '../../lib/hooks';
-import type { Card } from '../../lib/types';
+import type { Card, InvestKind } from '../../lib/types';
 import { PAY_MODES } from '../../lib/types';
 import { Money } from '../../ui/bits';
 import { Sheet } from '../../ui/Sheet';
@@ -22,7 +22,7 @@ import { catIcon } from './parts';
 import { balanceText, buildSplit, knownPeople, myShare, type SplitDraft } from './split';
 import { EMPTY_SPLIT, SplitPicker } from './splitPicker';
 import { CaptureBar, type Fill } from './CaptureBar';
-import { looksDuplicate } from '../../lib/capture';
+import { investKindFromText, looksDuplicate } from '../../lib/capture';
 
 type Day = 'today' | 'yesterday' | 'pick';
 const PAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '.'];
@@ -58,12 +58,15 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
   const [splitErr, setSplitErr] = useState('');
   const [shown, setShown] = useState(0);
   const busy = useRef(false);
+  /** Investment kind from the last SMS / voice fill (the SMS text itself isn't kept in the form). */
+  const fillInvest = useRef<InvestKind | null>(null);
   const amtRef = useRef<HTMLInputElement>(null);
   const anotherRef = useRef<HTMLButtonElement>(null);
 
   const reset = useCallback(() => {
     setAmt(''); setCat(null); setNote(''); setNoteOpen(false); setErr(''); setDay('today'); setPicked(todayISO()); setAll(false);
     setSplitOn(false); setSplitDraft(EMPTY_SPLIT); setSplitErr('');
+    fillInvest.current = null;
   }, []);
   useEffect(() => { if (open) { reset(); setMode('UPI'); setSaved(null); } }, [open, reset]);
 
@@ -109,6 +112,23 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       const salary = settings.salaryAmount ?? 0;
       const ref = today();
       const before = cashFlow(cards, salary, settings.salaryDay, ref);
+      // SIP, MF, PPF, FD… are money put away, not spent: log them on the investment instead.
+      const kind = sp?.split ? null : investKindFromText(note) ?? fillInvest.current;
+      if (kind) {
+        const title = note.trim() || kind;
+        const undo = await logInvestment({ amount: value, date, title, kind, mode });
+        const line = newCard({ type: 'expense', title, amount: value, date, category: 'Investment', mode });
+        const after = cashFlow([...cards, line], salary, settings.salaryDay, ref);
+        toast(`Saved as investment (${kind} ${inr(value)}), not a spend.`, undo);
+        buzz(15);
+        const safe = salary > 0;
+        const from = safe ? before.safeToday : before.spent;
+        const to = safe ? after.safeToday : after.spent;
+        setShown(from);
+        setSaved({ amount: value, category: 'Investment', date, from, to, safe });
+        reset();
+        return;
+      }
       const catBefore = spentByCategory(cards, date.slice(0, 7))[category] ?? 0;
       let created!: Card;
       const dup = looksDuplicate(cards, { amount: value, category, title: note.trim(), date }, Date.now());
@@ -157,6 +177,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     if (f.category) setCat(f.category);
     if (f.mode) setMode(f.mode);
     if (f.title) { setNote(f.title); setNoteOpen(true); }
+    fillInvest.current = f.invest ?? investKindFromText(f.title);
     if (f.date) {
       const t = todayISO(), y = addDaysISO(t, -1);
       if (f.date === t) setDay('today'); else if (f.date === y) setDay('yesterday'); else { setDay('pick'); setPicked(f.date); }

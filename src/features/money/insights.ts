@@ -5,7 +5,7 @@
  */
 import type { Card } from '../../lib/types';
 import { addDaysISO, fmtDate, inr, toISO } from '../../lib/format';
-import { isLive } from './money-util';
+import { isSpend } from '../../lib/logic';
 
 export type InsightKind = 'up' | 'down' | 'pace' | 'big' | 'calm' | 'weekend' | 'bills';
 export interface Insight { kind: InsightKind; text: string; /** higher shows first */ weight: number }
@@ -20,7 +20,7 @@ export function spendingInsights(cards: Card[], ref: Date): Insight[] {
   const sameDayLast = `${lastM}-${pad(Math.min(day, lastMonthDays))}`;
   const todayISO = toISO(ref);
 
-  const exp = cards.filter(c => c.type === 'expense' && isLive(c) && c.date && (c.amount ?? 0) > 0);
+  const exp = cards.filter(c => isSpend(c) && c.date && (c.amount ?? 0) > 0);
   const now = exp.filter(c => c.date!.startsWith(thisM) && c.date! <= todayISO);
   const then = exp.filter(c => c.date!.startsWith(lastM) && c.date! <= sameDayLast);
   const sum = (l: Card[]) => l.reduce((s, c) => s + (c.amount ?? 0), 0);

@@ -2,6 +2,7 @@
 import type { Card, InvestKind, Repeat } from '../../lib/types';
 import { addDaysISO, addMonths, fmtDate, inr, toISO, today, todayISO } from '../../lib/format';
 import { isActive } from '../../lib/types';
+import { isSpend } from '../../lib/logic';
 
 export const monthKey = (d: Date): string => toISO(d).slice(0, 7);
 export const monthStart = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), 1);
@@ -14,7 +15,7 @@ export const isLive = (c: Card): boolean => c.status !== 'trashed' && c.status !
 export const sum = (xs: number[]): number => xs.reduce((a, b) => a + b, 0);
 
 export const expensesIn = (cards: Card[], key: string): Card[] =>
-  cards.filter(c => c.type === 'expense' && isLive(c) && !!c.date && c.date.startsWith(key));
+  cards.filter(c => isSpend(c) && !!c.date && c.date.startsWith(key));
 
 export const spentIn = (cards: Card[], key: string): number => sum(expensesIn(cards, key).map(c => c.amount ?? 0));
 

@@ -5,7 +5,8 @@
 import type { Card } from '../../lib/types';
 import { EXPENSE_CATEGORIES, isActive } from '../../lib/types';
 import { addMonths, daysBetween, fromISO, toISO } from '../../lib/format';
-import { isLive, isMonthly } from './money-util';
+import { isMonthly } from './money-util';
+import { isInvestLog, isSpend } from '../../lib/logic';
 
 /* ---------- salary cycle ---------- */
 
@@ -52,7 +53,9 @@ export interface CashFlow {
   sips: CycleItem[];
   sipsTotal: number;
   spent: number;
-  /** salary − bills − instalments − spent. Negative when you are over. */
+  /** Money put into investments this cycle (logged SIP / MF / FD lines). Not a spend, but it has left your account. */
+  invested: number;
+  /** salary − bills − instalments − spent − invested. Negative when you are over. */
   left: number;
   /** left ÷ days until salary, never negative. */
   safeToday: number;
@@ -62,32 +65,59 @@ export interface CashFlow {
 
 const byDate = (a: CycleItem, b: CycleItem) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
+const linked = (a: Card, b: Card) => a.links.includes(b.id) || b.links.includes(a.id);
+
+/**
+ * SIP/RD cards whose instalment in [start, end) is already paid by an investment log in the same
+ * window: a log linked to the card, or a category 'Investment' line for the same amount.
+ * Each log covers one instalment, so nothing is taken off twice.
+ */
+export function coveredInstalments(cards: Card[], start: string, end: string): Set<string> {
+  const logs = cards.filter(c => isInvestLog(c) && !!c.date && c.date >= start && c.date < end);
+  const due = cards.filter(c => c.type === 'invest' && isActive(c) && isMonthly(c.invest?.kind) && !!c.invest?.next && c.invest.next < end);
+  const used = new Set<string>();
+  const out = new Set<string>();
+  const take = (match: (l: Card, c: Card) => boolean) => {
+    for (const c of due) {
+      if (out.has(c.id)) continue;
+      const l = logs.find(x => !used.has(x.id) && match(x, c));
+      if (l) { used.add(l.id); out.add(c.id); }
+    }
+  };
+  take(linked);
+  take((l, c) => l.category === 'Investment' && (l.amount ?? 0) > 0 && l.amount === c.amount);
+  return out;
+}
+
 /**
  * Salary cash flow for the cycle that contains `ref`:
  * - bills: live bills due before the next salary (overdue ones included, they still need paying)
  * - sips: live SIP/RD instalments whose next date falls before the next salary
- * - spent: expenses dated inside the cycle (paid bills become expenses, so nothing counts twice)
+ * - spent: real spends dated inside the cycle (paid bills become expenses, so nothing counts twice)
+ * - invested: investment lines dated inside the cycle; a SIP they already cover is not counted again
  */
 export function cashFlow(cards: Card[], salary: number, salaryDay: number, ref: Date): CashFlow {
   const cycle = salaryCycle(salaryDay, ref);
   const bills: CycleItem[] = [];
   const sips: CycleItem[] = [];
-  let spent = 0;
+  let spent = 0, invested = 0;
+  const covered = coveredInstalments(cards, cycle.start, cycle.end);
   for (const c of cards) {
     if (c.type === 'bill' && isActive(c) && c.due && c.due < cycle.end) {
       bills.push({ card: c, amount: c.amount ?? 0, date: c.due });
     } else if (c.type === 'invest' && isActive(c) && isMonthly(c.invest?.kind) && c.invest?.next && c.invest.next < cycle.end) {
-      sips.push({ card: c, amount: c.amount ?? 0, date: c.invest.next });
-    } else if (c.type === 'expense' && isLive(c) && c.date && c.date >= cycle.start && c.date < cycle.end) {
-      spent += c.amount ?? 0;
+      if (!covered.has(c.id)) sips.push({ card: c, amount: c.amount ?? 0, date: c.invest.next });
+    } else if (c.type === 'expense' && c.date && c.date >= cycle.start && c.date < cycle.end) {
+      if (isSpend(c)) spent += c.amount ?? 0;
+      else if (isInvestLog(c)) invested += c.amount ?? 0;
     }
   }
   bills.sort(byDate); sips.sort(byDate);
   const billsTotal = bills.reduce((s, b) => s + b.amount, 0);
   const sipsTotal = sips.reduce((s, b) => s + b.amount, 0);
-  const left = salary - billsTotal - sipsTotal - spent;
+  const left = salary - billsTotal - sipsTotal - spent - invested;
   const safe = safeToSpend(left, cycle.daysLeft);
-  return { cycle, salary, bills, billsTotal, sips, sipsTotal, spent, left, safeToday: safe.perDay, overBy: safe.overBy };
+  return { cycle, salary, bills, billsTotal, sips, sipsTotal, spent, invested, left, safeToday: safe.perDay, overBy: safe.overBy };
 }
 
 /** Per-day amount you can spend until salary. Never negative; `overBy` says how far over you are. */
@@ -121,7 +151,7 @@ export function budgetCrossing(before: number, after: number, budget: number | u
 export function spentByCategory(cards: Card[], month: string): Record<string, number> {
   const out: Record<string, number> = {};
   for (const c of cards) {
-    if (c.type !== 'expense' || !isLive(c) || !c.date?.startsWith(month)) continue;
+    if (!isSpend(c) || !c.date?.startsWith(month)) continue;
     const k = c.category || 'Other';
     out[k] = (out[k] ?? 0) + (c.amount ?? 0);
   }
@@ -134,7 +164,7 @@ export function spentByCategory(cards: Card[], month: string): Record<string, nu
 export function usedCategories(cards: Card[], month: string): string[] {
   const n = new Map<string, { count: number; amt: number }>();
   for (const c of cards) {
-    if (c.type !== 'expense' || !isLive(c) || !c.date?.startsWith(month)) continue;
+    if (!isSpend(c) || !c.date?.startsWith(month)) continue;
     const k = c.category || 'Other';
     const v = n.get(k) ?? { count: 0, amt: 0 };
     v.count++; v.amt += c.amount ?? 0;

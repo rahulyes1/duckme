@@ -5,8 +5,9 @@
  */
 import type { Card } from '../../lib/types';
 import { isActive } from '../../lib/types';
-import { salaryCycle } from './cashflow';
-import { isLive, isMonthly } from './money-util';
+import { coveredInstalments, salaryCycle } from './cashflow';
+import { isMonthly } from './money-util';
+import { isInvestLog, isSpend } from '../../lib/logic';
 
 export interface PassLine {
   id: string;
@@ -24,14 +25,17 @@ export interface PassLine {
 export function passbook(cards: Card[], salary: number, salaryDay: number, ref: Date): { lines: PassLine[]; cycle: { start: string; end: string } } {
   const cyc = salaryCycle(salaryDay, ref);
   const spends = cards
-    .filter(c => c.type === 'expense' && isLive(c) && c.date && c.date >= cyc.start && c.date < cyc.end && (c.amount ?? 0) > 0)
+    // Investment lines stay in the ledger (the money did leave the account), marked as invested, not spent.
+    .filter(c => (isSpend(c) || isInvestLog(c)) && c.date && c.date >= cyc.start && c.date < cyc.end && (c.amount ?? 0) > 0)
     .sort((a, b) => (a.date! < b.date! ? -1 : a.date! > b.date! ? 1 : a.createdAt - b.createdAt));
   const dues = cards
     .filter(c => c.type === 'bill' && isActive(c) && c.due && c.due < cyc.end && (c.amount ?? 0) > 0)
     .sort((a, b) => (a.due! < b.due! ? -1 : 1));
 
+  // A SIP already paid by an investment line this cycle shows once (as that line), not again as due.
+  const covered = coveredInstalments(cards, cyc.start, cyc.end);
   const sips = cards
-    .filter(c => c.type === 'invest' && isActive(c) && isMonthly(c.invest?.kind) && c.invest?.next && c.invest.next >= cyc.start && c.invest.next < cyc.end && (c.amount ?? 0) > 0)
+    .filter(c => !covered.has(c.id) && c.type === 'invest' && isActive(c) && isMonthly(c.invest?.kind) && c.invest?.next && c.invest.next >= cyc.start && c.invest.next < cyc.end && (c.amount ?? 0) > 0)
     .map(c => ({ c, due: c.invest!.next! }));
   const has = salary > 0;
   let bal = has ? salary : 0;
@@ -41,7 +45,7 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
     bal -= c.amount!;
     asc.push({
       id: c.id, date: c.date!, title: c.title || c.category || 'Spend',
-      sub: [c.category, c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
+      sub: [isSpend(c) ? c.category : 'Invested', c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
     });
   }
   // Bills and SIP/RD instalments still due, soonest first, so the projected balance runs in date order.

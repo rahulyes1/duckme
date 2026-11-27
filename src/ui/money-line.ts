@@ -5,6 +5,7 @@
  */
 import type { Card } from '../lib/types';
 import { addDays, daysBetween, fromISO, toISO } from '../lib/format';
+import { isSpend } from '../lib/logic';
 
 export interface MoneyLine {
   /** One value per day from cycle start up to today (inclusive). */
@@ -32,7 +33,7 @@ export function moneyLine(cards: Card[], salary: number | undefined, salaryDay: 
   let any = false;
   const startISO = toISO(start), refISO = toISO(ref);
   for (const c of cards) {
-    if (c.type !== 'expense' || !c.date || c.status === 'trashed' || c.status === 'killed') continue;
+    if (!isSpend(c) || !c.date) continue;
     if (c.date < startISO || c.date > refISO) continue;
     const i = daysBetween(start, fromISO(c.date));
     if (i < 0 || i > upto) continue;
