@@ -51,6 +51,7 @@
 .set-lbl:last-child { border-bottom: 0; }
 .set-lbl-name { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
 .set-lbl-count { font-size: 14px; color: var(--muted); }
+.set-lbl-fixed { min-height: 44px; display: inline-flex; align-items: center; padding: 0 8px; }
 .set-lbl-edit { display: flex; align-items: center; gap: 4px; flex: 1; padding: 4px 0; }
 .set-lbl-edit .input { flex: 1; min-width: 0; }
 .set-danger-ico { color: var(--danger); }
@@ -114,13 +115,18 @@
 
 /* ---------- theme swatches ---------- */
 .set-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.set-theme { display: grid; gap: 8px; padding: 6px; border-radius: 16px; border: 2px solid transparent; background: var(--surface-2); color: var(--ink); text-align: left; }
+.set-theme { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 8px; padding: 6px; border-radius: 16px; border: 2px solid transparent; background: var(--surface-2); color: var(--ink); text-align: left; }
 .set-theme[aria-checked="true"] { border-color: var(--accent); }
 .set-theme-pv { display: grid; gap: 5px; padding: 8px; border-radius: 11px; height: 74px; align-content: start; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .2); }
 .set-theme-pv i { display: grid; gap: 4px; padding: 6px; border-radius: 6px; }
 .set-theme-pv b { display: block; height: 4px; width: 80%; border-radius: 3px; }
 .set-theme-l { display: flex; align-items: center; gap: 6px; padding: 0 4px 4px; font-size: 13px; font-weight: 600; }
 .set-theme-ok { margin-left: auto; color: var(--accent); }
+.set-theme { position: relative; }
+.set-theme-l svg { flex: none; }
+/* The tick sits on the preview corner so a long name like "Charcoal" never pushes it out on a 360px phone. */
+.set-theme-l .set-theme-ok { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; padding: 3px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink, #0b1f17); }
 
 /* ---------- reminders ---------- */
 .set-rem-ask { display: grid; gap: 12px; justify-items: start; }

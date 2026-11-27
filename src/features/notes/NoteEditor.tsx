@@ -514,7 +514,7 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
         )}
         <span className="notes-edited">
           Edited {relTime(card.updatedAt)}
-          {words > 0 && <span className="notes-words num"> · {fmtWords(words)}</span>}
+          {words > 0 && <span className="notes-words num"><span className="sr-only">, </span>{fmtWords(words)}</span>}
         </span>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={e => addImages(e.target.files)} aria-label="Choose images" />
       </div>

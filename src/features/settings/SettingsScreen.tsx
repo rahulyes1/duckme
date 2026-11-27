@@ -11,6 +11,8 @@ import { mergeRestoredSettings, versionsToRestore } from '../../lib/backup-logic
 import { useCards, useSettings } from '../../lib/hooks';
 import { sha256, todayISO } from '../../lib/format';
 import { removeSampleData, SAMPLE_LABEL } from '../../lib/seed';
+import { TEMPLATE_LABEL } from '../notes/templates';
+import { JOURNAL_LABEL } from '../notes/journal';
 import type { Card, Settings } from '../../lib/types';
 import { useInstallPrompt } from './pwa';
 import { Switch } from '../../ui/bits';
@@ -73,11 +75,12 @@ function Profile({ settings, cards }: { settings: Settings; cards: Card[] }) {
         {editing ? (
           <form className="set-me-form" onSubmit={e => { e.preventDefault(); void save(); }}>
             <label htmlFor="me-name" className="sr-only">Your first name</label>
-            <input id="me-name" className="input" autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Your first name" autoComplete="given-name" />
+            <input id="me-name" className="input" autoFocus value={name} maxLength={40} onChange={e => setName(e.target.value)} placeholder="Your first name" autoComplete="given-name"
+              onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setEditing(false); } }} />
             <button type="submit" className="btn primary">Save</button>
           </form>
         ) : (
-          <button type="button" className="set-me-name" onClick={() => setEditing(true)}>
+          <button type="button" className="set-me-name" onClick={() => { setName(settings.userName ?? ''); setEditing(true); }}>
             {settings.userName || 'Add your name'} <Pencil size={14} aria-hidden="true" />
           </button>
         )}
@@ -189,6 +192,9 @@ async function deleteLabel(name: string, settings: Settings) {
   });
 }
 
+/** Labels the app itself relies on: renaming or deleting them would turn templates/journal pages into plain notes. */
+const BUILT_IN_LABELS = new Set([TEMPLATE_LABEL, JOURNAL_LABEL]);
+
 function LabelRow({ name, count, settings, all }: { name: string; count: number; settings: Settings; all: string[] }) {
   const { toast } = useApp();
   const [mode, setMode] = useState<null | 'rename' | 'delete'>(null);
@@ -198,8 +204,9 @@ function LabelRow({ name, count, settings, all }: { name: string; count: number;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    const to = val.trim();
+    const to = val.trim().replace(/\s+/g, ' ');
     if (!to) { setErr('Label name cannot be empty.'); return; }
+    if (BUILT_IN_LABELS.has(to) && to !== name) { setErr(`“${to}” is used by Hisaab itself. Pick another name.`); return; }
     if (to === name) { setMode(null); return; }
     await renameLabel(name, to, settings);
     toast(all.includes(to) ? `Merged “${name}” into “${to}”` : `Renamed to “${to}”`);
@@ -211,7 +218,7 @@ function LabelRow({ name, count, settings, all }: { name: string; count: number;
       <li className="set-lbl">
         <form className="set-lbl-edit" onSubmit={save}>
           <label htmlFor={inputId} className="sr-only">New name for {name}</label>
-          <input id={inputId} className="input" value={val} autoFocus maxLength={40} onChange={e => { setVal(e.target.value); setErr(''); }} />
+          <input id={inputId} className="input" value={val} autoFocus maxLength={30} onChange={e => { setVal(e.target.value); setErr(''); }} />
           <button type="submit" className="icon-btn" aria-label="Save name"><Check size={20} aria-hidden="true" /></button>
           <button type="button" className="icon-btn" aria-label="Cancel rename" onClick={() => { setMode(null); setVal(name); setErr(''); }}><X size={20} aria-hidden="true" /></button>
         </form>
@@ -237,8 +244,14 @@ function LabelRow({ name, count, settings, all }: { name: string; count: number;
       <Tag size={16} aria-hidden="true" className="set-muted" />
       <span className="set-lbl-name">{name}</span>
       <span className="set-lbl-count num">{count} {count === 1 ? 'card' : 'cards'}</span>
-      <button type="button" className="icon-btn" aria-label={`Rename ${name}`} onClick={() => setMode('rename')}><Pencil size={18} aria-hidden="true" /></button>
-      <button type="button" className="icon-btn set-danger-ico" aria-label={`Delete ${name}`} onClick={() => setMode('delete')}><Trash2 size={18} aria-hidden="true" /></button>
+      {BUILT_IN_LABELS.has(name) ? (
+        <span className="set-lbl-count set-lbl-fixed">Built in</span>
+      ) : (
+        <>
+          <button type="button" className="icon-btn" aria-label={`Rename ${name}`} onClick={() => { setVal(name); setMode('rename'); }}><Pencil size={18} aria-hidden="true" /></button>
+          <button type="button" className="icon-btn set-danger-ico" aria-label={`Delete ${name}`} onClick={() => setMode('delete')}><Trash2 size={18} aria-hidden="true" /></button>
+        </>
+      )}
     </li>
   );
 }
@@ -268,7 +281,7 @@ function isCardLike(x: unknown): x is Card {
 function storageHint(state: boolean | null | undefined): string {
   const iPhone = /iphone|ipad|ipod/i.test(navigator.userAgent);
   if (state === true) return 'Storage: protected';
-  if (state === false) return `Storage: may be cleared by iOS${iPhone ? '. Add to Home Screen helps.' : ''}`;
+  if (state === false) return iPhone ? 'Storage: may be cleared by iOS. Add to Home Screen helps.' : 'Storage: the browser may clear it when space runs low. Installing the app helps.';
   return '';
 }
 
@@ -356,6 +369,7 @@ function YourData({ cards }: { cards: Card[] }) {
   ];
 
   const doCsv = () => {
+    if (!live.some(c => c.type === 'expense')) { toast('No expenses to export yet'); return; }
     // BOM so Excel reads ₹ and Indian names correctly.
     const url = URL.createObjectURL(new Blob(['﻿' + expensesCsv(cards)], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
