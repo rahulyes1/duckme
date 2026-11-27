@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import type { Card, Settings } from '../../lib/types';
-import { fmtDayMonth, inr, toISO, today } from '../../lib/format';
+import { fmtDayMonth, inr, toISO, today, todayISO } from '../../lib/format';
 import { useCountUp } from '../../lib/hooks';
 import { cashFlow } from '../money/cashflow';
 import { spendingInsights } from '../money/insights';
@@ -19,13 +19,21 @@ function greeting(h: number): string {
  * ink line that writes itself once, and what is due before the next salary. Tapping opens Money.
  */
 export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settings }) {
+  // Re-render when the app comes back to the front, so an app left open overnight shows the new day.
+  const [, wake] = useState(0);
+  useEffect(() => {
+    const on = () => { if (document.visibilityState === 'visible') wake(n => n + 1); };
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
+  }, []);
+  const iso = todayISO();
   const ref = today();
   const salary = settings.salaryAmount ?? 0;
-  const flow = useMemo(() => cashFlow(cards, salary, settings.salaryDay, ref), [cards, salary, settings.salaryDay]); // eslint-disable-line react-hooks/exhaustive-deps
-  const line = useMemo(() => moneyLine(cards, salary || undefined, settings.salaryDay, ref), [cards, salary, settings.salaryDay]); // eslint-disable-line react-hooks/exhaustive-deps
+  const flow = useMemo(() => cashFlow(cards, salary, settings.salaryDay, ref), [cards, salary, settings.salaryDay, iso]); // eslint-disable-line react-hooks/exhaustive-deps
+  const line = useMemo(() => moneyLine(cards, salary || undefined, settings.salaryDay, ref), [cards, salary, settings.salaryDay, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   const { d, lastX, lastY } = useMemo(() => linePath(line, 1000, 120, 14), [line]);
 
-  const tip = useMemo(() => spendingInsights(cards, ref).find(i => i.kind !== 'bills'), [cards]); // eslint-disable-line react-hooks/exhaustive-deps
+  const tip = useMemo(() => spendingInsights(cards, ref).find(i => i.kind !== 'bills'), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   // What you spent leads: today, then this month. Safe-to-spend stays as the guide underneath.
   const spent = useMemo(() => {
     const t = toISO(ref), m = t.slice(0, 7);
@@ -36,7 +44,7 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
       if (c.date.startsWith(m) && c.date <= t) month += c.amount ?? 0;
     }
     return { day, month, count };
-  }, [cards]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   const big = useCountUp(spent.day, 800);
   const days = flow.cycle.daysLeft;
   const name = settings.userName?.split(' ')[0];
