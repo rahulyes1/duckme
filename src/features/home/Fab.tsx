@@ -32,7 +32,9 @@ export function Fab({ fanOpen, active, onTap, onHold, onPick, onTypeIt, onCloseF
     if (!fanOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onCloseFan(); } };
     document.addEventListener('keydown', onKey, true);
-    return () => document.removeEventListener('keydown', onKey, true);
+    // Nav taps (Home again, another tab) close the fan too.
+    window.addEventListener('hisaab:dismiss', onCloseFan);
+    return () => { document.removeEventListener('keydown', onKey, true); window.removeEventListener('hisaab:dismiss', onCloseFan); };
   }, [fanOpen, onCloseFan]);
 
   return (
@@ -92,8 +94,12 @@ export function Fab({ fanOpen, active, onTap, onHold, onPick, onTypeIt, onCloseF
         className={`home-fab ${active ? 'is-open' : ''}`}
         aria-label={fanOpen ? 'Close type picker' : 'New note. Hold to pick a type'}
         aria-expanded={fanOpen}
-        title="Tap for a note, hold to pick a type"
+        title="Tap for a note, hold (or right-click) to pick a type"
+        aria-keyshortcuts="ArrowUp"
         {...lp.handlers}
+        // Keyboard and mouse users can't "hold": Arrow Up or right-click opens the type picker.
+        onKeyDown={e => { if (e.key === 'ArrowUp' && !fanOpen) { e.preventDefault(); onHold(); } }}
+        onContextMenu={e => { e.preventDefault(); if (!fanOpen) onHold(); }}
         onPointerCancel={lp.handlers.onPointerUp}
         onClick={() => {
           if (lp.fired.current) { lp.fired.current = false; return; }
