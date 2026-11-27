@@ -88,6 +88,13 @@ export default function HomeScreen() {
     void app.createAndOpen(newCardDefaults(t), document.querySelector('.home-fab'));
   }, [app]);
 
+  /** Spend is one tap from Home: open Money with the quick spend sheet ready. */
+  const addSpend = useCallback(() => {
+    try { sessionStorage.setItem('hisaab.quickSpend', '1'); } catch { /* storage blocked */ }
+    app.go('money');
+    window.dispatchEvent(new Event('hisaab:spend'));
+  }, [app]);
+
   const closeSheet = useCallback(() => setSheet(s => ({ ...s, open: false })), []);
   const closeFan = useCallback(() => setFanOpen(false), []);
   const openSheet = useCallback((type: CardType | null) => { setFanOpen(false); setSheet({ open: true, type }); }, []);
@@ -125,7 +132,7 @@ export default function HomeScreen() {
           title="Your hisaab starts here"
           action={<button type="button" className="btn primary" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Write your first note</button>}
         >
-          Tap + for a quick note. Hold + to pick a task, bill, expense or investment, or choose <b>Type it</b> and write it the way you would say it: <b>bijli 2400 15th</b>.
+          Tap <b>Spend</b>, <b>Note</b>, <b>Task</b> or <b>Bill</b> above. Or hold + and choose <b>Type it</b> to write it the way you would say it: <b>bijli 2400 15th</b>.
         </EmptyState>
       );
     } else if (!shown.length && home) {
@@ -135,7 +142,7 @@ export default function HomeScreen() {
           title="All clear"
           action={<button type="button" className="btn primary" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Write a note</button>}
         >
-          Your spends are in Money. Tap + for a note, or hold + to add a task or bill.
+          Your spends are in Money. Use the buttons above to add a spend, note, task or bill.
         </EmptyState>
       );
     } else if (!shown.length) {
@@ -169,8 +176,8 @@ export default function HomeScreen() {
         <div className="topbar-row">
           <label className="search">
             <Search size={18} aria-hidden="true" />
-            <span className="sr-only">Search cards</span>
-            <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search cards" autoComplete="off" />
+            <span className="sr-only">Search notes, tasks and bills</span>
+            <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search notes, tasks, bills" autoComplete="off" />
           </label>
           {q && (
             <button type="button" className="icon-btn" aria-label="Clear search" onClick={() => setQ('')}><X size={20} aria-hidden="true" /></button>
@@ -184,6 +191,14 @@ export default function HomeScreen() {
         </div>
       </header>
 
+      {cards !== undefined && home && (
+        <div className="home-quick" role="group" aria-label="Add something">
+          <button type="button" className="btn primary" onClick={addSpend}><Plus size={18} aria-hidden="true" />Spend</button>
+          <button type="button" className="btn" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Note</button>
+          <button type="button" className="btn" onClick={() => newOfType('task')}><Plus size={18} aria-hidden="true" />Task</button>
+          <button type="button" className="btn" onClick={() => newOfType('bill')}><Plus size={18} aria-hidden="true" />Bill</button>
+        </div>
+      )}
       {cards !== undefined && open.length > 0 && home && <TodayPriorities items={prio.items} more={prio.more} />}
       {cards !== undefined && open.length > 0 && home && <TodayHero cards={cards} settings={settings} />}
       {cards !== undefined && home && spends.count > 0 && (

@@ -3,7 +3,7 @@ import {
   ArrowLeft, CheckCircle2, Copy, IndianRupee, Link2, MoreVertical, Palette, Pin, PinOff, Receipt, StickyNote, CheckSquare, Trash2, TrendingUp,
 } from 'lucide-react';
 import { HomeButton } from '../../ui/HomeButton';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '../../app-context';
 import { convert, duplicate, trash, updateCard } from '../../lib/actions';
 import { payBillAsking } from './CardPaySheet';
@@ -24,6 +24,17 @@ import { gainLoss } from '../../lib/logic';
 
 const REPEATS: Repeat[] = ['none', 'monthly', 'quarterly', 'yearly'];
 const TYPE_ICON = { expense: IndianRupee, bill: Receipt, invest: TrendingUp, note: StickyNote, task: CheckSquare } as const;
+
+/** Rarely used bill fields tucked away so the form starts short; opens by itself when one is already set. */
+function BillMore({ filled, children }: { filled: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(filled);
+  return (
+    <details className="money-opt" open={open} onToggle={e => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary>More options <span>repeat rules, penalty, autopay</span></summary>
+      {children}
+    </details>
+  );
+}
 
 function Chips<T extends string>({ label, options, value, onChange, render }: {
   label: string; options: readonly T[]; value: T | undefined; onChange: (v: T) => void; render?: (v: T) => string;
@@ -291,6 +302,16 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
               </div>
             )}
             <Chips label="Repeats" options={REPEATS} value={c.repeat ?? 'none'} onChange={v => set({ repeat: v })} render={v => REPEAT_LABEL[v]} />
+            {c.staff && <StaffLedger card={c} onChange={v => set({ staff: v })} />}
+            {isActive(c) && (
+              <button type="button" className="btn primary block money-markpaid"
+                onClick={e => { if (c.staff) { void flush(); setSheet('staffpay'); } else void markPaid(e.currentTarget); }}>
+                <CheckCircle2 size={18} aria-hidden="true" /> {c.staff ? 'Pay' : 'Mark paid'}{c.amount ? ` ${inr(c.amount)}` : ''}
+              </button>
+            )}
+            {c.status === 'done' && <p className="money-muted"><CheckCircle2 size={14} aria-hidden="true" /> Paid{c.doneAt ? ` on ${fmtDate(toISO(new Date(c.doneAt)))}` : ''}.</p>}
+            <Chips label="Category" options={EXPENSE_CATEGORIES} value={c.category as typeof EXPENSE_CATEGORIES[number]} onChange={v => set({ category: v })} />
+            <BillMore filled={!!(c.autorenew || c.lastSafe || c.penalty || c.autopay)}>
             <div className="money-switches">
               <Switch checked={!!c.autorenew} onChange={v => set({ autorenew: v })} label="Auto-renews (subscription)" />
               <Switch checked={!!c.lastSafe} onChange={v => set({ lastSafe: v })} label="Credit card style (show last safe day = due + 3)" />
@@ -302,15 +323,7 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
               <span className="help" id={`pen-${id}-help`}>Shown as a reminder only. It never changes the order.</span>
             </div>
             <AutopayFields card={c} settings={settings} onChange={v => set({ autopay: v })} />
-            <Chips label="Category" options={EXPENSE_CATEGORIES} value={c.category as typeof EXPENSE_CATEGORIES[number]} onChange={v => set({ category: v })} />
-            {c.staff && <StaffLedger card={c} onChange={v => set({ staff: v })} />}
-            {isActive(c) && (
-              <button type="button" className="btn primary block money-markpaid"
-                onClick={e => { if (c.staff) { void flush(); setSheet('staffpay'); } else void markPaid(e.currentTarget); }}>
-                <CheckCircle2 size={18} aria-hidden="true" /> {c.staff ? 'Pay' : 'Mark paid'}{c.amount ? ` ${inr(c.amount)}` : ''}
-              </button>
-            )}
-            {c.status === 'done' && <p className="money-muted"><CheckCircle2 size={14} aria-hidden="true" /> Paid{c.doneAt ? ` on ${fmtDate(toISO(new Date(c.doneAt)))}` : ''}.</p>}
+            </BillMore>
           </>
         )}
 

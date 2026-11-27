@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { expensesCsv } from '../money/goals';
 import {
-  ArrowRight, Check, Download, HardDriveDownload, Info, KeyRound, Moon, ScrollText, Pencil, ShieldCheck, Smartphone, Sun, Tag, Trash2, Upload, X,
+  ArrowRight, Check, Download, HardDriveDownload, Info, KeyRound, Moon, Palette, ScrollText, Pencil, ShieldCheck, Smartphone, Sun, Tag, Trash2, Upload, Wallet, X,
 } from 'lucide-react';
 import { useApp } from '../../app-context';
 import { db, getSettings, saveSettings } from '../../lib/db';
@@ -468,10 +468,6 @@ export default function SettingsScreen() {
     <div className="screen set-screen">
       <header className="topbar"><div className="topbar-row"><h1 className="screen-title">More</h1></div></header>
 
-      <Section id="set-backup" title="Backup" icon={<ShieldCheck size={18} aria-hidden="true" />}>
-        <BackupSection cards={cards} settings={settings} />
-      </Section>
-
       {canInstall && (
         <div className="set-install">
           <Smartphone size={22} aria-hidden="true" />
@@ -484,11 +480,7 @@ export default function SettingsScreen() {
 
       <Profile settings={settings} cards={cards} />
 
-      <AccountSection />
-
-      <RemindersSection settings={settings} />
-
-      <Section id="set-general" title="General" icon={null}>
+      <Section id="set-money" title="Money setup" icon={<Wallet size={18} aria-hidden="true" />}>
         <div className="field">
           <label htmlFor="set-salary">Salary day</label>
           <select id="set-salary" className="select set-narrow" value={settings.salaryDay}
@@ -496,6 +488,23 @@ export default function SettingsScreen() {
             {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
           <span className="help">Used for the before/after salary split. If a month is shorter, the last day is used.</span>
+        </div>
+        <button type="button" className="set-link" onClick={() => go('money')}>
+          Set monthly budgets in Money <ArrowRight size={18} aria-hidden="true" />
+        </button>
+      </Section>
+
+      <RemindersSection settings={settings} />
+
+      <Section id="set-look" title="Look and swipe" icon={<Palette size={18} aria-hidden="true" />}>
+        <div className="field">
+          <span className="label" id="theme-lbl">Theme</span>
+          <ThemePicker value={settings.theme} />
+        </div>
+        <div className="field">
+          <Switch checked={settings.backgroundLife !== false} label="Background life"
+            onChange={v => saveSettings({ backgroundLife: v })} />
+          <span className="help">Gentle birds, kite, balloon and fireflies behind the page</span>
         </div>
         <div className="field">
           <span className="label" id="delay-lbl">Swipe left delays by</span>
@@ -509,18 +518,6 @@ export default function SettingsScreen() {
           </div>
           <span className="help">Delay moves the due date and marks the card Delayed. It never changes your order.</span>
         </div>
-        <div className="field">
-          <span className="label" id="theme-lbl">Theme</span>
-          <ThemePicker value={settings.theme} />
-        </div>
-        <div className="field">
-          <Switch checked={settings.backgroundLife !== false} label="Background life"
-            onChange={v => saveSettings({ backgroundLife: v })} />
-          <span className="help">Gentle birds, kite, balloon and fireflies behind the page</span>
-        </div>
-        <button type="button" className="set-link" onClick={() => go('money')}>
-          Set monthly budgets in Money <ArrowRight size={18} aria-hidden="true" />
-        </button>
       </Section>
 
       <Section id="set-pin" title="Lock PIN" icon={<KeyRound size={18} aria-hidden="true" />}>
@@ -529,6 +526,12 @@ export default function SettingsScreen() {
 
       <Section id="set-labels" title="Labels" icon={<Tag size={18} aria-hidden="true" />}>
         <LabelsManager settings={settings} cards={cards} />
+      </Section>
+
+      <AccountSection />
+
+      <Section id="set-backup" title="Backup" icon={<ShieldCheck size={18} aria-hidden="true" />}>
+        <BackupSection cards={cards} settings={settings} />
       </Section>
 
       <Section id="set-data" title="Your data" icon={<HardDriveDownload size={18} aria-hidden="true" />}>

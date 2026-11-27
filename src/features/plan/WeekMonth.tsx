@@ -314,7 +314,7 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
         );
       })}
       {!ahead && !groups.next.length && !groups.later.length && (
-        <button type="button" className="btn ghost plan-ahead" onClick={() => setAhead(true)}>Plan further ahead</button>
+        <button type="button" className="btn ghost plan-ahead" onClick={() => setAhead(true)}>+ Plan next month or later</button>
       )}
       <WhenPicker
         open={!!pickCard}

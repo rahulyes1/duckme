@@ -12,7 +12,7 @@ import './plan.css';
 type View = 'box' | 'wm' | 'order' | 'time';
 const VIEWS: { id: View; label: string }[] = [
   { id: 'wm', label: 'Priorities' },
-  { id: 'box', label: '4-box' },
+  { id: 'box', label: 'Urgent grid' },
   { id: 'order', label: 'My order' },
   { id: 'time', label: 'Timeline' },
 ];
