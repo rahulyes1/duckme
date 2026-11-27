@@ -20,11 +20,10 @@
 .trk-hero { display: grid; justify-items: center; gap: 2px; padding: 18px 12px 12px; border-radius: 24px; background: #6E1A2A; color: #fff; text-decoration: none; border: 1px solid #A8475A; }
 .trk-k { font-size: 14px; font-weight: 600; }
 .trk-big { font-size: 42px; font-weight: 700; line-height: 1.15; }
-.trk-bars { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 4px; width: 100%; height: 104px; margin-top: 8px; }
-.trk-bar { display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: 4px; min-height: 0; }
-.trk-bar i { align-self: end; width: 70%; max-width: 12px; border-radius: 6px 6px 2px 2px; background: rgba(255, 255, 255, .42); }
-.trk-bar.is-today i { background: #fff; }
-.trk-bar small { font-size: 11px; color: #F3D5DA; }
+.trk-track { display: block; width: 100%; height: 10px; margin-top: 12px; border-radius: 9px; overflow: hidden; background: repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 4px, rgba(255,255,255,.1) 4px 8px); }
+.trk-track i { display: block; height: 100%; background: #fff; }
+.trk-legend { display: flex; justify-content: space-between; gap: 8px; width: 100%; margin-top: 6px; font-size: 12.5px; color: #F3D5DA; }
+.trk-note-line { margin-top: 8px; font-size: 14px; font-weight: 600; text-align: center; }
 .trk-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .trk-box { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px 6px; padding: 12px 12px 14px; border-radius: 20px; color: #fff; font-weight: 600; }
 .trk-box.is-income { background: var(--inc); }
@@ -168,3 +167,6 @@
 .later-btn small { color: var(--muted); }
 .later-open { align-self: flex-start; margin: 0 0 8px; }
 .tp-later { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+/* The header (title and Tracker | Notes switch) is identical in both views, so nothing jumps when you switch. */
+:root:root:root[data-theme="dark"] .home .topbar .screen-title { font-family: var(--f-body); font-size: 26px; font-weight: 700; line-height: 1.25; letter-spacing: 0; }
+.home .home-brand { min-height: 48px; }
