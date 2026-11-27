@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MutableRefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MutableRefObject } from 'react';
 import { CalendarDays, Bold, Calculator, CheckSquare, Heading, List, Minus } from 'lucide-react';
 import { fmtDate, todayISO } from '../../lib/format';
 import {
@@ -6,6 +6,10 @@ import {
 } from './md-lite';
 import { NoteBody } from './NoteBody';
 import { calcLines, fmtCalc } from './calc';
+import { useDebounced } from './use-debounced';
+
+/** Below this many characters derived work runs on every keystroke; above it, after a 250ms pause. */
+export const LIVE_LIMIT = 4000;
 
 const CMD_ICON: Record<SlashId, typeof Bold> = {
   h: Heading, li: List, todo: CheckSquare, hr: Minus, date: CalendarDays, bold: Bold,
@@ -35,6 +39,67 @@ function caretTop(el: HTMLTextAreaElement, pos: number): number {
   return top;
 }
 
+/** Bottom of the caret line, relative to the textarea's box. Cheap when the caret is at the end. */
+function caretBottom(el: HTMLTextAreaElement, pos: number): number {
+  if (pos >= el.value.length) return el.scrollHeight - (parseFloat(getComputedStyle(el).paddingBottom) || 0);
+  return caretTop(el, pos);
+}
+
+/**
+ * Keeps the caret above the iPhone keyboard and the bottom toolbar while typing. The editor is a fixed,
+ * full-height layer, so when the keyboard opens it covers the bottom of `.editor-scroll` and Safari does
+ * not scroll an inner container for us: typing at the end of a long note went out of sight, which felt
+ * like the note had a limit.
+ */
+function keepCaretVisible(el: HTMLTextAreaElement) {
+  const scroller = el.closest<HTMLElement>('.editor-scroll');
+  if (!scroller) return;
+  const pos = el.selectionEnd ?? el.value.length;
+  const line = parseFloat(getComputedStyle(el).lineHeight) || 27;
+  const elTop = el.getBoundingClientRect().top;
+  const bottom = elTop + caretBottom(el, pos);
+  const top = bottom - line;
+  const sr = scroller.getBoundingClientRect();
+  const vv = window.visualViewport;
+  const bar = scroller.parentElement?.querySelector<HTMLElement>('.notes-bar');
+  let visBottom = sr.bottom;
+  if (vv) visBottom = Math.min(visBottom, vv.offsetTop + vv.height);
+  if (bar) visBottom = Math.min(visBottom, bar.getBoundingClientRect().top);
+  const head = scroller.querySelector<HTMLElement>('.editor-top');
+  const visTop = Math.max(sr.top, vv ? vv.offsetTop : 0) + (head?.offsetHeight ?? 0);
+  const gap = line * 1.5;
+  if (bottom > visBottom - gap) scroller.scrollTop += bottom - (visBottom - gap);
+  else if (top < visTop + 8) scroller.scrollTop -= visTop + 8 - top;
+}
+
+/** Writes the on-screen keyboard height to --kb on <html> so the editor can leave room under the text. */
+function useKeyboardInset() {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    let raf = 0;
+    const update = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        root.style.setProperty('--kb', `${kb}px`);
+        const el = document.activeElement;
+        if (kb > 0 && el instanceof HTMLTextAreaElement && el.classList.contains('notes-body')) keepCaretVisible(el);
+      });
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      cancelAnimationFrame(raf);
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+      root.style.setProperty('--kb', '0px');
+    };
+  }, []);
+}
+
 interface Slash { start: number; query: string; active: number; top: number }
 
 interface Props {
@@ -58,21 +123,38 @@ export function BodyEditor({ id, value, onChange, placeholder, label, mode, onMo
   const selReq = useRef<{ s: number; e: number } | null>(null);
   const prev = useRef(value);
   prev.current = value;
+  const grown = useRef<{ el: HTMLTextAreaElement | null; len: number }>({ el: null, len: 0 });
   const listId = `${id}-cmds`;
-  const results = useMemo(() => calcLines(value).filter(r => r.kind === 'result'), [value]);
+  // The calc strip re-parses every line: on a long note do it after a short pause, not per keystroke.
+  const calcSrc = useDebounced(value, 250, value.length < LIVE_LIMIT);
+  const results = useMemo(() => calcLines(calcSrc).filter(r => r.kind === 'result'), [calcSrc]);
+  useKeyboardInset();
 
   // auto-grow + apply a pending caret position after React wrote the new value
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
+    const scroller = el.closest<HTMLElement>('.editor-scroll');
+    const len = el.value.length;
+    if (grown.current.el === el && len >= grown.current.len) {
+      // Text only grew: no need to collapse first (that is a full reflow of a long note).
+      if (el.scrollHeight > el.clientHeight) el.style.height = `${el.scrollHeight}px`;
+    } else {
+      // Collapsing to "auto" shortens the page for a moment, which clamps the scroll position and
+      // made long notes jump. Keep the scroll position across the measurement.
+      const keep = scroller?.scrollTop ?? 0;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+      if (scroller) scroller.scrollTop = keep;
+    }
+    grown.current = { el, len };
     const r = selReq.current;
     if (r) {
       selReq.current = null;
       if (document.activeElement !== el) el.focus({ preventScroll: true });
       try { el.setSelectionRange(r.s, r.e); } catch { /* ignore */ }
     }
+    if (document.activeElement === el) keepCaretVisible(el);
   }, [value, mode, textareaRef]);
 
   const commit = (ed: Edit) => {

@@ -77,11 +77,12 @@
 .notes-linked-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .notes-linked-a { font-weight: 700; }
 
-.notes-bar-space { height: 84px; }
+.notes-bar-space { height: calc(96px + env(safe-area-inset-bottom, 0px)); }
 .notes-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 8px;
   padding: 4px max(12px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
   background: var(--c, var(--surface)); border-top: 1px solid var(--card-line); }
 .notes-edited { margin-left: auto; min-width: 0; text-align: right; font-size: 13px; color: color-mix(in srgb, var(--ink) 72%, transparent); padding-right: 4px; }
+.notes-words { white-space: nowrap; }
 
 /* task extras */
 .notes-task { display: grid; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-line); }
@@ -218,6 +219,12 @@
 
 /* inside a CardTile: compact and clipped */
 .tile .body.notes-md-tile { display: block; white-space: normal; -webkit-line-clamp: unset; max-height: calc(1.45em * 9); overflow: hidden; line-height: 1.45; }
+/* more text than the tile shows: fade the last lines and add "…" (the full text is in the editor) */
+.tile .body.notes-md-tile.is-more { margin-bottom: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.9em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.9em), transparent); }
+.tile .notes-md-more { display: block; font-size: 14px; line-height: 1; margin: -2px 0 4px; letter-spacing: .1em; font-weight: 700;
+  color: color-mix(in srgb, var(--ink) 62%, transparent); }
 .tile .notes-md-tile .notes-md-p, .tile .notes-md-tile .notes-md-ttext { white-space: pre-wrap; }
 .tile .notes-md-tile .notes-md-h { margin-top: .1em; }
 

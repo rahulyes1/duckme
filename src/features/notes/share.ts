@@ -55,5 +55,5 @@ export function shareToNote(s: { title?: string; text?: string; url?: string }):
   if (title && text === title) text = '';
   const body = [text, url && !text.includes(url) ? url : ''].filter(Boolean).join('\n');
   if (!title && !body) return null;
-  return { type: 'note', title: title.replace(/\s*\n\s*/g, ' ').slice(0, 200), body };
+  return { type: 'note', title: title.replace(/\s*\n\s*/g, ' '), body };
 }

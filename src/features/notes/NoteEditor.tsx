@@ -22,7 +22,9 @@ import { ColorPicker } from '../../ui/bits';
 import { TYPE_ICON, checklistTotal } from '../../ui/CardTile';
 import { Checklist, useAutoGrow } from './Checklist';
 import { PinPad } from './PinPad';
-import { BodyEditor } from './BodyEditor';
+import { BodyEditor, LIVE_LIMIT } from './BodyEditor';
+import { countWords, fmtWords } from './text-stats';
+import { useDebounced } from './use-debounced';
 import { PlanRow } from './PlanRow';
 import { hasMarkup } from './md-lite';
 import {
@@ -123,7 +125,10 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   const queue = (patch: Partial<Card>) => {
     Object.assign(pending.current, patch);
     clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => { void flush(); }, 300);
+    // Long notes: a slightly longer pause, so a 10,000-word note is not rewritten on every word.
+    // Closing, hiding the app and every action still flush straight away.
+    const long = (patch.body?.length ?? 0) > LIVE_LIMIT;
+    timer.current = window.setTimeout(() => { void flush(); }, long ? 800 : 300);
   };
 
   useEffect(() => {
@@ -158,7 +163,10 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
     () => [title, body, ...(checklist ?? []).map(i => i.text)].filter(Boolean).join('\n'),
     [title, body, checklist],
   );
-  const chips = useMemo(() => detectChips(fullText), [fullText]);
+  // Smart chips and the word count scan the whole note: on a long note, only after a 250ms pause.
+  const scanText = useDebounced(fullText, 250, fullText.length < LIVE_LIMIT);
+  const chips = useMemo(() => detectChips(scanText), [scanText]);
+  const words = useMemo(() => countWords(scanText), [scanText]);
   const total = checklist ? checklistTotal({ ...card, checklist }) : null;
 
   const linkKey = card.links.join(',');
@@ -488,7 +496,10 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
             {mode === 'read' ? <PenLine size={20} aria-hidden="true" /> : <BookOpen size={20} aria-hidden="true" />}
           </button>
         )}
-        <span className="notes-edited">Edited {relTime(card.updatedAt)}</span>
+        <span className="notes-edited">
+          Edited {relTime(card.updatedAt)}
+          {words > 0 && <span className="notes-words num"> · {fmtWords(words)}</span>}
+        </span>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={e => addImages(e.target.files)} aria-label="Choose images" />
       </div>
 

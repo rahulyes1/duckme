@@ -1,8 +1,9 @@
-import type { KeyboardEvent, MouseEvent } from 'react';
+import { useMemo, type KeyboardEvent, type MouseEvent } from 'react';
 import { Check } from 'lucide-react';
 import './notes.css';
 import { parseNote, type Block, type Span } from './md-lite';
 import { calcByLine, fmtCalc, type CalcResult } from './calc';
+import { tileText } from './text-stats';
 
 function Spans({ spans }: { spans: Span[] }) {
   return <>{spans.map((s, i) => (s.bold ? <strong key={i}>{s.text}</strong> : <span key={i}>{s.text}</span>))}</>;
@@ -43,15 +44,21 @@ interface Props {
  * valid inside a <button>.
  */
 export function NoteBody({ text, variant = 'tile', onToggle, onEdit, className = '' }: Props) {
-  const blocks = parseNote(text);
-  const calc = calcByLine(text);
+  // A tile only shows ~9 lines: parse just those, never the whole of a 10,000-word note.
+  const clip = useMemo(() => (variant === 'tile' ? tileText(text) : { text, more: false }), [text, variant]);
+  const blocks = useMemo(() => parseNote(clip.text), [clip.text]);
+  const calc = useMemo(() => calcByLine(clip.text), [clip.text]);
   if (variant === 'tile') {
     // Trim trailing blank lines so the tile does not grow.
-    while (blocks.length && blocks[blocks.length - 1].kind === 'blank') blocks.pop();
+    let end = blocks.length;
+    while (end && blocks[end - 1].kind === 'blank') end--;
     return (
-      <span className={`body notes-md notes-md-tile ${className}`}>
-        {blocks.map(b => <TileLine key={b.line} b={b} c={calc.get(b.line)} />)}
-      </span>
+      <>
+        <span className={`body notes-md notes-md-tile ${clip.more ? 'is-more' : ''} ${className}`}>
+          {blocks.slice(0, end).map(b => <TileLine key={b.line} b={b} c={calc.get(b.line)} />)}
+        </span>
+        {clip.more && <span className="notes-md-more" aria-hidden="true">…</span>}
+      </>
     );
   }
 
