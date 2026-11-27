@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ListOrdered, Plus, Search, Sparkles, X } from 'lucide-react';
+import { ListOrdered, Plus, Search, Sparkles, X, NotebookPen } from 'lucide-react';
 import type { Card, CardType } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
@@ -164,6 +164,10 @@ export default function HomeScreen() {
           <BudgetPace cards={cards} settings={settings} />
           <DueList bills={flow.bills} salaryISO={flow.cycle.end} />
           <TodayPriorities items={prio.items} more={prio.more} />
+          <div className="trk-actions">
+            <button type="button" className="trk-add" onClick={() => add('expense')}><Plus size={18} aria-hidden="true" /> Add spend</button>
+            <button type="button" className="trk-note" onClick={e => quickNote(e.currentTarget)}><NotebookPen size={18} aria-hidden="true" /> Note</button>
+          </div>
           <RecentSpends spends={recent} cards={cards} incomes={(settings.incomes ?? []).filter(i => i.date <= iso)} />
           <AheadList items={ahead} />
           <CloseDay cards={cards} onSpend={addSpend} />
@@ -198,10 +202,12 @@ export default function HomeScreen() {
         </>
       )}
 
-      <div className="home-dock">
-        <Fab fanOpen={fanOpen} active={fanOpen} items={tracker ? ['spend', 'note'] : ['spend', 'note', 'task']}
-          onOpen={() => setFanOpen(true)} onPick={pick} onCloseFan={closeFan} />
-      </div>
+      {!tracker && (
+        <div className="home-dock">
+          <Fab fanOpen={fanOpen} active={fanOpen} items={['spend', 'note', 'task']}
+            onOpen={() => setFanOpen(true)} onPick={pick} onCloseFan={closeFan} />
+        </div>
+      )}
 
       <QuickTaskSheet open={tasking} onClose={() => setTasking(false)} />
 

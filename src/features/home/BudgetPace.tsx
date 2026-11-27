@@ -1,5 +1,6 @@
 /** Tracker: this month's budget bar. The white line marks today. */
 import { useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { fmtMonth, inr, today, todayISO } from '../../lib/format';
 import type { Card, Settings } from '../../lib/types';
 import BudgetSheet from '../money/BudgetSheet';
@@ -23,7 +24,7 @@ export function BudgetPace({ cards, settings }: { cards: Card[]; settings: Setti
               <span>{p.over ? `${inr(p.over)} over` : `${inr(p.perDay)} a day left`}</span>
             </span>
           </>
-        ) : <span className="pace-row"><b>Set a monthly budget</b><span className="pace-sub">See money left per day</span></span>}
+        ) : <span className="pace-empty"><b>Set a monthly budget</b><ChevronRight size={18} aria-hidden="true" /></span>}
       </button>
       <BudgetSheet open={open} onClose={() => setOpen(false)} settings={settings} spent={spentByCategory(cards, todayISO().slice(0, 7))} monthName={fmtMonth(today())} />
     </>
