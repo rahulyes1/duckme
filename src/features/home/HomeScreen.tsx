@@ -5,11 +5,11 @@ import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
 import { matchesQuery, useCards, useSettings } from '../../lib/hooks';
 import { saveSettings } from '../../lib/db';
-import { buzz, inr, prefersReducedMotion, today, todayISO } from '../../lib/format';
+import { buzz, inr, isTouchDevice, prefersReducedMotion, today, todayISO } from '../../lib/format';
 import { EmptyState } from '../../ui/bits';
 import { Masonry } from '../../ui/Masonry';
 import { SwipeCard } from './SwipeCard';
-import { byRank, isSpend } from '../../lib/logic';
+import { SPENT_THIS_MONTH, byRank, monthSpend } from '../../lib/logic';
 import { newCardDefaults } from './draft';
 import { TodayHero } from './TodayHero';
 import { CloseDay } from './CloseDay';
@@ -55,9 +55,8 @@ export default function HomeScreen() {
   const prio = useMemo(() => todayPriorities(cards ?? [], today()), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   // This month's real spends (not investments), for the "Open in Money" row.
   const spends = useMemo(() => {
-    const m = iso.slice(0, 7);
-    const list = (cards ?? []).filter(c => isSpend(c) && !!c.date && c.date.startsWith(m) && c.date <= iso);
-    return { count: list.length, total: list.reduce((s, c) => s + (c.amount ?? 0), 0) };
+    const s = monthSpend(cards ?? [], today());
+    return { count: s.count, total: s.total };
   }, [cards, iso]);
   const shown = useMemo(() => {
     const query = q.trim();
@@ -189,7 +188,7 @@ export default function HomeScreen() {
       {cards !== undefined && open.length > 0 && home && <TodayHero cards={cards} settings={settings} />}
       {cards !== undefined && home && spends.count > 0 && (
         <button type="button" className="home-spends num" onClick={() => { writePref('hisaab.money.tab', 'expenses'); app.go('money'); }}>
-          <span><b>{inr(spends.total)}</b> · {spends.count} spend{spends.count === 1 ? '' : 's'} this month</span>
+          <span><b>{inr(spends.total)}</b> {SPENT_THIS_MONTH.toLowerCase()} · {spends.count} spend{spends.count === 1 ? '' : 's'}</span>
           <em>Money <ChevronRight size={16} aria-hidden="true" /></em>
         </button>
       )}
@@ -198,7 +197,11 @@ export default function HomeScreen() {
 
       {showHint && (
         <div className="home-hint" role="note">
-          <span>Swipe right to mark paid or done. Swipe left to delay {settings.delayDays === 1 ? 'a day' : 'a week'}, keep going to kill.</span>
+          <span>
+            {isTouchDevice()
+              ? <>Swipe right to mark paid or done. Swipe left to delay {settings.delayDays === 1 ? 'a day' : 'a week'}, keep going to kill.</>
+              : <>Open a card and use its Done or Paid button. Dragging a card sideways with the mouse works too.</>}
+          </span>
           <button type="button" className="btn ghost" onClick={retireHint}>Got it</button>
         </div>
       )}

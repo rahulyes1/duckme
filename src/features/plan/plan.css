@@ -392,3 +392,4 @@
   .plan-prow-wrap.is-ticked .plan-pcheck svg path, .plan-prow-wrap.is-leaving .plan-pcheck svg path { animation: none; }
   .plan-prow-wrap.is-leaving { translate: none; transition: none; }
 }
+.plan-legend { margin: 0 2px 10px; font-size: 13px; line-height: 1.4; color: var(--muted); }

@@ -197,7 +197,7 @@
 .money-qe-total { min-height: 20px; font-size: 16px; font-weight: 700; color: var(--accent); }
 .money-qe-total.bad { color: var(--danger); }
 .money-qe-note .input { min-height: 44px; }
-.money-qe-when { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.money-qe-when { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
 .money-qe-when .switch { background: var(--surface); padding-left: 6px; }
 .money-qe-when .switch { flex: none; min-height: 44px; font-size: 14px; }
 .money-qe-date { flex: none; width: auto; min-height: 44px; padding: 0 10px; border-radius: 999px; scroll-snap-align: start; }
@@ -279,7 +279,7 @@
   scroll-snap-type: x proximity; scroll-padding-inline: 16px; -webkit-overflow-scrolling: touch; }
 .money-qe-chips::-webkit-scrollbar { display: none; }
 .money-qe-chips > * { flex: none; scroll-snap-align: start; }
-.money-qe-when .money-qe-chips { flex: 1; min-width: 0; margin-right: 0; padding-right: 4px; }
+.money-qe-when .money-qe-chips { flex: 1 1 100%; min-width: 0; margin-right: 0; padding-right: 4px; }
 .money-qe-key { min-height: 48px; }
 /* Touch targets: every button and chip in the quick-expense sheet is at least 44px tall. */
 .money-qe button, .money-qe .chip, .money-qe .qe-cap-btn, .money-qe .qe-usual .chip { min-height: 44px; }

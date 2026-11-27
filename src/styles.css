@@ -439,3 +439,16 @@ body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); botto
     padding-bottom: 20px; }
   body:has(.nav):not(:has(.editor)) .sheet .sheet-actions { bottom: -20px; padding-bottom: 14px; }
 }
+
+/* ---------- 360px fit: tile contents never push past the tile; editor icon row shrinks its gaps ---------- */
+.tile { min-width: 0; max-width: 100%; }
+.tile .k > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .amt, .tile .meta, .tile .total { overflow-wrap: anywhere; }
+@media (max-width: 400px) {
+  .editor-top { gap: 0; }
+  .editor-top .notes-tools { gap: 0; }
+}
+
+/* sticky top bar background reaches the screen edges (the screen has 12px side padding) */
+.topbar { margin-left: calc(-1 * max(12px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(12px, env(safe-area-inset-right, 0px)));
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }

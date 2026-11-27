@@ -13,6 +13,7 @@ import { Masonry } from '../../ui/Masonry';
 import { deleteForeverWithUndo, emptyItem, pref, readImages } from './notes-lib';
 import { isActive } from '../../lib/types';
 import { JOURNAL_LABEL } from './journal';
+import { isTouchDevice } from '../../lib/format';
 import { SwipeTile } from './SwipeTile';
 import { TodayBanner } from './TodayBanner';
 import { TemplatesSheet } from './TemplatesSheet';
@@ -306,7 +307,7 @@ export default function NotesScreen() {
         </motion.div>
       )}
       <TemplatesSheet open={showTemplates} onClose={() => setShowTemplates(false)} cards={all} anchor={barRef.current} />
-      {swipeHint && canCreate && list.length > 0 && <p className="notes-swipe-hint">Swipe a note sideways to archive it.</p>}
+      {swipeHint && canCreate && list.length > 0 && <p className="notes-swipe-hint">{isTouchDevice() ? 'Swipe a note sideways to archive it.' : 'Open a note and use its More options button to archive it.'}</p>}
     </div>
     </MotionConfig>
   );

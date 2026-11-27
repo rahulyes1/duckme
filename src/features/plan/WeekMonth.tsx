@@ -155,7 +155,8 @@ function DeadlineRing({ card: c }: { card: Card }) {
   const tone = dueTone(c.due);
   const r = 9, C = 2 * Math.PI * r;
   return (
-    <svg className={`plan-ring is-${tone}`} width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+    <svg className={`plan-ring is-${tone}`} width="24" height="24" viewBox="0 0 24 24" role="img"
+      aria-label={left < 0 ? `Deadline missed by ${-left} ${-left === 1 ? 'day' : 'days'}` : left === 0 ? 'Deadline is today' : `Deadline in ${left} ${left === 1 ? 'day' : 'days'}`}>
       <circle className="bg" cx="12" cy="12" r={r} />
       <circle className="fg" cx="12" cy="12" r={r} strokeDasharray={C} strokeDashoffset={C * (1 - frac)} />
     </svg>
@@ -284,6 +285,9 @@ export function WeekMonth({ cards }: { cards: Card[] }) {
 
   return (
     <section aria-label="Priorities for this week and this month" className="plan-wm">
+      {Object.values(groups).some(l => l.some(c => !!c.due)) && (
+        <p className="plan-legend">Ring = time left to the deadline. It empties as the date nears: orange is soon, red is late.</p>
+      )}
       {SLOTS.map(s => {
         const list = groups[s.id];
         if ((s.id === 'next' || s.id === 'later') && !list.length && !ahead) return null;
