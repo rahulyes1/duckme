@@ -14,7 +14,7 @@ import type { Card } from '../../lib/types';
 const KEY = 'hisaab.closedDay';
 const closedToday = () => { try { return localStorage.getItem(KEY) === todayISO(); } catch { return false; } };
 
-export function CloseDay({ cards }: { cards: Card[] }) {
+export function CloseDay({ cards, onSpend }: { cards: Card[]; onSpend: () => void }) {
   const { toast } = useApp();
   const [closed, setClosed] = useState(closedToday);
   const now = new Date();
@@ -47,7 +47,7 @@ export function CloseDay({ cards }: { cards: Card[] }) {
         </div>
       )}
       <div className="cd-actions">
-        <a className="btn" href="#money">Write a spend</a>
+        <button type="button" className="btn" onClick={onSpend}>Write a spend</button>
         <button type="button" className="btn primary" onClick={done}>Done for today</button>
       </div>
     </section>

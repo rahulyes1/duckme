@@ -219,7 +219,7 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
   color: var(--muted); background: color-mix(in srgb, var(--ink) 7%, transparent); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hero-chip b { color: var(--ink); font-weight: 700; }
 .hero-chip svg { flex: none; color: var(--accent); }
-.hero-chip.is-tip { color: var(--ink); }
+.hero-chip.is-tip, .hero-chip.is-salary { color: var(--ink); }
 
 .home-quick { display: flex; gap: 8px; margin: 0 0 14px; }
 .hq { flex: 1 1 0; min-width: 0; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px;
@@ -252,7 +252,15 @@ body:has(.home-dock) .toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bo
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); position: relative; }
 .hl-pay::after { content: ""; position: absolute; inset: -3px 0; }
 .hl-main:focus-visible, .hl-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .hl { animation: none; } .hq:active { transform: none; } }
+.hl-note { font-size: 15px; font-weight: 600; color: var(--muted); min-height: 44px; display: inline-flex; align-items: center; padding: 0 4px; }
+.hl-amt.is-in { color: var(--accent); }
+.hl-again { display: flex; gap: 8px; overflow-x: auto; padding: 2px 4px 8px; scrollbar-width: none; }
+.hl-again::-webkit-scrollbar { display: none; }
+.hl-again-chip { min-height: 44px; gap: 4px; display: inline-flex; align-items: center; font-size: 15px; color: var(--ink); }
+.hl-again-chip svg { color: var(--accent); }
+.hl-again-chip b { color: var(--accent); font-weight: 700; }
+.hl-again-chip:active { transform: scale(.96); }
+@media (prefers-reduced-motion: reduce) { .hl { animation: none; } .hq:active, .hl-again-chip:active { transform: none; } }
 
 /* + picker: Spend is first (nearest the thumb) and biggest */
 .home-pick.is-main span { font-size: 16px; padding: 8px 14px; background: var(--accent); color: var(--accent-ink); }

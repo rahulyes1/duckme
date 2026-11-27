@@ -11,7 +11,8 @@ import { Masonry } from '../../ui/Masonry';
 import { SwipeCard } from './SwipeCard';
 import { byRank, isSpend } from '../../lib/logic';
 import { cashFlow } from '../money/cashflow';
-import { DueList, RecentSpends } from './HomeLists';
+import { AheadList, DueList, RecentSpends } from './HomeLists';
+import { aheadItems } from './helpers';
 import { newCardDefaults } from './draft';
 import { TodayHero } from './TodayHero';
 import { CloseDay } from './CloseDay';
@@ -69,6 +70,8 @@ export default function HomeScreen() {
     .filter(c => isSpend(c) && !!c.date && c.date <= iso)
     .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.createdAt - a.createdAt)
     .slice(0, 3), [cards, iso]);
+  // Yearly bills, renewals, expiries, maturities: next 60 days, after this salary.
+  const ahead = useMemo(() => aheadItems(cards ?? [], today(), flow.cycle.end), [cards, flow.cycle.end, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   const shown = useMemo(() => {
     const query = q.trim();
     const inStrip = new Set([...prio.items.map(c => c.id), ...dueIds]);
@@ -217,10 +220,11 @@ export default function HomeScreen() {
           <button type="button" className="hq" onClick={() => newOfType('bill')}><Receipt size={18} aria-hidden="true" />Bill</button>
         </div>
       )}
-      {cards !== undefined && open.length > 0 && home && <DueList bills={flow.bills} />}
+      {cards !== undefined && open.length > 0 && home && <DueList bills={flow.bills} salaryISO={flow.cycle.end} />}
       {cards !== undefined && open.length > 0 && home && <TodayPriorities items={prio.items} more={prio.more} />}
-      {cards !== undefined && home && <RecentSpends spends={recent} />}
-      {cards !== undefined && !q && filter === 'all' && <CloseDay cards={cards} />}
+      {cards !== undefined && open.length > 0 && home && <AheadList items={ahead} />}
+      {cards !== undefined && home && <RecentSpends spends={recent} cards={cards} />}
+      {cards !== undefined && !q && filter === 'all' && <CloseDay cards={cards} onSpend={addSpend} />}
       {cards !== undefined && !q && filter === 'all' && <BackupNudge cardCount={cards.filter(c => c.status !== 'trashed').length} settings={settings} />}
 
       {showHint && (

@@ -49,4 +49,13 @@ describe('todayPriorities', () => {
     expect(p.more).toBe(5);
     expect(todayPriorities([], REF)).toEqual({ items: [], more: 0 });
   });
+  it('a task with a deadline tomorrow comes last; a plan for tomorrow and far deadlines stay out', () => {
+    const cards = [
+      mk({ type: 'task', title: 'deadline tomorrow', due: '2026-11-28', rank: 1 }),
+      mk({ type: 'task', title: 'deadline in 2 days', due: '2026-11-29', rank: 2 }),
+      mk({ type: 'task', title: 'planned tomorrow', when: { unit: 'day', start: '2026-11-28' }, rank: 3 }),
+      mk({ type: 'task', title: 'do', quadrant: 'do', rank: 4 }),
+    ];
+    expect(titles(cards)).toEqual(['do', 'deadline tomorrow']);
+  });
 });
