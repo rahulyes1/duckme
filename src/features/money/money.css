@@ -8,7 +8,8 @@
   background: transparent; font-weight: 600; font-size: 16px; text-align: left; }
 .money-menu-item:hover, .money-menu-item:focus-visible { background: var(--surface-2); }
 .money-spend { min-height: 48px; padding: 0 20px; font-size: 16px; font-weight: 700; }
-@media (max-width: 359px) { .money-add-label { display: none; } }
+/* 360–399px phones: the title, search, Add and Spend didn't fit and pushed the whole page sideways. */
+@media (max-width: 399px) { .money-add-label { display: none; } .money-spend { padding: 0 16px; } }
 
 /* segmented tabs */
 .money-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; margin-top: 10px; padding: 4px; border-radius: 999px; background: var(--surface-2); }
@@ -197,6 +198,7 @@
 .money-qe-total.bad { color: var(--danger); }
 .money-qe-note .input { min-height: 44px; }
 .money-qe-when { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.money-qe-when .switch { background: var(--surface); padding-left: 6px; }
 .money-qe-when .switch { flex: none; min-height: 44px; font-size: 14px; }
 .money-qe-date { flex: none; width: auto; min-height: 44px; padding: 0 10px; border-radius: 999px; scroll-snap-align: start; }
 .money-qe-err { color: var(--danger); font-size: 14px; font-weight: 600; }
@@ -370,3 +372,7 @@
 .money-qe-bhint.money-lvl-text-warn { color: var(--warn); }
 .money-qe-bhint.money-lvl-text-over { color: var(--danger); }
 .money-list-card { scroll-margin-top: 128px; }
+
+/* Bill "Paid" pill looks compact but takes a full 44px tap. */
+.bill-right .money-paid { position: relative; }
+.bill-right .money-paid::after { content: ""; position: absolute; inset: -4px 0; }

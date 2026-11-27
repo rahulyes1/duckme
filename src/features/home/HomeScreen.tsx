@@ -189,8 +189,8 @@ export default function HomeScreen() {
       {cards !== undefined && open.length > 0 && home && <TodayHero cards={cards} settings={settings} />}
       {cards !== undefined && home && spends.count > 0 && (
         <button type="button" className="home-spends num" onClick={() => { writePref('hisaab.money.tab', 'expenses'); app.go('money'); }}>
-          <span>{spends.count} spend{spends.count === 1 ? '' : 's'} this month · <b>{inr(spends.total)}</b></span>
-          <em>Open in Money <ChevronRight size={16} aria-hidden="true" /></em>
+          <span><b>{inr(spends.total)}</b> · {spends.count} spend{spends.count === 1 ? '' : 's'} this month</span>
+          <em>Money <ChevronRight size={16} aria-hidden="true" /></em>
         </button>
       )}
       {cards !== undefined && !q && filter === 'all' && <CloseDay cards={cards} />}

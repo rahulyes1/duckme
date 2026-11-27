@@ -21,6 +21,9 @@ const INVEST_WORDS: Record<string, InvestKind> = { sip: 'SIP', fd: 'FD', rd: 'RD
 const TASK_WORDS = ['karna', 'karo', 'karni', 'todo', 'renew', 'file', 'call', 'book', 'submit', 'update', 'check', 'puc', 'remind', 'yaad', 'banwana', 'lena', 'dena'];
 const EXPENSE_WORDS = ['kharcha', 'spent', 'diya', 'khana', 'chai', 'lunch', 'dinner', 'breakfast', 'petrol', 'diesel', 'auto', 'uber', 'ola', 'rapido', 'metro', 'groceries', 'sabzi', 'dawai', 'medicine', 'movie', 'shopping', 'kapde', 'swiggy', 'zomato', 'blinkit', 'zepto', 'doodh'];
 const MONTHLY_WORDS = ['rent', 'kiraya', 'bijli', 'electricity', 'emi', 'sip', 'wifi', 'broadband', 'maintenance', 'har', 'monthly', 'mahina'];
+const PAID_WORDS = ['paid', 'spent', 'kharcha', 'diya', 'diye', 'bhara', 'bhare', 'bhari'];
+/** Words that steer the parser but read oddly in a title ("Credit card bill due" → "Credit card bill"). */
+const TITLE_DROP = ['due', 'paid', 'monthly', 'bhara', 'bhare', 'bhari'];
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const FILLER = ['rs', 'rs.', '₹', 'rupay', 'rupaye', 'rupees', 'ka', 'ki', 'ke', 'ko', 'pe', 'par', 'on', 'by', 'for', 'tak', 'se'];
 const DATE_WORDS = ['tareekh', 'tarikh', 'tarik', 'date'];
@@ -77,6 +80,10 @@ export function parseAmountToken(tok: string): number | null {
 }
 
 export function parse(text: string, ref: Date = today()): Parsed {
+  // "every month", "per month", "har mahine": repeats monthly; the phrase itself isn't part of the title.
+  const everyMonth = /(^|\s)(every|per|each|har)\s+(month|mahine|mahina)(?=\s|$)/i;
+  const saysMonthly = everyMonth.test(text) || /(^|\s)monthly(?=[\s,.!]|$)/i.test(text);
+  text = text.replace(everyMonth, ' ');
   const toks = text.trim().split(/\s+/).filter(Boolean);
   let amount: number | null = null;
   let amountMarked = false;
@@ -131,19 +138,22 @@ export function parse(text: string, ref: Date = today()): Parsed {
 
   let type: CardType;
   if (investKind) type = 'invest';
-  else if (has(BILL_WORDS) || (amount !== null && date !== null)) type = 'bill';
+  // "paid rent 18000", "bijli 2400 bhara": already paid, so it's a spend, not a bill to pay.
+  // (A credit card bill stays a bill: paying it isn't a new spend.)
+  else if (amount !== null && has(PAID_WORDS) && !has(['card'])) type = 'expense';
+  else if (has(BILL_WORDS) || (amount !== null && (date !== null || saysMonthly))) type = 'bill';
   else if (has(EXPENSE_WORDS) && amount !== null) type = 'expense';
   else if (has(TASK_WORDS) || date !== null) type = 'task';
   else if (amount !== null) type = 'expense';
   else type = 'note';
 
-  let title = words.join(' ').replace(/^(idea|note|todo):\s*/i, '');
+  let title = words.filter(w => !TITLE_DROP.includes(norm(w))).join(' ').replace(/^(idea|note|todo):\s*/i, '');
   for (const [re, rep] of TITLE_FIX) title = title.replace(re, rep);
   title = title ? title[0].toUpperCase() + title.slice(1) : '';
   if (!title && investKind) title = investKind;
 
   const category = CATEGORY_MAP.find(([, ws]) => lw.some(w => ws.includes(w)))?.[0] ?? 'Other';
-  const repeat = has(MONTHLY_WORDS) ? 'monthly' : 'none';
+  const repeat = saysMonthly || has(MONTHLY_WORDS) ? 'monthly' : 'none';
 
   return { type, title, amount, date: date ? toISO(date) : null, category, repeat, investKind };
 }

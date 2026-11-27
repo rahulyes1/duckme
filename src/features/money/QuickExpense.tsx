@@ -18,7 +18,7 @@ import { floatText } from '../../ui/fx';
 import {
   budgetCrossing, budgetStatus, cashFlow, padDisplay, padHasOp, padPress, padValue, quickCategories, spentByCategory, toggleFav, usedCategories,
 } from './cashflow';
-import { monthKey } from './money-util';
+import { guessCategory, monthKey } from './money-util';
 import { catIcon } from './parts';
 import { balanceText, buildSplit, knownPeople, myShare, type SplitDraft } from './split';
 import { EMPTY_SPLIT, SplitPicker } from './splitPicker';
@@ -133,7 +133,8 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     if (sp?.error) { setSplitErr(sp.error); return; }
     busy.current = true;
     try {
-      const category = cat ?? 'Other';
+      // Nothing picked: guess from the note ("chai" → Food) instead of filing it under Other.
+      const category = cat ?? guessCategory(note);
       // No note but the amount was a sum: keep the sum as the note ("300 + 200 + 50").
       const text = note.trim() || (isSum ? padDisplay(amt.replace(/[+\-.]$/, '')) : '');
       // Remember category and paid-with for next time.

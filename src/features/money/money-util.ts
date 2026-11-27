@@ -3,6 +3,14 @@ import type { Card, InvestKind, Repeat } from '../../lib/types';
 import { addDaysISO, addMonths, fmtDate, inr, toISO, today, todayISO } from '../../lib/format';
 import { isActive } from '../../lib/types';
 import { isSpend } from '../../lib/logic';
+import { parse } from '../../lib/parse';
+import { EXPENSE_CATEGORIES } from '../../lib/types';
+
+/** Category from a spend's note when none was picked: "chai" → Food, "uber" → Travel. Else Other. */
+export function guessCategory(note: string): string {
+  const c = note.trim() ? parse(note).category : 'Other';
+  return (EXPENSE_CATEGORIES as readonly string[]).includes(c) ? c : 'Other';
+}
 
 export const monthKey = (d: Date): string => toISO(d).slice(0, 7);
 export const monthStart = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), 1);
@@ -43,13 +51,19 @@ export const DEFAULTS = {
   invest: (): Partial<Card> & { type: 'invest' } => ({ type: 'invest', invest: { kind: 'SIP', next: nextTenth() } }),
 };
 
-/** Parses a typed amount: strips ₹, commas and spaces. Returns null when not a number. */
+const AMOUNT_SCALE: Record<string, number> = { k: 1e3, l: 1e5, lac: 1e5, lakh: 1e5, lakhs: 1e5, cr: 1e7, crore: 1e7 };
+
+/** Parses a typed amount: strips ₹/Rs, commas and spaces. Understands "40k", "1.5 lakh", "2cr".
+ *  Returns null when not a number. */
 export function parseAmount(raw: string): number | null {
-  const s = raw.replace(/[₹,\s]/g, '');
+  let s = raw.toLowerCase().replace(/[₹,\s]/g, '').replace(/^rs\.?/, '');
   if (!s) return null;
+  const m = s.match(/^(\d*\.?\d*)(k|l|lac|lakh|lakhs|cr|crore)$/);
+  const mult = m && m[1] && m[1] !== '.' ? AMOUNT_SCALE[m[2]] : 1;
+  if (m && mult !== 1) s = m[1];
   if (!/^\d*\.?\d*$/.test(s)) return null;
   const n = parseFloat(s);
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) ? Math.round(n * mult * 100) / 100 : null;
 }
 
 /** Indian digit grouping without the ₹ sign, keeps up to 2 decimals. */

@@ -186,4 +186,17 @@ describe('numbers that are not money', () => {
   it('the plumber line still becomes a bill chip', () => {
     expect(detectChips('Pay plumber 1500 on 12th', REF)[0]).toMatchObject({ amount: 1500, date: '2026-12-12', suggest: 'bill' });
   });
+  it('"every month" / "monthly" with an amount is a repeating bill, phrase kept out of the title', () => {
+    expect(parse('netflix 649 every month 5th', REF)).toMatchObject({ type: 'bill', title: 'Netflix', repeat: 'monthly', amount: 649 });
+    expect(parse('gym 1500 monthly', REF)).toMatchObject({ type: 'bill', title: 'Gym', repeat: 'monthly' });
+    expect(parse('12 months ka plan', REF).repeat).toBe('none');
+  });
+  it('"paid" makes it a spend, not a bill to pay (except card bills)', () => {
+    expect(parse('paid rent 18000', REF)).toMatchObject({ type: 'expense', title: 'Rent', amount: 18000 });
+    expect(parse('bijli 2400 bhara', REF)).toMatchObject({ type: 'expense', title: 'Bijli bill' });
+    expect(parse('paid credit card bill 18450', REF).type).toBe('bill');
+  });
+  it('drops a stray "due" from the title', () => {
+    expect(parse('credit card bill 18,450 due 2 dec', REF)).toMatchObject({ type: 'bill', title: 'Credit card bill', date: '2026-12-02' });
+  });
 });

@@ -146,3 +146,7 @@
 .pb-row.is-due .pb-main { background-image: linear-gradient(to right, color-mix(in srgb, var(--ink) 22%, transparent) 50%, transparent 0);
   background-size: 8px 1px; background-repeat: repeat-x; background-position: 0 100%; }
 .pb-row.is-due .pb-pay { border-style: dashed; }
+
+/* Small-looking buttons keep a 44px+ touch area. */
+.pb-edit, .pb-pay { position: relative; }
+.pb-edit::after, .pb-pay::after { content: ""; position: absolute; inset: -6px; }
