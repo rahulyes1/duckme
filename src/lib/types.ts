@@ -26,6 +26,12 @@ export interface When {
   start: string;
 }
 
+/** Home Notes grid: small (1x1), wide (2x1), tall (1x2), big (2x2). */
+export type TileSize = 'small' | 'wide' | 'tall' | 'big';
+
+/** Money received other than salary (salary counts itself from salaryAmount). */
+export interface IncomeEntry { id: string; /** YYYY-MM-DD */ date: string; amount: number; title: string; account?: string; createdAt: number }
+
 export interface ChecklistItem {
   id: string;
   text: string;
@@ -153,6 +159,12 @@ export interface Card {
   /** An expense shared with other people. */
   split?: SplitInfo;
 
+  /** Account the expense was paid from ("Main" when unset) and the time it was spent ("HH:mm"). */
+  account?: string;
+  time?: string;
+  /** Size of this note's box on the Home Notes grid. Unset = chosen from pin and content. */
+  tile?: TileSize;
+
   status: Status;
   /** Linked cards, e.g. note → bill → expense chain. */
   links: string[];
@@ -225,7 +237,11 @@ export interface Settings {
   /** Category and pay mode of the last quick expense, preselected next time. */
   lastExpenseCategory?: string;
   lastExpenseMode?: string;
-  /** Gentle line-art birds, kite, balloon and fireflies behind the page. undefined = on. */
+  /** Extra income you added by hand. */
+  incomes?: IncomeEntry[];
+  /** Expense categories you made yourself. */
+  customCategories?: string[];
+  /** Gentle line-art birds, kite, balloon and fireflies behind the page. On only when true. */
   backgroundLife?: boolean;
 }
 

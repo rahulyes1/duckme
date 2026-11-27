@@ -32,7 +32,7 @@ const isEmpty = (x: unknown) =>
 
 /** Fields brought back from a backup only when this device has none of its own (or no cards at all). */
 type FillField = 'salaryDay' | 'salaryAmount' | 'accounts' | 'reminders' | 'weeklyAllowance' | 'udhaar'
-  | 'splitPeople' | 'upiId' | 'upiName' | 'favCategories' | 'userName';
+  | 'splitPeople' | 'customCategories' | 'upiId' | 'upiName' | 'favCategories' | 'userName';
 
 const VALID: Record<FillField, (v: unknown) => boolean> = {
   salaryDay: v => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 31,
@@ -42,6 +42,7 @@ const VALID: Record<FillField, (v: unknown) => boolean> = {
   udhaar: v => Array.isArray(v) && v.every(a => isObj(a) && typeof a.id === 'string'),
   splitPeople: v => Array.isArray(v) && v.every(s => typeof s === 'string'),
   favCategories: v => Array.isArray(v) && v.every(s => typeof s === 'string'),
+  customCategories: v => Array.isArray(v) && v.every(s => typeof s === 'string'),
   reminders: v => isObj(v) && typeof v.bills === 'boolean' && typeof v.salary === 'boolean' && typeof v.hour === 'number',
   upiId: v => typeof v === 'string' && v.trim() !== '',
   upiName: v => typeof v === 'string' && v.trim() !== '',
@@ -79,6 +80,7 @@ export function mergeRestoredSettings(mine: Settings, file: unknown, deviceHasCa
     budgets,
     goals: byId(mine.goals, s.goals),
     loans: byId(mine.loans, s.loans),
+    ...(mine.incomes?.length || Array.isArray(s.incomes) ? { incomes: byId(mine.incomes, s.incomes) } : {}),
   };
   for (const f of FILL_FIELDS) {
     const v = s[f];

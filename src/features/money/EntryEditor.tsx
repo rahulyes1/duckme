@@ -11,7 +11,8 @@ import { db } from '../../lib/db';
 import { addDaysISO, fmtDate, fmtDateY, inr, nextSalary, salarySide, toISO } from '../../lib/format';
 import { useCard, useSettings } from '../../lib/hooks';
 import type { Card, CardColor, InvestInfo, Repeat } from '../../lib/types';
-import { EXPENSE_CATEGORIES, INVEST_KINDS, KIND_LABEL, PAY_MODES } from '../../lib/types';
+import { INVEST_KINDS, KIND_LABEL, PAY_MODES } from '../../lib/types';
+import { allCategories } from '../../lib/income';
 import { DuePill } from '../../ui/CardTile';
 import { ColorPicker, Switch } from '../../ui/bits';
 import { Sheet } from '../../ui/Sheet';
@@ -290,7 +291,7 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
         {c.type === 'expense' && (
           <>
             <DateField id={`date-${id}`} label="Date" value={c.date} required onChange={v => set({ date: v })} />
-            <Chips label="Category" options={EXPENSE_CATEGORIES} value={c.category as typeof EXPENSE_CATEGORIES[number]} onChange={v => set({ category: v })} />
+            <Chips label="Category" options={allCategories(settings.customCategories)} value={c.category ?? ''} onChange={v => set({ category: v })} />
             <Chips label="Paid with" options={PAY_MODES} value={c.mode as typeof PAY_MODES[number]} onChange={v => set({ mode: v })} />
           </>
         )}
@@ -316,7 +317,7 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
               </button>
             )}
             {c.status === 'done' && <p className="money-muted"><CheckCircle2 size={14} aria-hidden="true" /> Paid{c.doneAt ? ` on ${fmtDate(toISO(new Date(c.doneAt)))}` : ''}.</p>}
-            <Chips label="Category" options={EXPENSE_CATEGORIES} value={c.category as typeof EXPENSE_CATEGORIES[number]} onChange={v => set({ category: v })} />
+            <Chips label="Category" options={allCategories(settings.customCategories)} value={c.category ?? ''} onChange={v => set({ category: v })} />
             <BillMore filled={!!(c.autorenew || c.lastSafe || c.penalty || c.autopay)}>
             <div className="money-switches">
               <Switch checked={!!c.autorenew} onChange={v => set({ autorenew: v })} label="Auto-renews (subscription)" />

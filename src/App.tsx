@@ -13,8 +13,6 @@ import { db, getSettings } from './lib/db';
 import { createCard, purgeOldTrash, type Undo } from './lib/actions';
 import { useCard } from './lib/hooks';
 import { prefersReducedMotion } from './lib/format';
-import { coinBurst } from './ui/fx';
-import { startTapFx } from './ui/tapfx';
 import { Ambient } from './ui/Ambient';
 import { clearIncomingShare, readIncomingShare, shareToNote } from './features/notes/share';
 import { NAV_RESET, clearNavReset, markNavReset } from './lib/prefs';
@@ -85,7 +83,7 @@ function EditorShell({ id, origin, onClose }: { id: string; origin: DOMRect | nu
 
   const body = (
     <motion.div
-      className="editor"
+      className={`editor${card.type === 'note' || card.type === 'task' ? ' is-rustic' : ''}`}
       data-color={card.color}
       role="dialog"
       aria-modal="true"
@@ -155,7 +153,7 @@ export default function App() {
       setToast({ msg, undo, key: Date.now() });
       toastTimer.current = window.setTimeout(() => setToast(null), undo ? 7000 : 3200);
     },
-    burst: from => coinBurst(from instanceof DOMRect ? from : from.getBoundingClientRect()),
+    burst: () => { /* minimal motion: the toast already confirms */ },
     isUnlocked: id => unlocked.current.has(id),
     unlock: id => { unlocked.current.add(id); force(n => n + 1); },
   }), [route]);
@@ -225,7 +223,6 @@ export default function App() {
 
   // Must stay above the early returns below (hooks run in the same order every render).
   useEffect(() => (settings?.consentAt ? startReminderLoop() : undefined), [settings?.consentAt]);
-  useEffect(() => startTapFx(), []);
   useEffect(() => {
     const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
     const t = w.requestIdleCallback ? w.requestIdleCallback(prefetchScreens) : window.setTimeout(prefetchScreens, 1500);
@@ -238,7 +235,7 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={api}>
-      <Ambient life={settings.backgroundLife !== false} />
+      <Ambient life={settings.backgroundLife === true} />
       <div className="shell">
         <nav className="nav" aria-label="Main">
           <div className="brand">Hisaab<span>.</span></div>

@@ -7,14 +7,16 @@ import { Check, ChevronDown, Delete, Plus, Star, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
 import { createCard, logInvestment, newCard, withUndo } from '../../lib/actions';
-import { saveSettings } from '../../lib/db';
-import { addDaysISO, buzz, fmtDate, inr, prefersReducedMotion, today, todayISO } from '../../lib/format';
+import { getSettings, saveSettings } from '../../lib/db';
+import { addDaysISO, buzz, fmtDate, inr, prefersReducedMotion, today, todayISO, uid } from '../../lib/format';
 import { useCards, useSettings } from '../../lib/hooks';
 import type { Card, InvestKind } from '../../lib/types';
-import { EXPENSE_CATEGORIES, PAY_MODES } from '../../lib/types';
+import { PAY_MODES } from '../../lib/types';
 import { Money } from '../../ui/bits';
 import { Sheet } from '../../ui/Sheet';
-import { floatText } from '../../ui/fx';
+import { buildDraft } from '../home/draft';
+import { parse } from '../../lib/parse';
+import { allCategories } from '../../lib/income';
 import {
   budgetCrossing, budgetStatus, cashFlow, padDisplay, padHasOp, padPress, padValue, quickCategories, spentByCategory, toggleFav, usedCategories,
 } from './cashflow';
@@ -26,6 +28,7 @@ import { CaptureBar, type Fill } from './CaptureBar';
 import { categoryForNote, investKindFromText, looksDuplicate } from '../../lib/capture';
 
 type Day = 'today' | 'yesterday' | 'pick';
+const nowTime = () => new Date().toTimeString().slice(0, 5);
 /** 4 columns: 7 8 9 ⌫ | 4 5 6 − | 1 2 3 + | 00 0 . = */
 const PAD = ['7', '8', '9', 'back', '4', '5', '6', '-', '1', '2', '3', '+', '00', '0', '.', '='];
 const KEY_LABEL: Record<string, string> = { back: 'Delete last', '-': 'Minus', '+': 'Plus', '=': 'Equals, show the total', '.': 'Decimal point', '00': 'Double zero' };
@@ -40,11 +43,17 @@ interface Saved {
   safe: boolean;
 }
 
-export default function QuickExpense({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function QuickExpense({ open, onClose, kind = 'expense' }: { open: boolean; onClose: () => void; kind?: 'expense' | 'income' }) {
   const cards = useCards();
   const settings = useSettings();
   const { toast } = useApp();
 
+  const [entry, setEntry] = useState<'expense' | 'income'>(kind);
+  const [account, setAccount] = useState('Main');
+  const [time, setTime] = useState(nowTime);
+  const [typed, setTyped] = useState('');
+  const [newCat, setNewCat] = useState<string | null>(null);
+  const isIncome = entry === 'income';
   const [amt, setAmt] = useState('');
   const [cat, setCat] = useState<string | null>(null);
   /** True while the category was picked for you (last time's, or guessed from the note): the note may still change it. */
@@ -71,25 +80,26 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     setSplitOn(false); setSplitDraft(EMPTY_SPLIT); setSplitErr('');
     fillInvest.current = null;
     catAuto.current = true;
+    setTime(nowTime()); setTyped(''); setNewCat(null);
   }, []);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   useEffect(() => {
     if (!open) return;
-    reset(); setSaved(null);
+    reset(); setSaved(null); setEntry(kind);
     // Preselect what you used last time (an SMS / voice fill below can still override it).
     const s = settingsRef.current;
-    setCat(s.lastExpenseCategory && (EXPENSE_CATEGORIES as readonly string[]).includes(s.lastExpenseCategory) ? s.lastExpenseCategory : null);
+    setCat(s.lastExpenseCategory && allCategories(s.customCategories).includes(s.lastExpenseCategory) ? s.lastExpenseCategory : null);
     catAuto.current = true;
     setMode(s.lastExpenseMode && (PAY_MODES as readonly string[]).includes(s.lastExpenseMode) ? s.lastExpenseMode : 'UPI');
-  }, [open, reset]);
+  }, [open, kind, reset]);
 
   const month = monthKey(today());
   const lastCat = settings.lastExpenseCategory;
   const order = useMemo(() => {
-    const q = quickCategories(settings.favCategories, usedCategories(cards ?? [], month));
+    const q = quickCategories(settings.favCategories, usedCategories(cards ?? [], month), settings.customCategories);
     return lastCat && q.includes(lastCat) ? [lastCat, ...q.filter(k => k !== lastCat)] : q;
-  }, [cards, settings.favCategories, month, lastCat]);
+  }, [cards, settings.favCategories, settings.customCategories, month, lastCat]);
   const lastMode = settings.lastExpenseMode;
   const modes = useMemo(
     () => (lastMode && (PAY_MODES as readonly string[]).includes(lastMode) ? [lastMode, ...PAY_MODES.filter(m => m !== lastMode)] : [...PAY_MODES]),
@@ -105,7 +115,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
   const spentNow = useMemo(() => spentByCategory(cards ?? [], month), [cards, month]);
   const budgetHint = useMemo(() => {
     const b = cat ? settings.budgets[cat] : undefined;
-    if (!cat || !b) return null;
+    if (isIncome || !cat || !b) return null;
     const after = (spentNow[cat] ?? 0) + (value || 0);
     const st = budgetStatus(after, b);
     return {
@@ -113,7 +123,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       text: st.level === 'over' ? `${cat}: this puts you ${inr(st.over)} over the ${inr(b)} budget`
         : `${cat}: ${inr(st.left)} of ${inr(b)} left${value ? ' after this' : ''}`,
     };
-  }, [cat, settings.budgets, spentNow, value]);
+  }, [isIncome, cat, settings.budgets, spentNow, value]);
   const date = day === 'today' ? todayISO() : day === 'yesterday' ? addDaysISO(todayISO(), -1) : picked;
 
   const press = useCallback((k: string) => {
@@ -133,6 +143,20 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     if (sumBad) { setErr("Total can't be zero or less"); return; }
     if (value <= 0) { setErr('Type an amount first'); amtRef.current?.focus(); return; }
     if (!date) { setErr('Pick a date'); return; }
+    if (isIncome) {
+      busy.current = true;
+      try {
+        const before = settings.incomes ?? [];
+        const item = { id: uid(), date, amount: value, title: note.trim() || 'Income', createdAt: Date.now(), ...(account !== 'Main' ? { account } : {}) };
+        await saveSettings({ incomes: [...before, item] });
+        toast(`Added income ${inr(value)}`, async () => {
+          const cur = await getSettings();
+          await saveSettings({ incomes: (cur.incomes ?? []).filter(i => i.id !== item.id) });
+        });
+        reset(); onClose();
+      } finally { busy.current = false; }
+      return;
+    }
     const sp = splitOn ? buildSplit(value, splitDraft) : null;
     if (sp?.error) { setSplitErr(sp.error); return; }
     busy.current = true;
@@ -145,7 +169,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       const remember = () => saveSettings({ ...(cat ? { lastExpenseCategory: cat } : {}), lastExpenseMode: mode }).catch(() => { /* not critical */ });
       const salary = settings.salaryAmount ?? 0;
       const ref = today();
-      const before = cashFlow(cards, salary, settings.salaryDay, ref);
+      const before = cashFlow(cards, salary, settings.salaryDay, ref, settings.incomes);
       // SIP, MF, PPF, FD… are money put away, not spent: log them on the investment instead.
       const kind = sp?.split ? null : investKindFromText(note) ?? fillInvest.current;
       if (kind) {
@@ -153,7 +177,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
         const undo = await logInvestment({ amount: value, date, title, kind, mode });
         void remember();
         const line = newCard({ type: 'expense', title, amount: value, date, category: 'Investment', mode });
-        const after = cashFlow([...cards, line], salary, settings.salaryDay, ref);
+        const after = cashFlow([...cards, line], salary, settings.salaryDay, ref, settings.incomes);
         toast(`Saved as investment (${kind} ${inr(value)}), not a spend.`, undo);
         buzz(15);
         const safe = salary > 0;
@@ -168,10 +192,10 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       let created!: Card;
       const dup = looksDuplicate(cards, { amount: value, category, title: text, date }, Date.now());
       const undo = await withUndo(async () => {
-        created = await createCard({ type: 'expense', title: text || category, amount: value, date, category, mode, ...(sp?.split ? { split: sp.split } : {}) });
+        created = await createCard({ type: 'expense', title: text || category, amount: value, date, category, mode, ...(time ? { time } : {}), ...(account !== 'Main' ? { account } : {}), ...(sp?.split ? { split: sp.split } : {}) });
       });
       void remember();
-      const after = cashFlow([...cards, created], salary, settings.salaryDay, ref);
+      const after = cashFlow([...cards, created], salary, settings.salaryDay, ref, settings.incomes);
 
       const budget = settings.budgets[category];
       const crossed = budgetCrossing(catBefore, catBefore + value, budget);
@@ -240,11 +264,41 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
     setNote(v);
     if (!catAuto.current) return;
     const g = categoryForNote(cards ?? [], v);
-    if (!g || !(EXPENSE_CATEGORIES as readonly string[]).includes(g)) return;
+    if (!g || !allCategories(settings.customCategories).includes(g)) return;
     setCat(g);
     requestAnimationFrame(() => document.querySelector<HTMLElement>(`.money-qe-cat[data-cat="${CSS.escape(g)}"]`)
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }));
   };
+
+  /** "bijli 2400 15th" → a bill; "chai 40" → fills this spend. */
+  const draft = useMemo(() => (typed.trim() ? buildDraft(typed, null) : null), [typed]);
+  const useTyped = async () => {
+    if (!draft) return;
+    const p = draft.partial;
+    if (draft.type === 'expense' || draft.type === 'note') {
+      if (!p.amount) { setErr('Add an amount, like “chai 40”'); return; }
+      const parsed = parse(typed.trim());
+      setAmt(String(p.amount));
+      setNote(parsed.title || '');
+      if (parsed.category !== 'Other') { setCat(parsed.category); catAuto.current = false; }
+      if (parsed.date) { setDay('pick'); setPicked(parsed.date); }
+      setTyped(''); setErr('');
+      return;
+    }
+    const undo = await withUndo(async () => { await createCard(p); });
+    toast(`Added ${draft.summary}`, undo);
+    setTyped(''); setErr(''); onClose();
+  };
+
+  const addCategory = async () => {
+    const name = (newCat ?? '').trim().replace(/\s+/g, ' ');
+    if (!name) { setNewCat(null); return; }
+    const existing = allCategories(settings.customCategories).find(c => c.toLowerCase() === name.toLowerCase());
+    if (!existing) await saveSettings({ customCategories: [...(settings.customCategories ?? []), name] });
+    setCat(existing ?? name); catAuto.current = false; setNewCat(null);
+  };
+
+  const accounts = ['Main', ...(settings.accounts ?? []).map(a => a.name).filter(n => n !== 'Main')];
 
   const another = () => { setSaved(null); setTimeout(() => amtRef.current?.focus(), 30); };
 
@@ -317,7 +371,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
   const reduce = prefersReducedMotion();
 
   return (
-    <Sheet open={open} onClose={onClose} title="Add expense" hideTitle>
+    <Sheet open={open} onClose={onClose} title="Add transaction" hideTitle>
       {saved ? (
         <div className="money-qe-done" aria-live="polite">
           <motion.span className="money-qe-check" aria-hidden="true"
@@ -341,9 +395,22 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
         </div>
       ) : (
         <div className="money-qe">
+          <div className="home-switch qe-kind" role="tablist" aria-label="Type">
+            {(['income', 'expense'] as const).map(k => (
+              <button key={k} type="button" role="tab" aria-selected={entry === k} onClick={() => { setEntry(k); setErr(''); }}>{k === 'income' ? 'Income' : 'Expense'}</button>
+            ))}
+          </div>
+          {!isIncome && (
+            <form className="qe-type" onSubmit={e => { e.preventDefault(); void useTyped(); }}>
+              <label htmlFor="qe-typed" className="sr-only">Type it</label>
+              <input id="qe-typed" className="input" value={typed} autoComplete="off" enterKeyHint="go" placeholder="Type it: bijli 2400 15th" onChange={e => setTyped(e.target.value)} />
+              {draft && <button type="submit" className="btn primary">{draft.type === 'expense' || draft.type === 'note' ? 'Fill' : 'Add'}</button>}
+              {draft && draft.type !== 'expense' && draft.type !== 'note' && <small aria-live="polite">{draft.summary}</small>}
+            </form>
+          )}
           <div className="qe-head">
             <div className="money-qe-display">
-              <label htmlFor="qe-amt" className="sr-only">Amount spent</label>
+              <label htmlFor="qe-amt" className="sr-only">Amount</label>
               <div className={`money-qe-amt${isSum ? ' is-sum' : ''}`}>
                 <span aria-hidden="true">₹</span>
                 <input
@@ -352,7 +419,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
                 />
               </div>
             </div>
-            <CaptureBar cards={cards ?? []} onFill={fill} onError={msg => setErr(msg)} />
+            {!isIncome && <CaptureBar cards={cards ?? []} onFill={fill} onError={msg => setErr(msg)} />}
           </div>
           {/* One short line under the amount: an error, the running sum, or the category budget. */}
           {err ? <span className="money-qe-err qe-line" id="qe-err" role="alert">{err}</span>
@@ -361,29 +428,49 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
                 : null}
           <span className="sr-only" id="qe-hint">Use the number pad below or your keyboard. Plus and minus add up several amounts. Hold a category to pin it.</span>
 
-          <div className="chips money-qe-chips" role="group" aria-label="Category (hold to pin)">
-            {order.map(k => {
-              const Icon = catIcon(k);
-              const isFav = favs.includes(k);
-              return (
-                <button key={k} type="button" className="chip money-qe-cat" data-cat={k} aria-pressed={cat === k}
-                  aria-label={isFav ? `${k}, pinned` : k} {...catProps(k)}>
-                  <Icon size={18} aria-hidden="true" />
-                  <span>{k}</span>
-                  {isFav && <Star size={12} className="money-qe-star" aria-hidden="true" fill="currentColor" />}
-                </button>
-              );
-            })}
-          </div>
+          {!isIncome && (
+            <>
+              <p className="qe-label">Category{cat ? <b> · {cat}</b> : null}</p>
+              <div className="chips money-qe-chips qe-rounds" role="group" aria-label="Category (hold to pin)">
+                {order.map(k => {
+                  const Icon = catIcon(k);
+                  const own = (settings.customCategories ?? []).includes(k);
+                  const isFav = favs.includes(k);
+                  return (
+                    <button key={k} type="button" className="money-qe-cat qe-round" data-cat={k} aria-pressed={cat === k} title={k}
+                      aria-label={isFav ? `${k}, pinned` : k} {...catProps(k)}>
+                      {own ? <span aria-hidden="true">{k.slice(0, 2)}</span> : <Icon size={20} aria-hidden="true" />}
+                      {isFav && <Star size={11} className="money-qe-star" aria-hidden="true" fill="currentColor" />}
+                    </button>
+                  );
+                })}
+                <button type="button" className="qe-round is-add" aria-label="New category" onClick={() => setNewCat(v => (v === null ? '' : null))}><Plus size={20} aria-hidden="true" /></button>
+              </div>
+              {newCat !== null && (
+                <form className="qe-type" onSubmit={e => { e.preventDefault(); void addCategory(); }}>
+                  <label htmlFor="qe-newcat" className="sr-only">New category name</label>
+                  <input id="qe-newcat" className="input" autoFocus maxLength={24} value={newCat} placeholder="New category name" onChange={e => setNewCat(e.target.value)} />
+                  <button type="submit" className="btn primary">Add</button>
+                </form>
+              )}
+            </>
+          )}
 
           <div className="qe-opts">
             <label className="qe-sel">
+              <span className="sr-only">Account</span>
+              <select value={account} onChange={e => setAccount(e.target.value)}>
+                {accounts.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <ChevronDown size={16} aria-hidden="true" />
+            </label>
+            {!isIncome && <label className="qe-sel">
               <span className="sr-only">Paid with</span>
               <select value={mode} onChange={e => setMode(e.target.value)}>
                 {modes.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
               <ChevronDown size={16} aria-hidden="true" />
-            </label>
+            </label>}
             <label className="qe-sel">
               <span className="sr-only">When</span>
               <select value={day} onChange={e => {
@@ -403,26 +490,30 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
                 <input id="qe-date" type="date" className="input num money-qe-date" value={picked} max={todayISO()} onChange={e => setPicked(e.target.value)} />
               </>
             )}
-            <button type="button" className="chip qe-split" aria-pressed={splitOn} onClick={() => { setSplitOn(v => !v); setSplitErr(''); }}>
+            {!isIncome && <button type="button" className="chip qe-split" aria-pressed={splitOn} onClick={() => { setSplitOn(v => !v); setSplitErr(''); }}>
               <Users size={16} aria-hidden="true" /> Split
-            </button>
+            </button>}
           </div>
-          {splitOn && (
+          {!isIncome && splitOn && (
             <SplitPicker amount={value} draft={splitDraft} known={splitNames} saved={settings.splitPeople} error={splitErr}
               onChange={dft => { setSplitDraft(dft); setSplitErr(''); }} />
           )}
 
-          <div className="field money-qe-note">
+          <div className="field money-qe-note qe-noterow">
             <label htmlFor="qe-note" className="sr-only">Note (optional)</label>
-            <input id="qe-note" className="input" value={note} placeholder="Note (optional)" autoComplete="off" enterKeyHint="done"
-              onChange={e => onNote(e.target.value)}
+            <input id="qe-note" className="input" value={note} placeholder={isIncome ? 'From where? (optional)' : 'Note (optional)'} autoComplete="off" enterKeyHint="done"
+              onChange={e => (isIncome ? setNote(e.target.value) : onNote(e.target.value))}
               onFocus={e => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }), 250); }} />
+            {!isIncome && <>
+              <label htmlFor="qe-time" className="sr-only">Time</label>
+              <input id="qe-time" type="time" className="input num qe-time" value={time} onChange={e => setTime(e.target.value)} />
+            </>}
           </div>
 
           <div className="money-qe-pad" role="group" aria-label="Number pad">
             {PAD.map(k => (
               <button key={k} type="button" className={`money-qe-key num${/^[+\-=]$|^back$/.test(k) ? ' op' : ''}`}
-                onClick={e => { if (/^\d+$/.test(k)) floatText(e.currentTarget.getBoundingClientRect(), k); press(k); }} disabled={k === 'back' && !amt} aria-label={KEY_LABEL[k] ?? k}>
+                onClick={() => press(k)} disabled={k === 'back' && !amt} aria-label={KEY_LABEL[k] ?? k}>
                 {k === 'back' ? <Delete size={22} aria-hidden="true" /> : k === '-' ? '−' : k}
               </button>
             ))}
@@ -431,7 +522,7 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
           {/* Always visible at the bottom of the sheet, however small the phone. */}
           <div className="sheet-actions">
             <button type="button" className="btn primary block money-qe-save" onClick={() => void save()} aria-disabled={value <= 0 || sumBad}>
-              <Check size={20} aria-hidden="true" /> Save{value > 0 ? ` ${inr(value)}` : ''}{cat ? ` · ${cat}` : ''}
+              <Check size={20} aria-hidden="true" /> Save{value > 0 ? ` ${inr(value)}` : ''}{isIncome ? ' income' : cat ? ` · ${cat}` : ''}
             </button>
           </div>
         </div>

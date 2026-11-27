@@ -1,14 +1,15 @@
 import { ChevronLeft, ChevronRight, HandCoins, PiggyBank, Search, SlidersHorizontal, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../app-context';
-import { addMonths, fmtDate, fmtMonth, inr, prefersReducedMotion, today, todayISO } from '../../lib/format';
+import { addMonths, fmtDate, fmtMonth, inr, today, todayISO } from '../../lib/format';
 import type { Card, Settings } from '../../lib/types';
 import { PAY_MODES } from '../../lib/types';
-import { Money } from '../../ui/bits';
+import CategorySheet from './CategorySheet';
+import FlowCharts from './FlowCharts';
 import BudgetSheet from './BudgetSheet';
 import { filterExpenses, groupByDay, spentByCategory, usedCategories } from './cashflow';
-import { expensesIn, lastMonths, longMonth, monthKey, monthStart, spentIn, sum } from './money-util';
-import { catIcon, CategoryBar, Trend } from './parts';
+import { expensesIn, longMonth, monthKey, monthStart, sum } from './money-util';
+import { catIcon, CategoryBar } from './parts';
 import { SmallSpendsCard } from './smallSpends';
 import { smallInMonth } from './small';
 import { splitBalances } from './split';
@@ -35,8 +36,8 @@ function ExpenseRow({ c }: { c: Card }) {
   );
 }
 
-export default function ExpensesTab({ cards, settings, month, setMonth }: {
-  cards: Card[]; settings: Settings;
+export default function ExpensesTab({ cards, settings, month, setMonth, onAdd }: {
+  cards: Card[]; settings: Settings; onAdd: (k: 'income' | 'expense') => void;
   /** Shared with the Bills tab (lifted to MoneyScreen). Always the 1st of a month. */
   month: Date; setMonth: (m: Date) => void;
 }) {
@@ -46,10 +47,10 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [allCats, setAllCats] = useState(false);
   const [budgetOpen, setBudgetOpen] = useState(false);
+  const [detail, setDetail] = useState<string | null>(null);
   const closeBudget = useCallback(() => setBudgetOpen(false), []);
 
   const [extras, setExtras] = useState(false);
-  const listRef = useRef<HTMLElement>(null);
   const nowMonth = monthStart(today());
   const key = monthKey(month);
   const isCurrent = key === monthKey(nowMonth);
@@ -59,27 +60,19 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
   const d = useMemo(() => {
     const exp = expensesIn(cards, key);
     const spent = sum(exp.map(c => c.amount ?? 0));
-    const lastSpent = spentIn(cards, monthKey(addMonths(month, -1)));
     const byCat = spentByCategory(cards, key);
     const names = new Set([...Object.keys(byCat), ...Object.keys(settings.budgets).filter(k => settings.budgets[k] > 0)]);
     const cats = [...names].map(name => ({ name, amount: byCat[name] ?? 0, budget: settings.budgets[name] }))
       .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
-    const months = lastMonths(month);
-    const trend = months.map(m => spentIn(cards, monthKey(m)));
     const used = usedCategories(cards, key);
     const hasSplits = splitBalances(cards).some(b => b.open.length > 0);
     const hasSmall = smallInMonth(cards, key).count > 0;
-    return { exp, spent, lastSpent, byCat, cats, months, trend, used, hasSplits, hasSmall };
+    return { exp, spent, byCat, cats, used, hasSplits, hasSmall };
   }, [cards, key, settings.budgets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasUdhaar = useMemo(() => udhaarPeople(settings.udhaar ?? []).some(p => p.open.length > 0), [settings.udhaar]);
   // A category picked from another month may not exist here; drop it so the list never looks empty by mistake.
   useEffect(() => { if (cat && !d.used.includes(cat)) setCat(''); }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const pickCat = (name: string) => {
-    setCat(c => (c === name ? '' : name));
-    listRef.current?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
-  };
 
   const filtered = filterExpenses(d.exp, { q, category: cat, mode });
   const days = groupByDay(filtered);
@@ -87,11 +80,6 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
   // Category and mode pickers stay tucked away until asked for (or one is in use).
   const showFilters = filtersOpen || !!mode;
   const setShowFilters = (f: (v: boolean) => boolean) => setFiltersOpen(f(showFilters));
-  const diff = d.spent - d.lastSpent;
-  const prevName = longMonth(prevMonth);
-  const prevShort = prevName.slice(0, 3);
-  const vsText = d.spent === 0 && d.lastSpent === 0 ? `₹0 in ${prevShort} too`
-    : diff === 0 ? `Same as ${prevShort}` : `${diff < 0 ? '↓' : '↑'} ${inr(Math.abs(diff))} vs ${prevShort}`;
 
   return (
     <>
@@ -108,13 +96,7 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
       </div>
 
       <div className="money-layout">
-        <section className="money-summary money-wide" aria-label="Month total">
-          <div>
-            <span className="money-k">Spent</span>
-            <Money value={d.spent} className="money-big" />
-            <span className="money-vs">{vsText} · {d.exp.length} {d.exp.length === 1 ? 'entry' : 'entries'}</span>
-          </div>
-        </section>
+        <FlowCharts cards={cards} settings={settings} month={month} onAdd={onAdd} />
 
         <section className="money-card" aria-labelledby="e-cat">
           <div className="money-h-row">
@@ -124,13 +106,13 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
           {d.cats.length ? (<>
             <ul className="money-cats">
               {(allCats ? d.cats : d.cats.slice(0, 3)).map(c => <CategoryBar key={c.name} name={c.name} amount={c.amount} total={d.spent} budget={c.budget}
-                onSelect={c.amount > 0 ? pickCat : undefined} selected={cat === c.name} />)}
+                onSelect={c.amount > 0 ? setDetail : undefined} />)}
             </ul>
             {d.cats.length > 3 && <button type="button" className="btn ghost money-more-cats" aria-expanded={allCats} onClick={() => setAllCats(v => !v)}>{allCats ? 'Top 3' : `All ${d.cats.length}`}</button>}
           </>) : <p className="money-muted">No spends yet</p>}
         </section>
 
-        <section ref={listRef} className="money-card money-wide money-list-card" aria-labelledby="e-list">
+        <section className="money-card money-wide money-list-card" aria-labelledby="e-list">
           <h2 id="e-list" className="money-h">{cat || 'All spends'}</h2>
           <div className="money-filters">
             <div className="search">
@@ -174,10 +156,6 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
             </div>
           )) : <p className="money-muted">{filtering ? 'Nothing matches these filters.' : 'No spends yet'}</p>}
         </section>
-        <section className="money-card" aria-labelledby="e-trend">
-          <h2 id="e-trend" className="money-h">6 months</h2>
-          <Trend months={d.months} values={d.trend} selected={key} />
-        </section>
 
         {(d.hasSplits || extras) && <SplitsCard cards={cards} settings={settings} />}
         {(hasUdhaar || extras) && <UdhaarCard cards={cards} settings={settings} />}
@@ -189,6 +167,7 @@ export default function ExpensesTab({ cards, settings, month, setMonth }: {
         )}
       </div>
 
+      <CategorySheet category={detail} spends={d.exp} period={fmtMonth(month)} onClose={() => setDetail(null)} />
       <BudgetSheet open={budgetOpen} onClose={closeBudget} settings={settings} spent={d.byCat} monthName={longMonth(month)} />
     </>
   );

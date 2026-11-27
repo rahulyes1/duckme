@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { saveSettings } from '../../lib/db';
 import { inr } from '../../lib/format';
 import type { Settings } from '../../lib/types';
-import { EXPENSE_CATEGORIES } from '../../lib/types';
+import { allCategories } from '../../lib/income';
 import { Sheet } from '../../ui/Sheet';
 import { budgetStatus } from './cashflow';
 import { parseAmount } from './money-util';
@@ -18,7 +18,7 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
   useEffect(() => {
     if (!open) return;
     const v: Record<string, string> = {};
-    for (const c of EXPENSE_CATEGORIES) v[c] = settings.budgets[c] ? settings.budgets[c].toLocaleString('en-IN') : '';
+    for (const c of allCategories(settings.customCategories)) v[c] = settings.budgets[c] ? settings.budgets[c].toLocaleString('en-IN') : '';
     setVals(v); setErr({});
     setWeekly(settings.weeklyAllowance ? settings.weeklyAllowance.toLocaleString('en-IN') : '');
   }, [open, settings.budgets, settings.weeklyAllowance]);
@@ -26,7 +26,7 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
   const save = async () => {
     const budgets: Record<string, number> = {};
     const errs: Record<string, string> = {};
-    for (const c of EXPENSE_CATEGORIES) {
+    for (const c of allCategories(settings.customCategories)) {
       const raw = vals[c] ?? '';
       if (!raw.trim()) continue;
       const n = parseAmount(raw);
@@ -56,7 +56,7 @@ export default function BudgetSheet({ open, onClose, settings, spent, monthName 
       </div>
       <p className="money-muted">Category budgets: leave a box empty for no budget. Bars turn amber at 80% and red when you go over.</p>
       <div className="money-budget-grid">
-        {EXPENSE_CATEGORIES.map(c => {
+        {allCategories(settings.customCategories).map(c => {
           const id = `budget-${c.replace(/\s/g, '')}`;
           const Icon = catIcon(c);
           const typed = parseAmount(vals[c] ?? '') ?? 0;

@@ -3,7 +3,8 @@
  * calendar buckets and the quick-entry number pad. No database, no UI — unit tested in cashflow.test.ts.
  */
 import { evalExpr } from '../notes/calc';
-import type { Card } from '../../lib/types';
+import type { Card, IncomeEntry } from '../../lib/types';
+import { extraBetween } from '../../lib/income';
 import { EXPENSE_CATEGORIES, isActive } from '../../lib/types';
 import { addMonths, daysBetween, fromISO, toISO } from '../../lib/format';
 import { isMonthly } from './money-util';
@@ -49,6 +50,8 @@ export interface CycleItem { card: Card; amount: number; date: string }
 export interface CashFlow {
   cycle: Cycle;
   salary: number;
+  /** Extra income received this cycle (on top of salary). */
+  extra: number;
   bills: CycleItem[];
   billsTotal: number;
   sips: CycleItem[];
@@ -104,7 +107,7 @@ export function coveredInstalments(cards: Card[], start: string, end: string): S
  * - cardPaid: card bill payments this cycle (transfers, never spends)
  * - invested: investment lines dated inside the cycle; a SIP they already cover is not counted again
  */
-export function cashFlow(cards: Card[], salary: number, salaryDay: number, ref: Date): CashFlow {
+export function cashFlow(cards: Card[], salary: number, salaryDay: number, ref: Date, incomes: IncomeEntry[] = []): CashFlow {
   const cycle = salaryCycle(salaryDay, ref);
   const bills: CycleItem[] = [];
   const sips: CycleItem[] = [];
@@ -124,9 +127,10 @@ export function cashFlow(cards: Card[], salary: number, salaryDay: number, ref: 
   bills.sort(byDate); sips.sort(byDate);
   const billsTotal = bills.reduce((s, b) => s + b.amount, 0);
   const sipsTotal = sips.reduce((s, b) => s + b.amount, 0);
-  const left = salary - billsTotal - sipsTotal - spent - invested - cardPaid;
+  const extra = extraBetween(incomes, cycle.start, cycle.end, toISO(ref));
+  const left = salary + extra - billsTotal - sipsTotal - spent - invested - cardPaid;
   const safe = safeToSpend(left, cycle.daysLeft);
-  return { cycle, salary, bills, billsTotal, sips, sipsTotal, spent, onCard, cardPaid, invested, left, safeToday: safe.perDay, overBy: safe.overBy };
+  return { cycle, salary, extra, bills, billsTotal, sips, sipsTotal, spent, onCard, cardPaid, invested, left, safeToday: safe.perDay, overBy: safe.overBy };
 }
 
 /** Per-day amount you can spend until salary. Never negative; `overBy` says how far over you are. */
@@ -205,8 +209,8 @@ export function usedCategories(cards: Card[], month: string): string[] {
 }
 
 /** Full category order for quick entry: favourites, then most used this month, then the rest. */
-export function quickCategories(favs: string[] | undefined, used: string[]): string[] {
-  const all = EXPENSE_CATEGORIES as readonly string[];
+export function quickCategories(favs: string[] | undefined, used: string[], custom: string[] = []): string[] {
+  const all: string[] = [...EXPENSE_CATEGORIES, ...custom];
   const out: string[] = [];
   for (const k of [...(favs ?? []), ...used, ...all]) if (all.includes(k) && !out.includes(k)) out.push(k);
   return out;

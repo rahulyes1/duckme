@@ -4,7 +4,7 @@
  */
 import { useMemo, useRef, useState } from 'react';
 import { ArrowRight, Check, Plus } from 'lucide-react';
-import type { Card } from '../../lib/types';
+import type { Card, IncomeEntry } from '../../lib/types';
 import { useApp } from '../../app-context';
 import { buzz, dueLabel, dueTone, fmtDayMonth, inr, todayISO } from '../../lib/format';
 import { createCard, updateCard, withUndo } from '../../lib/actions';
@@ -162,21 +162,33 @@ export function AheadList({ items }: { items: AheadItem[] }) {
   );
 }
 
-export function RecentSpends({ spends, cards }: { spends: Card[]; cards: Card[] }) {
+export function RecentSpends({ spends, cards, incomes = [] }: { spends: Card[]; cards: Card[]; incomes?: IncomeEntry[] }) {
   const app = useApp();
   const open = useOpenMoney();
-  if (!spends.length) return null;
+  if (!spends.length && !incomes.length) return null;
+  // Spends and the income you added, newest first, as one history.
+  const rows = [...spends.map(c => ({ date: c.date ?? '', at: c.createdAt, spend: c, income: undefined as IncomeEntry | undefined })),
+    ...incomes.map(i => ({ date: i.date, at: i.createdAt, spend: undefined as Card | undefined, income: i }))]
+    .sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at).slice(0, 5);
   const Icon = TYPE_ICON.expense;
   const t = todayISO();
   return (
     <section className="hl" aria-labelledby="hl-recent">
       <div className="hl-head">
-        <h2 id="hl-recent">Recent spends</h2>
+        <h2 id="hl-recent">Recent transactions</h2>
         <button type="button" className="hl-link" onClick={() => open('expenses')}>All <ArrowRight size={16} aria-hidden="true" /></button>
       </div>
       <AgainChips cards={cards} />
       <ul className="hl-list">
-        {spends.map(c => (
+        {rows.map(({ spend: c, income: i }) => i ? (
+          <li key={i.id} className="hl-row">
+            <button type="button" className="hl-main" onClick={() => open('expenses')}>
+              <span className="hl-t">{i.title || 'Income'}</span>
+              <small className="hl-sub">{['Income', i.date === t ? 'Today' : fmtDayMonth(i.date)].join(' · ')}</small>
+            </button>
+            <b className="hl-amt num is-in">+{inr(i.amount)}</b>
+          </li>
+        ) : c && (
           <li key={c.id} className="hl-row">
             <button type="button" className="hl-main" onClick={e => app.openCard(c.id, e.currentTarget.closest('li'))}>
               <span className="hl-t"><Icon size={15} aria-hidden="true" className="hl-ic" />{c.title || c.category || 'Spend'}</span>

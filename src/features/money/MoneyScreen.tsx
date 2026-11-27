@@ -21,7 +21,13 @@ import { openQuickSearch } from '../../ui/QuickSearch';
 type AddType = Extract<CardType, 'expense' | 'bill' | 'invest'>;
 const TABS = ['overview', 'expenses', 'bills', 'invest', 'goals'] as const;
 type Tab = typeof TABS[number];
-const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', expenses: 'Spends', bills: 'Bills', invest: 'Invest', goals: 'Goals' };
+/** Three tabs on top; Plan holds Bills, Invest and Goals. The saved tab names stay the old ones. */
+const PLAN_TABS = ['bills', 'invest', 'goals'] as const;
+const PLAN_LABEL = { bills: 'Bills', invest: 'Invest', goals: 'Goals' } as const;
+const GROUPS = ['stats', 'general', 'plan'] as const;
+type Group = typeof GROUPS[number];
+const GROUP_LABEL: Record<Group, string> = { stats: 'Stats', general: 'General', plan: 'Plan' };
+const groupOf = (t: Tab): Group => (t === 'overview' ? 'stats' : t === 'expenses' ? 'general' : 'plan');
 const TAB_KEY = 'hisaab.money.tab';
 
 /* ---------------- add menu ---------------- */
@@ -86,12 +92,14 @@ export default function MoneyScreen() {
   const [tab, setTabState] = useState<Tab>(() => (peekNavReset('money') ? 'overview' : readPref(TAB_KEY, TABS, 'overview')));
   const [gen, setGen] = useState(0);
   const [spend, setSpend] = useState(false);
+  const [kind, setKind] = useState<'expense' | 'income'>('expense');
+  const openAdd = useCallback((k: 'expense' | 'income') => { setKind(k); setSpend(true); }, []);
   // One selected month shared by Expenses and Bills, so switching tabs keeps you in the same month.
   const [month, setMonth] = useState<Date>(() => monthStart(today()));
   const closeSpend = useCallback(() => setSpend(false), []);
   // "New expense" home-screen shortcut: App sets this flag, then routes here.
   useEffect(() => {
-    const check = () => { try { if (sessionStorage.getItem('hisaab.quickSpend')) { sessionStorage.removeItem('hisaab.quickSpend'); setSpend(true); } } catch { /* storage blocked */ } };
+    const check = () => { try { if (sessionStorage.getItem('hisaab.quickSpend')) { sessionStorage.removeItem('hisaab.quickSpend'); openAdd('expense'); } } catch { /* storage blocked */ } };
     check();
     window.addEventListener('hisaab:spend', check);
     return () => window.removeEventListener('hisaab:spend', check);
@@ -99,6 +107,7 @@ export default function MoneyScreen() {
   // Money tab tapped again: back to Overview, this month, filters cleared (the panel remounts).
   useNavReset('money', () => { setTabState('overview'); setMonth(monthStart(today())); setSlip(false); setGen(g => g + 1); });
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const lastPlan = useRef<typeof PLAN_TABS[number]>('bills');
 
   const setTab = (t: Tab) => { setTabState(t); writePref(TAB_KEY, t); };
   const [slip, setSlip] = useState(false);
@@ -111,17 +120,21 @@ export default function MoneyScreen() {
     window.scrollTo({ top: 0 });
   }, [tab]);
 
+  const group = groupOf(tab);
+  if (group === 'plan') lastPlan.current = tab as typeof PLAN_TABS[number];
+  const openGroup = (g: Group) => setTab(g === 'stats' ? 'overview' : g === 'general' ? 'expenses' : lastPlan.current);
+
   const onTabKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const i = TABS.indexOf(tab);
+    const i = GROUPS.indexOf(group);
     let n = -1;
-    if (e.key === 'ArrowRight') n = (i + 1) % TABS.length;
-    else if (e.key === 'ArrowLeft') n = (i + TABS.length - 1) % TABS.length;
+    if (e.key === 'ArrowRight') n = (i + 1) % GROUPS.length;
+    else if (e.key === 'ArrowLeft') n = (i + GROUPS.length - 1) % GROUPS.length;
     else if (e.key === 'Home') n = 0;
-    else if (e.key === 'End') n = TABS.length - 1;
+    else if (e.key === 'End') n = GROUPS.length - 1;
     if (n < 0) return;
     e.preventDefault();
-    setTab(TABS[n]);
-    tabRefs.current[TABS[n]]?.focus();
+    openGroup(GROUPS[n]);
+    tabRefs.current[GROUPS[n]]?.focus();
   };
 
   if (!cards) return <div className="screen" />;
@@ -136,34 +149,39 @@ export default function MoneyScreen() {
           <button type="button" className="icon-btn money-search" aria-label="Search everything" onClick={openQuickSearch}><Search size={20} aria-hidden="true" /></button>
           <span style={{ flex: 1 }} />
           <AddMenu onPick={(t, el) => add(t, el)} />
-          <button type="button" className="btn primary money-spend" onClick={() => setSpend(true)}>
+          <button type="button" className="btn primary money-spend" onClick={() => openAdd('expense')}>
             <Plus size={20} strokeWidth={2.6} aria-hidden="true" /> Spend
           </button>
         </div>
         <div className="money-tabs" role="tablist" aria-label="Money sections" onKeyDown={onTabKey}>
-          {TABS.map(t => (
-            <button key={t} ref={el => { tabRefs.current[t] = el; }} type="button" role="tab" id={`money-tab-${t}`}
-              aria-selected={tab === t} aria-controls={`money-panel-${t}`} tabIndex={tab === t ? 0 : -1}
-              className="money-tab" onClick={() => setTab(t)}>
-              {tab === t && <motion.span layoutId="money-tab-pill" className="money-tab-pill" aria-hidden="true"
+          {GROUPS.map(g => (
+            <button key={g} ref={el => { tabRefs.current[g] = el; }} type="button" role="tab" id={`money-tab-${g}`}
+              aria-selected={group === g} aria-controls="money-panel" tabIndex={group === g ? 0 : -1}
+              className="money-tab" onClick={() => openGroup(g)}>
+              {group === g && <motion.span layoutId="money-tab-pill" className="money-tab-pill" aria-hidden="true"
                 transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 40 }} />}
-              <span className="money-tab-text">{TAB_LABEL[t]}</span>
+              <span className="money-tab-text">{GROUP_LABEL[g]}</span>
             </button>
           ))}
         </div>
+        {group === 'plan' && (
+          <div className="donut-ranges plan-sub" role="group" aria-label="Plan sections">
+            {PLAN_TABS.map(t => <button key={t} type="button" aria-pressed={tab === t} onClick={() => setTab(t)}>{PLAN_LABEL[t]}</button>)}
+          </div>
+        )}
       </header>
 
-      <div role="tabpanel" id={`money-panel-${tab}`} aria-labelledby={`money-tab-${tab}`} className="money-panel">
+      <div role="tabpanel" id="money-panel" aria-labelledby={`money-tab-${group}`} className="money-panel">
         <div key={`${tab}:${gen}`} className="money-panel-anim">
-        {tab === 'overview' && <OverviewTab cards={live} settings={settings} onSpend={() => setSpend(true)} onTab={setTab} />}
-        {tab === 'expenses' && <ExpensesTab cards={live} settings={settings} month={month} setMonth={setMonth} />}
+        {tab === 'overview' && <OverviewTab cards={live} settings={settings} onSpend={() => openAdd('expense')} />}
+        {tab === 'expenses' && <ExpensesTab cards={live} settings={settings} month={month} setMonth={setMonth} onAdd={openAdd} />}
         {tab === 'bills' && <BillsTab cards={live} settings={settings} month={month} setMonth={setMonth} />}
         {tab === 'invest' && <InvestTab cards={live} onAdd={el => add('invest', el)} />}
         {tab === 'goals' && <GoalsTab settings={settings} />}
         </div>
       </div>
 
-      <QuickExpense open={spend} onClose={closeSpend} />
+      <QuickExpense open={spend} kind={kind} onClose={closeSpend} />
       <DepositSlip open={slip} onClose={() => setSlip(false)} />
     </div>
   );

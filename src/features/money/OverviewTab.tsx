@@ -6,14 +6,13 @@ import { weekAllowance } from './allowance';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { saveSettings } from '../../lib/db';
 import { useApp } from '../../app-context';
-import { fmtDate, inr, today, fmtDayMonth } from '../../lib/format';
-import { monthSpend, netWorth } from '../../lib/logic';
+import { fmtDate, inr, today, todayISO, fmtDayMonth } from '../../lib/format';
+import { monthSpend } from '../../lib/logic';
+import StatsDonut from './StatsDonut';
 import type { Card, Settings } from '../../lib/types';
-import { Money } from '../../ui/bits';
 import { InfoTip } from '../../ui/InfoTip';
-import { cashFlow, spentByCategory, type CashFlow } from './cashflow';
-import { longMonth, monthKey, openBills, parseAmount } from './money-util';
-import { BillRow, CategoryBar } from './parts';
+import { cashFlow, type CashFlow } from './cashflow';
+import { longMonth, parseAmount } from './money-util';
 import { inPaydayWindow, isSunday } from './review';
 import { PaydayCard, WeekCard } from './reviewCards';
 
@@ -85,35 +84,30 @@ function SalaryForm({ settings, onDone, compact }: { settings: Settings; onDone?
 }
 
 
-export default function OverviewTab({ cards, settings, onSpend, onTab }: {
-  cards: Card[]; settings: Settings; onSpend: (el?: HTMLElement) => void; onTab: (t: 'expenses' | 'bills' | 'invest') => void;
+export default function OverviewTab({ cards, settings, onSpend }: {
+  cards: Card[]; settings: Settings; onSpend: (el?: HTMLElement) => void;
 }) {
   const [editSalary, setEditSalary] = useState(false);
   const [weekOpen, setWeekOpen] = useState(() => isSunday(today()));
   const salary = settings.salaryAmount ?? 0;
   const ref = today();
-  const month = monthKey(ref);
+  const iso = todayISO();
 
   const d = useMemo(() => {
-    const flow = cashFlow(cards, salary, settings.salaryDay, ref);
-    const byCat = spentByCategory(cards, month);
-    const monthTotal = Object.values(byCat).reduce((a, b) => a + b, 0);
-    const top = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    const upcoming = openBills(cards).slice(0, 3);
-    const nw = netWorth(cards);
-    const inv = cards.filter(c => c.type === 'invest');
-    return { flow, byCat, monthSpent: monthSpend(cards, ref).total, monthTotal, top, upcoming, nw, invCount: inv.length };
-  }, [cards, salary, settings.salaryDay, month]); // eslint-disable-line react-hooks/exhaustive-deps
+    const flow = cashFlow(cards, salary, settings.salaryDay, ref, settings.incomes);
+    return { flow, monthSpent: monthSpend(cards, ref).total };
+  }, [cards, salary, settings.salaryDay, settings.incomes, iso]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { flow } = d;
   const [recapOpen, setRecapOpen] = useState(false);
   const insights = useMemo(() => spendingInsights(cards, ref), [cards]); // eslint-disable-line react-hooks/exhaustive-deps
   const daysTxt = flow.cycle.daysLeft === 1 ? '1 day' : `${flow.cycle.daysLeft} days`;
-  const gl = d.nw.value - d.nw.invested;
   const payday = salary > 0 && !editSalary && inPaydayWindow(settings.salaryDay, ref);
 
   return (
     <div className="money-layout">
+      <StatsDonut cards={cards} />
+
       {!salary || editSalary ? (
         <section className="money-card money-wide" aria-labelledby="m-sal">
           <h2 id="m-sal" className="money-h"><Wallet size={18} aria-hidden="true" /> {salary ? 'Edit salary' : 'Your monthly salary'}</h2>
@@ -151,33 +145,6 @@ export default function OverviewTab({ cards, settings, onSpend, onTab }: {
         </section>
       )}
 
-      <section className="money-card" aria-labelledby="m-top">
-        <div className="money-h-row">
-          <h2 id="m-top" className="money-h">Top spends</h2>
-          <button type="button" className="btn ghost" onClick={() => onTab('expenses')}>All <ArrowRight size={16} aria-hidden="true" /></button>
-        </div>
-        {d.top.length ? (
-          <ul className="money-cats">
-            {d.top.map(([name, amount]) => <CategoryBar key={name} name={name} amount={amount} total={d.monthTotal} budget={settings.budgets[name]} />)}
-          </ul>
-        ) : <p className="money-muted">Nothing spent yet</p>}
-      </section>
-
-
-      <section className="money-card" aria-labelledby="m-nw">
-        <div className="money-h-row">
-          <h2 id="m-nw" className="money-h">Net worth <InfoTip label="About these values">Values are what you enter. Hisaab doesn't give buy/sell advice.</InfoTip></h2>
-          <button type="button" className="btn ghost" onClick={() => onTab('invest')}>Invest <ArrowRight size={16} aria-hidden="true" /></button>
-        </div>
-        {d.invCount ? (
-          <div className="money-nw-one">
-            <Money value={d.nw.value} className="money-mid" />
-            <span className={`num money-gl-${gl >= 0 ? 'up' : 'down'}`}>
-              {gl >= 0 ? '+' : '−'}{inr(Math.abs(gl))}{d.nw.invested ? ` · ${gl >= 0 ? '+' : '−'}${Math.abs((gl / d.nw.invested) * 100).toFixed(1)}%` : ''}
-            </span>
-          </div>
-        ) : <p className="money-muted">No investments yet</p>}
-      </section>
       <RecapSheet open={recapOpen} onClose={() => setRecapOpen(false)} cards={cards} settings={settings} />
     </div>
   );

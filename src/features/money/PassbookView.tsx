@@ -37,7 +37,7 @@ export function PaperHero({ flow, monthSpent, onEditSalary }: { flow: CashFlow; 
         {flow.overBy ? `${inr(flow.overBy)} over` : `${inr(flow.left)} left · ${days}`} · salary {fmtDayMonth(flow.cycle.end)}
       </p>
       <div className="pb-split num">
-        <div><span>Salary</span><b>{inr(flow.salary)}</b></div>
+        <div><span>{flow.extra ? 'Income' : 'Salary'}</span><b>{inr(flow.salary + flow.extra)}</b></div>
         <div><span>{billsLabel}</span><b>{inr(flow.billsTotal + flow.sipsTotal)}</b></div>
         <div><span>Spent</span><b>{inr(monthSpent)}</b></div>
       </div>
@@ -124,7 +124,7 @@ export function PenLine({ cards, onMore }: { cards: Card[]; onMore?: (el: HTMLEl
 export function PassbookList({ cards, settings, onSpend }: { cards: Card[]; settings: Settings; onSpend?: (el: HTMLElement) => void }) {
   const pay = usePayBill();
   const [all, setAll] = useState(false);
-  const { lines, cycle } = useMemo(() => passbook(cards, settings.salaryAmount ?? 0, settings.salaryDay, today()), [cards, settings.salaryAmount, settings.salaryDay]);
+  const { lines, cycle } = useMemo(() => passbook(cards, settings.salaryAmount ?? 0, settings.salaryDay, today(), settings.incomes), [cards, settings.salaryAmount, settings.salaryDay, settings.incomes]);
   const shown = all ? lines : lines.slice(0, FIRST);
   const label = new Date(cycle.start + 'T00:00:00').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
   return (

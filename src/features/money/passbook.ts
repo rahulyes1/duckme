@@ -3,7 +3,8 @@
  * Salary is the opening credit, each spend is a debit, and bills still due before the next salary
  * appear at the top as "due" lines with the balance they will leave. Pure; tested in passbook.test.ts.
  */
-import type { Card } from '../../lib/types';
+import type { Card, IncomeEntry } from '../../lib/types';
+import { toISO } from '../../lib/format';
 import { isActive } from '../../lib/types';
 import { coveredInstalments, salaryCycle } from './cashflow';
 import { isMonthly } from './money-util';
@@ -22,7 +23,7 @@ export interface PassLine {
   card?: Card;
 }
 
-export function passbook(cards: Card[], salary: number, salaryDay: number, ref: Date): { lines: PassLine[]; cycle: { start: string; end: string } } {
+export function passbook(cards: Card[], salary: number, salaryDay: number, ref: Date, incomes: IncomeEntry[] = []): { lines: PassLine[]; cycle: { start: string; end: string } } {
   const cyc = salaryCycle(salaryDay, ref);
   const spends = cards
     // Investment lines stay in the ledger (the money did leave the account), marked as invested, not spent.
@@ -42,7 +43,18 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
   let bal = has ? salary : 0;
   const asc: PassLine[] = [];
   if (has) asc.push({ id: `salary-${cyc.start}`, date: cyc.start, title: 'Salary', sub: 'Credited', amount: salary, balance: bal, kind: 'salary' });
+  const credits = incomes.filter(i => i.date >= cyc.start && i.date < cyc.end && i.date <= toISO(ref))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.createdAt - b.createdAt));
+  let next = 0;
+  const creditUpTo = (date: string) => {
+    for (; next < credits.length && credits[next].date <= date; next++) {
+      const i = credits[next];
+      bal += i.amount;
+      asc.push({ id: i.id, date: i.date, title: i.title || 'Income', sub: 'Income', amount: i.amount, balance: has ? bal : null, kind: 'salary' });
+    }
+  };
   for (const c of spends) {
+    creditUpTo(c.date!);
     // A spend on a credit card doesn't touch the account yet: it leaves via the card bill.
     const onCard = isSpend(c) && c.mode === 'Card';
     if (!onCard) bal -= c.amount!;
@@ -52,6 +64,7 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
       sub: [what, onCard ? 'On card' : c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
     });
   }
+  creditUpTo('9999');
   // Bills and SIP/RD instalments still due, soonest first, so the projected balance runs in date order.
   const upcoming = [
     ...dues.map(b => ({ c: b, date: b.due!, title: b.title || 'Bill', sub: b.penalty ? `Due · ${b.penalty}` : 'Due', id: b.id })),

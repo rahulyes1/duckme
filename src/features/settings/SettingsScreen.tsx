@@ -503,7 +503,7 @@ export default function SettingsScreen() {
           <ThemePicker value={settings.theme} />
         </div>
         <div className="field">
-          <Switch checked={settings.backgroundLife !== false} label="Background life"
+          <Switch checked={settings.backgroundLife === true} label="Background life"
             onChange={v => saveSettings({ backgroundLife: v })} />
           <span className="help">Birds, kite, fireflies behind the page</span>
         </div>

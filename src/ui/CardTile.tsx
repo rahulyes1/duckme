@@ -3,6 +3,7 @@ import type { Card, Settings } from '../lib/types';
 import { KIND_LABEL, HORIZON_LABEL } from '../lib/types';
 import { addDaysISO, daysLeft, dueLabel, dueTone, fmtDate, fmtDateY, inr, salarySide } from '../lib/format';
 import { gainLoss } from '../lib/logic';
+import { tileColor } from './tile-color';
 import { NoteBody } from '../features/notes/NoteBody';
 import { lineAmount } from '../lib/parse';
 import { isActive } from '../lib/types';
@@ -110,7 +111,7 @@ export function CardTile({ card: c, settings, hidden, onOpen, className = '' }: 
     <button
       type="button"
       className={`tile ${hasRing ? 'has-ring' : ''} ${className}`}
-      data-color={c.color}
+      data-color={tileColor(c)}
       data-id={c.id}
       aria-label={`${KIND_LABEL[c.type]}: ${hidden ? 'locked note' : c.title || 'Untitled'}`}
       onClick={e => onOpen?.(e.currentTarget)}
