@@ -432,3 +432,10 @@ body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); botto
 @media (min-width: 1024px) {
   .qs-wrap, .scrim, .editor-wrap { left: 232px; }
 }
+/* Phones: when the bottom menu is showing (no full-screen editor), sheets sit just above it,
+   so Home is always one tap away. The bar already pads the safe area. */
+@media (max-width: 719px) {
+  body:has(.nav):not(:has(.editor)) .sheet { bottom: calc(61px + env(safe-area-inset-bottom, 0px)); max-height: calc(92dvh - 61px);
+    padding-bottom: 20px; }
+  body:has(.nav):not(:has(.editor)) .sheet .sheet-actions { bottom: -20px; padding-bottom: 14px; }
+}
