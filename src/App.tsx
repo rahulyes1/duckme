@@ -57,6 +57,17 @@ function EditorShell({ id, origin, onClose }: { id: string; origin: DOMRect | nu
     ? `inset(${origin.top}px ${W - origin.right}px ${H - origin.bottom}px ${origin.left}px round 16px)`
     : undefined;
 
+  // Move focus into the editor (unless it already put the caret somewhere), so keys like End or
+  // Space don't scroll the page hidden behind it and screen readers start inside the dialog.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const ed = document.querySelector<HTMLElement>('.editor');
+      if (!ed || ed.contains(document.activeElement)) return;
+      (ed.querySelector<HTMLElement>('.editor-top [aria-label="Back"]') ?? ed).focus({ preventScroll: true });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [id]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || document.querySelector('.sheet')) return;
@@ -77,6 +88,7 @@ function EditorShell({ id, origin, onClose }: { id: string; origin: DOMRect | nu
       data-color={card.color}
       role="dialog"
       aria-modal="true"
+      tabIndex={-1}
       aria-label={`Edit ${card.type}`}
       initial={clipFrom ? { clipPath: clipFrom } : { opacity: 0, scale: wide ? 0.96 : 1, y: wide ? 0 : 24 }}
       animate={clipFrom ? { clipPath: `inset(0px 0px 0px 0px round 0px)` } : { opacity: 1, scale: 1, y: 0 }}
@@ -105,7 +117,14 @@ export default function App() {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    const on = () => setRoute(readRoute());
+    // Plain links (#plan, #money…) change the hash too: land at the top of the new screen, like a nav tap.
+    let last = readRoute();
+    const on = () => {
+      const r = readRoute();
+      if (r !== last) window.scrollTo(0, 0);
+      last = r;
+      setRoute(r);
+    };
     window.addEventListener('hashchange', on);
     purgeOldTrash().catch(() => {});
     return () => window.removeEventListener('hashchange', on);

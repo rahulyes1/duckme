@@ -110,6 +110,7 @@ img { max-width: 100%; display: block; }
 @keyframes route-fade { from { opacity: 0; } to { opacity: 1; } }
 .route-fade { animation: route-fade .12s ease-out; }
 .editor-lead { display: flex; align-items: center; gap: 2px; }
+.editor:focus { outline: none; }
 
 /* ---------- primitives ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px;
@@ -417,3 +418,16 @@ body:has(.sheet) .toast { top: calc(env(safe-area-inset-top, 0px) + 14px); botto
 @keyframes life-blink { 0%, 100% { opacity: 0; } 50% { opacity: var(--ff-a); } }
 .life.is-paused * { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) { .ambient .life { display: none; } }
+
+/* Keep the main nav tappable while search or a sheet is open, so one tap on Home (or any tab) closes it
+   and lands there. Phones/tablets: overlays stop above the bottom bar (4+52+4 padding + 1 border = 61px).
+   Desktop: they start right of the side rail. (Phone bottom sheets still sit over the bar.) */
+@media (max-width: 1023px) {
+  .qs-wrap, .scrim { bottom: calc(61px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (min-width: 720px) and (max-width: 1023px) {
+  .sheet { max-height: calc(90dvh - 61px - env(safe-area-inset-bottom, 0px)); }
+}
+@media (min-width: 1024px) {
+  .qs-wrap, .scrim, .editor-wrap { left: 232px; }
+}
