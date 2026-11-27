@@ -16,7 +16,8 @@ export function PinPad({ pinHash, onUnlock }: { pinHash: string; onUnlock: () =>
     const clean = v.replace(/\D/g, '').slice(0, 6);
     setPin(clean);
     setErr('');
-    void tryPin(clean, false);
+    // Six digits is the longest PIN: if it is still wrong, say so and clear, instead of a stuck, full box.
+    void tryPin(clean, clean.length === 6);
   };
 
   const submit = (e: FormEvent) => { e.preventDefault(); void tryPin(pin, true); };

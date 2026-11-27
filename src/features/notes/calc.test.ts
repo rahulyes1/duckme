@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcByLine, calcLines, evalExpr, fmtCalc, tokenize } from './calc';
+import { calcByLine, calcLineTexts, calcLines, evalExpr, fmtCalc, tokenize } from './calc';
 
 const v = (src: string, vars: Record<string, number> = {}) => evalExpr(src, new Map(Object.entries(vars)));
 
@@ -109,5 +109,15 @@ describe('fmtCalc', () => {
     expect(fmtCalc(82.5)).toBe('₹82.5');
     expect(fmtCalc(-400)).toBe('−₹400');
     expect(fmtCalc(1 / 3)).toBe('₹0.33');
+  });
+});
+
+describe('calcLineTexts', () => {
+  it('lists only lines that are sums or definitions', () => {
+    const s = calcLineTexts('Rent 18000 + 2500 =\nChai ₹20\n  rent = 18000  \nnot = a sum here');
+    expect(s.has('Rent 18000 + 2500 =')).toBe(true);
+    expect(s.has('rent = 18000')).toBe(true);
+    expect(s.has('Chai ₹20')).toBe(false);
+    expect(s.has('not = a sum here')).toBe(false);
   });
 });

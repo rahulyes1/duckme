@@ -9,13 +9,13 @@ import {
 import { HomeButton } from '../../ui/HomeButton';
 import './notes.css';
 import { useApp } from '../../app-context';
-import { db, saveSettings } from '../../lib/db';
+import { db, getSettings, saveSettings } from '../../lib/db';
 import {
   archive, convert, createCard, duplicate, getVersions, markDone, restore, restoreVersion, spawnFromNote, trash, updateCard,
 } from '../../lib/actions';
 import { useCard, useSettings } from '../../lib/hooks';
 import { detectChips } from '../../lib/parse';
-import { fmtDate, fromISO, inr, nextSalary, sha256, toISO, todayISO } from '../../lib/format';
+import { fmtDate, fromISO, inr, nextSalary, sha256, toISO } from '../../lib/format';
 import type { Card, CardType, ChecklistItem, Horizon, Repeat, Version } from '../../lib/types';
 import { HORIZON_LABEL, KIND_LABEL } from '../../lib/types';
 import { Sheet } from '../../ui/Sheet';
@@ -28,6 +28,7 @@ import { countWords, fmtWords } from './text-stats';
 import { useDebounced } from './use-debounced';
 import { PlanRow } from './PlanRow';
 import { hasMarkup } from './md-lite';
+import { calcLineTexts } from './calc';
 import {
   CHIP_ACTION, chipCard, chipLabel, chipTitle, convertFill, deleteForeverWithUndo, emptyItem, itemsToText, readImages,
   relTime, textToItems,
@@ -76,8 +77,10 @@ export default function NoteEditor({ id, onClose }: { id: string; onClose: () =>
 
 function LockedGate({ card, onClose }: { card: Card; onClose: () => void }) {
   const { unlock } = useApp();
-  const settings = useSettings();
-  useEffect(() => { if (!settings.pinHash) unlock(card.id); }, [settings.pinHash, card.id, unlock]);
+  // Wait for the real settings. useSettings() gives defaults (no PIN) for the first moment after a
+  // reload, which used to open a locked note without asking for the PIN.
+  const settings = useLiveQuery(() => getSettings(), []);
+  useEffect(() => { if (settings && !settings.pinHash) unlock(card.id); }, [settings, card.id, unlock]);
   return (
     <div className="editor-scroll">
       <div className="editor-top">
@@ -86,7 +89,7 @@ function LockedGate({ card, onClose }: { card: Card; onClose: () => void }) {
           <HomeButton />
         </span>
       </div>
-      {settings.pinHash && <PinPad pinHash={settings.pinHash} onUnlock={() => unlock(card.id)} />}
+      {settings?.pinHash && <PinPad pinHash={settings.pinHash} onUnlock={() => unlock(card.id)} />}
     </div>
   );
 }
@@ -169,7 +172,11 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   );
   // Smart chips and the word count scan the whole note: on a long note, only after a 250ms pause.
   const scanText = useDebounced(fullText, 250, fullText.length < LIVE_LIMIT);
-  const chips = useMemo(() => detectChips(scanText), [scanText]);
+  // Calc lines ("Rent 18000 + 2500 =") are sums, not bills: no ₹18,000 chip for them.
+  const chips = useMemo(() => {
+    const calc = calcLineTexts(scanText);
+    return detectChips(scanText).filter(c => !calc.has(c.match));
+  }, [scanText]);
   const words = useMemo(() => countWords(scanText), [scanText]);
   const total = checklist ? checklistTotal({ ...card, checklist }) : null;
 
@@ -311,6 +318,8 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
       document.querySelector<HTMLElement>('.editor .notes-item-text')?.focus();
       return;
     }
+    // Focus straight away when the box is already there, so the next letter typed lands in the body, not the title.
+    if (mode === 'edit' && bodyRef.current) { bodyRef.current.focus(); return; }
     setMode('edit');
     requestAnimationFrame(() => bodyRef.current?.focus());
   };
@@ -698,7 +707,7 @@ function LabelsSheet({ open, onClose, card, allLabels, save }: {
       <form className="notes-newlabel" onSubmit={add}>
         <div className="field" style={{ flex: 1 }}>
           <label htmlFor={`nl-${card.id}`}>New label</label>
-          <input id={`nl-${card.id}`} className="input" value={name} maxLength={40} onChange={e => { setName(e.target.value); setErr(''); }}
+          <input id={`nl-${card.id}`} className="input" value={name} maxLength={30} onChange={e => { setName(e.target.value); setErr(''); }}
             aria-invalid={!!err} aria-describedby={err ? `nle-${card.id}` : undefined} />
           {err && <span id={`nle-${card.id}`} className="err" role="alert">{err}</span>}
         </div>
@@ -714,10 +723,17 @@ function ReminderSheet({ open, onClose, card, salaryDay, save }: {
   open: boolean; onClose: () => void; card: Card; salaryDay: number; save: (p: Partial<Card>) => Promise<void>;
 }) {
   const app = useApp();
-  const [date, setDate] = useState(card.reminder?.slice(0, 10) ?? todayISO());
+  // A new reminder starts at 9 am: today if that is still ahead, else tomorrow (never in the past).
+  const defaultDate = () => {
+    const d = new Date();
+    if (d.getHours() >= 9) d.setDate(d.getDate() + 1);
+    return toISO(d);
+  };
+  const [date, setDate] = useState(card.reminder?.slice(0, 10) ?? defaultDate());
   const [time, setTime] = useState(card.reminder?.slice(11, 16) ?? '09:00');
+  const [err, setErr] = useState('');
   useEffect(() => {
-    if (open) { setDate(card.reminder?.slice(0, 10) ?? todayISO()); setTime(card.reminder?.slice(11, 16) ?? '09:00'); }
+    if (open) { setDate(card.reminder?.slice(0, 10) ?? defaultDate()); setTime(card.reminder?.slice(11, 16) ?? '09:00'); setErr(''); }
   }, [open, card.reminder]);
 
   const now = new Date();
@@ -736,7 +752,13 @@ function ReminderSheet({ open, onClose, card, salaryDay, save }: {
     app.toast(`Reminder set for ${fmtReminder(stamp)}`);
   };
 
-  const submit = (e: FormEvent) => { e.preventDefault(); if (date && time) void set(`${date}T${time}`); };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!date || !time) return;
+    const stamp = `${date}T${time}`;
+    if (stamp <= localStamp(new Date())) { setErr('That time has already passed. Pick a later time.'); return; }
+    void set(stamp);
+  };
 
   return (
     <Sheet open={open} onClose={onClose} title="Reminder">
@@ -747,13 +769,15 @@ function ReminderSheet({ open, onClose, card, salaryDay, save }: {
         <div className="row">
           <div className="field">
             <label htmlFor={`rd-${card.id}`}>Date</label>
-            <input id={`rd-${card.id}`} className="input" type="date" required value={date} onChange={e => setDate(e.target.value)} />
+            <input id={`rd-${card.id}`} className="input" type="date" required value={date} onChange={e => { setDate(e.target.value); setErr(''); }} />
           </div>
           <div className="field">
             <label htmlFor={`rt-${card.id}`}>Time</label>
-            <input id={`rt-${card.id}`} className="input" type="time" required value={time} onChange={e => setTime(e.target.value)} />
+            <input id={`rt-${card.id}`} className="input" type="time" required value={time} onChange={e => { setTime(e.target.value); setErr(''); }}
+              aria-invalid={!!err} aria-describedby={err ? `rte-${card.id}` : undefined} />
           </div>
         </div>
+        {err && <span id={`rte-${card.id}`} className="err" role="alert">{err}</span>}
         <p className="notes-muted">The reminder shows on the card. Phone notifications are not part of this version.</p>
         <button type="submit" className="btn primary block">Save reminder</button>
         {card.reminder && (
