@@ -16,7 +16,21 @@
 .home-brand .screen-title { margin-right: auto; }
 
 /* ---------- Tracker cards ---------- */
-.trk { display: grid; }
+.trk { display: grid; gap: 10px; margin: 8px 0 14px; }
+.trk-hero { display: grid; justify-items: center; gap: 2px; padding: 18px 12px 12px; border-radius: 24px; background: #6E1A2A; color: #fff; text-decoration: none; border: 1px solid #A8475A; }
+.trk-k { font-size: 14px; font-weight: 600; }
+.trk-big { font-size: 42px; font-weight: 700; line-height: 1.15; }
+.trk-bars { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 4px; width: 100%; height: 104px; margin-top: 8px; }
+.trk-bar { display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: 4px; min-height: 0; }
+.trk-bar i { align-self: end; width: 70%; max-width: 12px; border-radius: 6px 6px 2px 2px; background: rgba(255, 255, 255, .42); }
+.trk-bar.is-today i { background: #fff; }
+.trk-bar small { font-size: 11px; color: #F3D5DA; }
+.trk-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.trk-box { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px 6px; padding: 12px 12px 14px; border-radius: 20px; color: #fff; font-weight: 600; }
+.trk-box.is-income { background: var(--inc); }
+.trk-box.is-expense { background: var(--exp); }
+.trk-box b { grid-column: 1 / -1; font-size: 23px; line-height: 1.2; overflow-wrap: anywhere; }
+.trk-plus { width: 44px; height: 44px; margin: -6px -6px 0 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: #fff; color: #17181B; }
 .trk-set { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; color: var(--accent); }
 
 /* ---------- Notes: rustic aged paper, chalk lettering ---------- */
@@ -137,9 +151,7 @@
 .lvl-chips .chip[aria-checked="true"] { background: var(--accent-fill, var(--accent)); border-color: var(--accent); color: var(--accent-ink); }
 
 /* ---------- budget pace ---------- */
-.pace { display: grid; gap: 7px; width: 100%; margin: 0 0 10px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); text-align: left; }
-.pace-empty { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14.5px; min-height: 22px; }
-.pace-empty svg { color: var(--muted); }
+.pace { display: grid; gap: 7px; width: 100%; margin: -4px 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); text-align: left; }
 .pace-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .pace-sub { color: var(--muted); font-size: 13px; }
 .pace-bar { position: relative; height: 10px; border-radius: 9px; background: var(--surface-2); }
@@ -156,42 +168,3 @@
 .later-btn small { color: var(--muted); }
 .later-open { align-self: flex-start; margin: 0 0 8px; }
 .tp-later { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
-
-.trk-plus { width: 44px; height: 44px; margin: -6px -6px 0 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: #fff; color: #17181B; }
-
-/* ---------- Tracker: clean ledger ---------- */
-.home.is-tracker .home-switch { display: flex; justify-content: flex-start; gap: 22px; padding: 0 4px; background: none; border-radius: 0; }
-.home.is-tracker .home-switch button { padding: 0; background: none; border-radius: 0; font-size: 15px; font-weight: 500; }
-.home.is-tracker .home-switch button[aria-selected="true"] { background: none; color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
-.trk { margin: 0; }
-.trk-top { display: grid; padding: 22px 4px 14px; color: var(--ink); text-decoration: none; }
-.trk-big { font-size: 56px; font-weight: 300; letter-spacing: -2px; line-height: 1.05; overflow-wrap: anywhere; }
-.trk-k { color: var(--muted); font-size: 14px; }
-.trk-line { width: 100%; height: 56px; margin-top: 16px; }
-.trk-line path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.trk-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 4px; border-top: 1px solid var(--line); font-size: 15px; }
-.trk-row b { margin-left: auto; font-size: 17px; font-weight: 500; }
-.trk-mini { width: 44px; height: 44px; margin-right: -10px; display: grid; place-items: center; border: 0; background: none; color: var(--accent); }
-.home.is-tracker .pace { margin: 0; padding: 14px 4px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
-.home.is-tracker .pace-empty { font-size: 15px; }
-.home.is-tracker .pace-empty b { font-weight: 400; }
-.home.is-tracker .pace-bar { height: 4px; }
-.home.is-tracker :is(.hl, .tp) { margin: 0; padding: 12px 0 6px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; }
-.home.is-tracker :is(.hl-head h2, .tp-head h2) { font-size: 13px; font-weight: 500; color: var(--muted); }
-.home.is-tracker .tp-head h2 svg { display: none; }
-.home.is-tracker :is(.hl-link, .tp-link) { font-size: 13px; font-weight: 500; }
-.home.is-tracker .hl-t { font-size: 15px; }
-.home.is-tracker .hl-amt { font-size: 16px; font-weight: 500; }
-.home.is-tracker .hl-pay { min-height: 36px; padding: 0 10px; border: 0; background: none; font-size: 14px; font-weight: 600; }
-.home.is-tracker .tp-row { padding: 0; border: 0; background: none; }
-.home.is-tracker .tp-title { font-size: 15px; font-weight: 400; }
-.trk-actions { display: flex; gap: 10px; margin: 10px 0 18px; }
-.trk-add, .trk-note { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 52px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
-.trk-add { flex: 1; border: 0; background: var(--ink); color: var(--bg); }
-.trk-note { padding: 0 20px; border: 1px solid var(--line); background: none; color: var(--ink); }
-:root:root:root[data-theme="dark"] .home.is-tracker { --bg: #0E0E10; }
-body:has(.home.is-tracker) { background: #0E0E10 !important; }
-.home.is-tracker, .home.is-tracker .topbar { background: #0E0E10; }
-.home.is-tracker .close-day { margin: 0; padding: 16px 4px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; }
-.home.is-tracker .close-day h2 { font-size: 15px; font-weight: 500; }
-.home.is-tracker .close-day .btn.primary { background: none; border-color: var(--line); color: var(--ink); }
