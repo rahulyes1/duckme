@@ -10,6 +10,7 @@ import { EmptyState } from '../../ui/bits';
 import { NotesBento } from './NotesBento';
 import { topFirst } from '../notes/importance';
 import { TrackerCards } from './TrackerCards';
+import { Dashboard } from './Dashboard';
 import { BudgetPace } from './BudgetPace';
 import { QuickTaskSheet } from '../notes/QuickTaskSheet';
 import { openQuickSearch } from '../../ui/QuickSearch';
@@ -25,7 +26,8 @@ import { Fab, type FanPick } from './Fab';
 import './home.css';
 import { isActive } from '../../lib/types';
 
-type View = 'tracker' | 'notes';
+type View = 'home' | 'tracker' | 'notes';
+const VIEWS: [View, string][] = [['home', 'Home'], ['tracker', 'Tracker'], ['notes', 'Notes']];
 type Filter = 'all' | 'notes' | 'tasks';
 const FILTERS: [Filter, string][] = [['all', 'All'], ['notes', 'Notes'], ['tasks', 'Tasks']];
 const QuickExpense = lazy(() => import('../money/QuickExpense'));
@@ -36,8 +38,8 @@ export default function HomeScreen() {
   const settings = useSettings();
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  // Home always opens on the Tracker; the switch is tap only so card swipes never clash with it.
-  const [view, setView] = useState<View>('tracker');
+  // Always opens on the Home tab; the switch is tap only so card swipes never clash with it.
+  const [view, setView] = useState<View>('home');
   const [adding, setAdding] = useState<'expense' | 'income' | null>(null);
   const [tasking, setTasking] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -55,7 +57,7 @@ export default function HomeScreen() {
 
   useEffect(() => () => clearTimeout(newTimer.current), []);
   // Home tapped again (or Home from an editor): All, empty search, nothing open.
-  useNavReset('home', () => { setView('tracker'); setQ(''); setFilter('all'); setFanOpen(false); setAdding(null); setTasking(false); });
+  useNavReset('home', () => { setView('home'); setQ(''); setFilter('all'); setFanOpen(false); setAdding(null); setTasking(false); });
   // Re-render when the app comes back to the front, so priorities and the month total follow the date.
   const [, wake] = useState(0);
   useEffect(() => {
@@ -118,6 +120,7 @@ export default function HomeScreen() {
   }, [addSpend, quickNote]);
 
   const closeFan = useCallback(() => setFanOpen(false), []);
+  const show = (v: View) => { setView(v); setFanOpen(false); window.scrollTo({ top: 0 }); };
 
   // A card created from the Notes view pops in.
   const known = useRef<Set<string> | null>(null);
@@ -149,7 +152,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <div className={`screen home ${tracker ? 'is-tracker' : 'is-notes'}`}>
+    <div className={`screen home is-${view}`}>
       <header className="topbar">
         <div className="home-brand">
           <h1 className="screen-title">Hisaab</h1>
@@ -157,13 +160,16 @@ export default function HomeScreen() {
           <a className="icon-btn" href="#plan" aria-label="Reorder cards" title="Reorder: drag cards into your order"><ListOrdered size={20} aria-hidden="true" /></a>
         </div>
         <div className="home-switch" role="tablist" aria-label="Home view">
-          {(['tracker', 'notes'] as const).map(v => (
-            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => { setView(v); setFanOpen(false); window.scrollTo({ top: 0 }); }}>
-              {v === 'tracker' ? 'Tracker' : 'Notes'}
-            </button>
+          {VIEWS.map(([v, name]) => (
+            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => show(v)}>{name}</button>
           ))}
         </div>
       </header>
+
+      {view === 'home' && cards !== undefined && (
+        <Dashboard cards={cards} settings={settings} isHidden={isHidden} newId={newId} onSwiped={retireHint}
+          onTracker={() => show('tracker')} onNotes={() => show('notes')} onWrite={() => quickNote()} />
+      )}
 
       {tracker && cards !== undefined && (
         <>
@@ -178,7 +184,7 @@ export default function HomeScreen() {
         </>
       )}
 
-      {!tracker && (
+      {view === 'notes' && (
         <>
           <div className="topbar-row">
             <label className="search">
