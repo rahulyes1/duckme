@@ -27,6 +27,14 @@ describe('spendingInsights', () => {
     const bill: Card = { ...ex('2026-11-01', 0), id: 'b', type: 'bill', amount: 18450, due: '2026-11-28' };
     expect(spendingInsights([bill], REF)[0].text).toBe('1 bill worth ₹18,450 due in the next 7 days.');
   });
+  it('has a chip form of six words or fewer for every insight', () => {
+    const cards = [ex('2026-11-10', 3000), ex('2026-10-10', 1000), ex('2026-11-03', 500), ex('2026-10-03', 4000),
+      { ...ex('2026-11-01', 0), id: 'b', type: 'bill' as const, amount: 18450, due: '2026-11-28' }];
+    const ins = spendingInsights(cards, REF);
+    expect(ins.length).toBeGreaterThan(1);
+    for (const i of ins) expect(i.short.split(/\s+/).length).toBeLessThanOrEqual(6);
+    expect(ins.find(i => i.kind === 'bills')?.short).toBe('1 bill due this week');
+  });
   it('says nothing when there is nothing to say', () => {
     expect(spendingInsights([], REF)).toEqual([]);
   });

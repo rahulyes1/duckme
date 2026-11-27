@@ -1,23 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, ListOrdered, Plus, Search, Sparkles, X } from 'lucide-react';
+import { CheckSquare, IndianRupee, ListOrdered, Plus, Receipt, Search, Sparkles, StickyNote, X } from 'lucide-react';
 import type { Card, CardType } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
-import { matchesQuery, useCards, useSettings } from '../../lib/hooks';
+import { matchesQuery, useCards, useNavReset, useSettings } from '../../lib/hooks';
 import { saveSettings } from '../../lib/db';
 import { buzz, inr, isTouchDevice, prefersReducedMotion, today, todayISO } from '../../lib/format';
 import { EmptyState } from '../../ui/bits';
 import { Masonry } from '../../ui/Masonry';
 import { SwipeCard } from './SwipeCard';
-import { SPENT_THIS_MONTH, byRank, monthSpend } from '../../lib/logic';
+import { byRank, isSpend } from '../../lib/logic';
+import { cashFlow } from '../money/cashflow';
+import { DueList, RecentSpends } from './HomeLists';
 import { newCardDefaults } from './draft';
 import { TodayHero } from './TodayHero';
 import { CloseDay } from './CloseDay';
 import { BackupNudge } from './BackupNudge';
 import { TodayPriorities } from './TodayPriorities';
 import { todayPriorities } from './priorities';
-import { writePref } from '../../lib/prefs';
-import { Fab } from './Fab';
+import { Fab, type FanPick } from './Fab';
 import { QuickAdd } from './QuickAdd';
 import './home.css';
 import { isActive } from '../../lib/types';
@@ -38,6 +39,8 @@ export default function HomeScreen() {
   const newTimer = useRef<number>();
 
   useEffect(() => () => clearTimeout(newTimer.current), []);
+  // Home tapped again (or Home from an editor): All, empty search, nothing open.
+  useNavReset('home', () => { setQ(''); setFilter('all'); setFanOpen(false); setSheet(s => ({ ...s, open: false })); });
   // Re-render when the app comes back to the front, so priorities and the month total follow the date.
   const [, wake] = useState(0);
   useEffect(() => {
@@ -52,15 +55,23 @@ export default function HomeScreen() {
   // Journal pages live in Notes → Today, not in the Home grid.
   const open = useMemo(() => (cards ?? []).filter(c => isActive(c) && !c.journalDate), [cards]);
   const home = !q.trim() && filter === 'all';
-  const prio = useMemo(() => todayPriorities(cards ?? [], today()), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
-  // This month's real spends (not investments), for the "Open in Money" row.
-  const spends = useMemo(() => {
-    const s = monthSpend(cards ?? [], today());
-    return { count: s.count, total: s.total };
-  }, [cards, iso]);
+  const salary = settings.salaryAmount ?? 0;
+  const flow = useMemo(() => cashFlow(cards ?? [], salary, settings.salaryDay, today()), [cards, salary, settings.salaryDay, iso]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Bills due before salary get their own list (with Pay), so priorities skip them. Three of each.
+  const dueIds = useMemo(() => new Set(flow.bills.slice(0, 3).map(b => b.card.id)), [flow]);
+  const prio = useMemo(() => {
+    const all = todayPriorities(cards ?? [], today(), 99);
+    const rest = all.items.filter(c => !dueIds.has(c.id));
+    return { items: rest.slice(0, 3), more: Math.max(0, rest.length - 3) };
+  }, [cards, iso, dueIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The last three real spends (not investments, not card-bill payments).
+  const recent = useMemo(() => (cards ?? [])
+    .filter(c => isSpend(c) && !!c.date && c.date <= iso)
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.createdAt - a.createdAt)
+    .slice(0, 3), [cards, iso]);
   const shown = useMemo(() => {
     const query = q.trim();
-    const inStrip = new Set(prio.items.map(c => c.id));
+    const inStrip = new Set([...prio.items.map(c => c.id), ...dueIds]);
     return open
       .filter(c => filter === 'all' || c.type === FILTER_TYPE[filter])
       // On All with no search: spends live in Money, and today's priorities are already in the strip above.
@@ -73,11 +84,11 @@ export default function HomeScreen() {
       })
       // Your order is the ONLY order (spec §7): due dates, penalties and salary side never move cards.
       .sort(byRank);
-  }, [open, filter, q, isHidden, prio]);
+  }, [open, filter, q, isHidden, prio, dueIds]);
   const pinned = shown.filter(c => c.pinned);
   const others = shown.filter(c => !c.pinned);
 
-  /** + tap: a blank note straight into the editor (spec §4). */
+  /** Note button: a blank note straight into the editor. */
   const quickNote = useCallback((el?: Element | null) => {
     setFanOpen(false);
     void app.createAndOpen({ type: 'note' }, el ?? document.querySelector('.home-fab'));
@@ -94,6 +105,12 @@ export default function HomeScreen() {
     app.go('money');
     window.dispatchEvent(new Event('hisaab:spend'));
   }, [app]);
+
+  /** + picker: Spend opens the spend sheet, the rest open a new card of that type. */
+  const pick = useCallback((t: FanPick) => {
+    setFanOpen(false);
+    if (t === 'spend') addSpend(); else newOfType(t);
+  }, [addSpend, newOfType]);
 
   const closeSheet = useCallback(() => setSheet(s => ({ ...s, open: false })), []);
   const closeFan = useCallback(() => setFanOpen(false), []);
@@ -132,7 +149,7 @@ export default function HomeScreen() {
           title="Your hisaab starts here"
           action={<button type="button" className="btn primary" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Write your first note</button>}
         >
-          Tap <b>Spend</b>, <b>Note</b>, <b>Task</b> or <b>Bill</b> above. Or hold + and choose <b>Type it</b> to write it the way you would say it: <b>bijli 2400 15th</b>.
+          Tap + or try <b>bijli 2400 15th</b>.
         </EmptyState>
       );
     } else if (!shown.length && home) {
@@ -142,7 +159,7 @@ export default function HomeScreen() {
           title="All clear"
           action={<button type="button" className="btn primary" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Write a note</button>}
         >
-          Your spends are in Money. Use the buttons above to add a spend, note, task or bill.
+          Spends live in Money.
         </EmptyState>
       );
     } else if (!shown.length) {
@@ -191,22 +208,18 @@ export default function HomeScreen() {
         </div>
       </header>
 
+      {cards !== undefined && open.length > 0 && home && <TodayHero cards={cards} settings={settings} flow={flow} />}
       {cards !== undefined && home && (
-        <div className="home-quick" role="group" aria-label="Add something">
-          <button type="button" className="btn primary" onClick={addSpend}><Plus size={18} aria-hidden="true" />Spend</button>
-          <button type="button" className="btn" onClick={e => quickNote(e.currentTarget)}><Plus size={18} aria-hidden="true" />Note</button>
-          <button type="button" className="btn" onClick={() => newOfType('task')}><Plus size={18} aria-hidden="true" />Task</button>
-          <button type="button" className="btn" onClick={() => newOfType('bill')}><Plus size={18} aria-hidden="true" />Bill</button>
+        <div className="home-quick" role="group" aria-label="Add">
+          <button type="button" className="hq is-main" onClick={addSpend}><IndianRupee size={18} aria-hidden="true" />Spend</button>
+          <button type="button" className="hq" onClick={e => quickNote(e.currentTarget)}><StickyNote size={18} aria-hidden="true" />Note</button>
+          <button type="button" className="hq" onClick={() => newOfType('task')}><CheckSquare size={18} aria-hidden="true" />Task</button>
+          <button type="button" className="hq" onClick={() => newOfType('bill')}><Receipt size={18} aria-hidden="true" />Bill</button>
         </div>
       )}
+      {cards !== undefined && open.length > 0 && home && <DueList bills={flow.bills} />}
       {cards !== undefined && open.length > 0 && home && <TodayPriorities items={prio.items} more={prio.more} />}
-      {cards !== undefined && open.length > 0 && home && <TodayHero cards={cards} settings={settings} />}
-      {cards !== undefined && home && spends.count > 0 && (
-        <button type="button" className="home-spends num" onClick={() => { writePref('hisaab.money.tab', 'expenses'); app.go('money'); }}>
-          <span><b>{inr(spends.total)}</b> {SPENT_THIS_MONTH.toLowerCase()} · {spends.count} spend{spends.count === 1 ? '' : 's'}</span>
-          <em>Money <ChevronRight size={16} aria-hidden="true" /></em>
-        </button>
-      )}
+      {cards !== undefined && home && <RecentSpends spends={recent} />}
       {cards !== undefined && !q && filter === 'all' && <CloseDay cards={cards} />}
       {cards !== undefined && !q && filter === 'all' && <BackupNudge cardCount={cards.filter(c => c.status !== 'trashed').length} settings={settings} />}
 
@@ -214,8 +227,8 @@ export default function HomeScreen() {
         <div className="home-hint" role="note">
           <span>
             {isTouchDevice()
-              ? <>Swipe right to mark paid or done. Swipe left to delay {settings.delayDays === 1 ? 'a day' : 'a week'}, keep going to kill.</>
-              : <>Open a card and use its Done or Paid button. Dragging a card sideways with the mouse works too.</>}
+              ? <>Swipe right: done. Left: later {settings.delayDays === 1 ? '(1 day)' : '(1 week)'}.</>
+              : <>Open a card to mark it done.</>}
           </span>
           <button type="button" className="btn ghost" onClick={retireHint}>Got it</button>
         </div>
@@ -227,9 +240,8 @@ export default function HomeScreen() {
         <Fab
           fanOpen={fanOpen}
           active={fanOpen || sheet.open}
-          onTap={() => quickNote()}
-          onHold={() => setFanOpen(true)}
-          onPick={newOfType}
+          onOpen={() => setFanOpen(true)}
+          onPick={pick}
           onTypeIt={() => openSheet(null)}
           onCloseFan={closeFan}
         />

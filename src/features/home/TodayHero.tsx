@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Sprout } from 'lucide-react';
 import type { Card, Settings } from '../../lib/types';
-import { fmtDayMonth, inr, toISO, today, todayISO } from '../../lib/format';
+import { inr, today, todayISO } from '../../lib/format';
 import { useCountUp } from '../../lib/hooks';
-import { cashFlow } from '../money/cashflow';
+import type { CashFlow } from '../money/cashflow';
 import { spendingInsights } from '../money/insights';
 import { linePath, moneyLine } from '../../ui/money-line';
-import { SPENT_THIS_MONTH, monthSpend } from '../../lib/logic';
-
-function greeting(h: number): string {
-  if (h < 5) return 'Up late';
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
+import { monthSpend } from '../../lib/logic';
 
 /**
- * The top of Home: one clear answer ("how much can I spend today?"), this salary cycle drawn as an
- * ink line that writes itself once, and what is due before the next salary. Tapping opens Money.
+ * The top of Home answers one question: how much can I spend today? One big number, the money left
+ * till salary, this cycle drawn as an ink line, and small chips (spent this month, a nudge).
+ * Tapping opens Money.
  */
-export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settings }) {
+export function TodayHero({ cards, settings, flow }: { cards: Card[]; settings: Settings; flow: CashFlow }) {
   // Re-render when the app comes back to the front, so an app left open overnight shows the new day.
   const [, wake] = useState(0);
   useEffect(() => {
@@ -30,38 +24,31 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
   const iso = todayISO();
   const ref = today();
   const salary = settings.salaryAmount ?? 0;
-  const flow = useMemo(() => cashFlow(cards, salary, settings.salaryDay, ref), [cards, salary, settings.salaryDay, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   const line = useMemo(() => moneyLine(cards, salary || undefined, settings.salaryDay, ref), [cards, salary, settings.salaryDay, iso]); // eslint-disable-line react-hooks/exhaustive-deps
   const { d, lastX, lastY } = useMemo(() => linePath(line, 1000, 120, 14), [line]);
-
   const tip = useMemo(() => spendingInsights(cards, ref).find(i => i.kind !== 'bills'), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
-  // What you spent this month leads, then today. Investments (SIP, MF, FD…) are never "spent".
-  const spent = useMemo(() => {
-    const s = monthSpend(cards, ref);
-    return { day: s.today, month: s.total, count: s.todayCount, invested: s.invested };
-  }, [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
-  const big = useCountUp(spent.month, 800);
+  // Investments (SIP, MF, FD…) are never "spent".
+  const month = useMemo(() => monthSpend(cards, ref), [cards, iso]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const over = salary > 0 && flow.overBy > 0;
+  // With a salary: safe to spend today. Without one: what this month cost so far.
+  const target = !salary ? month.total : over ? flow.overBy : flow.safeToday;
+  const big = useCountUp(target, 800);
   const days = flow.cycle.daysLeft;
-  const name = settings.userName?.split(' ')[0];
+  const dayWord = days === 1 ? '1 day' : `${days} days`;
 
   return (
-    <a className={`hero ${flow.overBy ? 'is-over' : ''}`} href="#money" aria-label="Open Money">
+    <a className={`hero ${over ? 'is-over' : ''}`} href="#money" aria-label="Open Money">
       <div className="hero-top">
-        <span>{greeting(new Date().getHours())}{name ? `, ${name}` : ''}</span>
+        <span className="hero-k">{!salary ? 'Spent this month' : over ? 'Over budget by' : 'Safe to spend today'}</span>
         <span className="hero-date">{ref.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
       </div>
-
-      <div className="hero-k">{SPENT_THIS_MONTH}</div>
       <div className="hero-big num" aria-live="off">{inr(big)}</div>
       <p className="hero-sub num">
-        {spent.count
-          ? <><b>{inr(spent.day)}</b> today · {spent.count} spend{spent.count === 1 ? '' : 's'}</>
-          : 'Nothing yet today'}
-        {salary > 0 && (flow.overBy
-          ? <> · <span className="hero-over">over by {inr(flow.overBy)}</span></>
-          : <> · <span className="hero-safe">{inr(flow.safeToday)} safe today</span></>)}
+        {salary
+          ? <><b>{inr(Math.max(0, flow.left))}</b> left till salary · {dayWord}</>
+          : <span className="hero-set">Set salary for daily limit <ArrowRight size={14} aria-hidden="true" /></span>}
       </p>
-      {spent.invested > 0 && <p className="hero-invested num">Invested this month <b>{inr(spent.invested)}</b></p>}
 
       <div className="hero-line" aria-hidden="true">
         <svg viewBox="0 0 1000 120" preserveAspectRatio="none">
@@ -71,24 +58,12 @@ export function TodayHero({ cards, settings }: { cards: Card[]; settings: Settin
         <span className="hl-dot" style={{ left: `${(lastX / 1000) * 100}%`, top: `${(lastY / 120) * 100}%` }} />
       </div>
 
-      <div className="hero-stats">
-        <div>
-          <small>Before salary</small>
-          <b className="num">{inr(flow.billsTotal)}</b>
-          <em>{flow.bills.length} bill{flow.bills.length === 1 ? '' : 's'} due</em>
-        </div>
-        <div>
-          <small>{salary ? 'Left this cycle' : 'Salary'}</small>
-          {salary ? <b className="num">{inr(Math.max(0, flow.left))}</b> : <b className="hero-set">Set it <ArrowRight size={14} aria-hidden="true" /></b>}
-          <em>{salary ? 'after bills' : 'to see daily limit'}</em>
-        </div>
-        <div>
-          <small>Next salary</small>
-          <b className="num">{days === 1 ? 'Tomorrow' : `${days} days`}</b>
-          <em>{fmtDayMonth(flow.cycle.end)}</em>
-        </div>
+      <div className="hero-chips num">
+        {salary > 0 && <span className="hero-chip"><b>{inr(month.total)}</b> spent this month</span>}
+        {month.today > 0 && <span className="hero-chip"><b>{inr(month.today)}</b> today</span>}
+        {month.invested > 0 && <span className="hero-chip"><Sprout size={13} aria-hidden="true" /><b>{inr(month.invested)}</b> invested</span>}
+        {tip && <span className="hero-chip is-tip" title={tip.text}><Sparkles size={13} aria-hidden="true" />{tip.short}</span>}
       </div>
-      {tip && <p className="hero-tip"><Sparkles size={14} aria-hidden="true" /> {tip.text}</p>}
     </a>
   );
 }

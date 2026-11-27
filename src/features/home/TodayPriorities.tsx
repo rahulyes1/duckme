@@ -90,7 +90,7 @@ export function TodayPriorities({ items, more }: { items: Card[]; more: number }
     <section className="tp" aria-labelledby="tp-h">
       <div className="tp-head">
         <h2 id="tp-h"><Target size={18} aria-hidden="true" /> Today's priorities</h2>
-        <a className="tp-link" href="#plan">Open Priorities <ArrowRight size={16} aria-hidden="true" /></a>
+        <a className="tp-link" href="#plan" aria-label="Open Priorities">All <ArrowRight size={16} aria-hidden="true" /></a>
       </div>
       {items.length ? (
         <motion.ul className="tp-list" layout={!reduce}>
@@ -104,7 +104,7 @@ export function TodayPriorities({ items, more }: { items: Card[]; more: number }
           <a className="tp-link" href="#plan">Plan your day <ArrowRight size={16} aria-hidden="true" /></a>
         </p>
       )}
-      {more > 0 && <a className="tp-more" href="#plan">+{more} more in Priorities</a>}
+      {more > 0 && <a className="tp-more" href="#plan">+{more} more</a>}
     </section>
   );
 }
