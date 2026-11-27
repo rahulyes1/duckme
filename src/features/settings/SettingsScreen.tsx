@@ -13,6 +13,7 @@ import { sha256, todayISO } from '../../lib/format';
 import { removeSampleData, SAMPLE_LABEL } from '../../lib/seed';
 import type { Card, Settings } from '../../lib/types';
 import { useInstallPrompt } from './pwa';
+import { Switch } from '../../ui/bits';
 import './settings.css';
 import AccountSection from './AccountSection';
 import RemindersSection from './RemindersSection';
@@ -483,6 +484,11 @@ export default function SettingsScreen() {
         <div className="field">
           <span className="label" id="theme-lbl">Theme</span>
           <ThemePicker value={settings.theme} />
+        </div>
+        <div className="field">
+          <Switch checked={settings.backgroundLife !== false} label="Background life"
+            onChange={v => saveSettings({ backgroundLife: v })} />
+          <span className="help">Gentle birds, kite, balloon and fireflies behind the page</span>
         </div>
         <button type="button" className="set-link" onClick={() => go('money')}>
           Set monthly budgets in Money <ArrowRight size={18} aria-hidden="true" />

@@ -225,6 +225,8 @@ export interface Settings {
   /** Category and pay mode of the last quick expense, preselected next time. */
   lastExpenseCategory?: string;
   lastExpenseMode?: string;
+  /** Gentle line-art birds, kite, balloon and fireflies behind the page. undefined = on. */
+  backgroundLife?: boolean;
 }
 
 export interface UdhaarEntry { id: string; name: string; dir: 'lent' | 'borrowed'; amount: number; note?: string; /** YYYY-MM-DD */ date: string; settled?: boolean; settledAt?: number; createdAt: number }
