@@ -220,6 +220,9 @@ export interface Settings {
   weeklyAllowance?: number;
   /** Last time "Backup to file" finished (ms). Drives the Home backup nudge. */
   lastBackupAt?: number;
+  /** Category and pay mode of the last quick expense, preselected next time. */
+  lastExpenseCategory?: string;
+  lastExpenseMode?: string;
 }
 
 export interface UdhaarEntry { id: string; name: string; dir: 'lent' | 'borrowed'; amount: number; note?: string; /** YYYY-MM-DD */ date: string; settled?: boolean; settledAt?: number; createdAt: number }

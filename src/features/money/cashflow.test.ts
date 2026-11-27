@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newCard } from '../../lib/actions';
 import type { Card } from '../../lib/types';
 import {
-  budgetCrossing, budgetStatus, bucketByDay, cashFlow, dueItemsInRange, filterExpenses, groupByDay, monthGrid, padDisplay, padPress,
+  budgetCrossing, budgetStatus, bucketByDay, cashFlow, dueItemsInRange, filterExpenses, groupByDay, monthGrid, padDisplay, padEval, padHasOp, padPress,
   padValue, quickCategories, safeToSpend, salaryCycle, salaryDate, spentByCategory, toggleFav, usedCategories,
 } from './cashflow';
 
@@ -227,5 +227,64 @@ describe('number pad', () => {
     expect(padDisplay('125000')).toBe('1,25,000');
     expect(padDisplay('1250.')).toBe('1,250.');
     expect(padDisplay('1250.5')).toBe('1,250.5');
+  });
+});
+
+describe('number pad sums', () => {
+  const type = (keys: string[]) => keys.reduce(padPress, '');
+  const typeStr = (s: string) => type(s.split(''));
+  it('adds up', () => {
+    expect(padEval('300+200+50')).toBe(550);
+    expect(padValue(typeStr('300+200+50'))).toBe(550);
+    expect(padEval('300+')).toBe(300);
+    expect(padEval('1.5+2.25')).toBe(3.75);
+    expect(padEval('12.')).toBe(12);
+  });
+  it('operator after a dot drops the dot', () => expect(type(['1', '2', '.', '+'])).toBe('12+'));
+  it('one dot per number', () => {
+    expect(typeStr('1.5+2..25')).toBe('1.5+2.25');
+    expect(typeStr('1.5+.5')).toBe('1.5+0.5');
+  });
+  it('max 2 decimals per number', () => {
+    expect(typeStr('1.259+3.333')).toBe('1.25+3.33');
+    expect(padEval('0.1+0.2')).toBe(0.3);
+  });
+  it('00 at the start of a number does nothing', () => {
+    expect(type(['5', '+', '00'])).toBe('5+');
+    expect(type(['5', '+', '0', '0', '7'])).toBe('5+7');
+  });
+  it('operator on empty does nothing', () => {
+    expect(padPress('', '+')).toBe('');
+    expect(padPress('', '-')).toBe('');
+  });
+  it('never negative', () => {
+    expect(padEval('100-300')).toBe(0);
+    expect(padEval('300-100')).toBe(200);
+  });
+  it('operator after operator swaps it', () => {
+    expect(type(['5', '+', '+'])).toBe('5+');
+    expect(type(['5', '+', '-'])).toBe('5-');
+    expect(type(['5', '-', '+'])).toBe('5+');
+  });
+  it('caps each number at 8 digits and the whole sum at 40 chars', () => {
+    expect(type([...Array(10).fill('9'), '+', ...Array(10).fill('1')])).toBe('99999999+11111111');
+    const long = type(Array(30).fill(['9', '+']).flat());
+    expect(long.length).toBeLessThanOrEqual(40);
+    expect(padPress('9+'.repeat(20), '5')).toBe('9+'.repeat(20));
+  });
+  it('= collapses to the total', () => {
+    expect(padPress('300+200+50', '=')).toBe('550');
+    expect(padPress('1.5+2.25', '=')).toBe('3.75');
+    expect(padPress('100-300', '=')).toBe('');
+    expect(padPress('300', '=')).toBe('300');
+  });
+  it('knows a sum', () => {
+    expect(padHasOp('300')).toBe(false);
+    expect(padHasOp('300+')).toBe(true);
+  });
+  it('display', () => {
+    expect(padDisplay('125000+50')).toBe('1,25,000 + 50');
+    expect(padDisplay('500-20.5')).toBe('500 − 20.5');
+    expect(padDisplay('300+')).toBe('300 + ');
   });
 });

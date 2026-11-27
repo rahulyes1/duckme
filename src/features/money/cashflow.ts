@@ -2,6 +2,7 @@
  * Pure money rules for the Money tab: salary cycle, left-to-spend, safe-to-spend, budget status,
  * calendar buckets and the quick-entry number pad. No database, no UI — unit tested in cashflow.test.ts.
  */
+import { evalExpr } from '../notes/calc';
 import type { Card } from '../../lib/types';
 import { EXPENSE_CATEGORIES, isActive } from '../../lib/types';
 import { addMonths, daysBetween, fromISO, toISO } from '../../lib/format';
@@ -292,41 +293,82 @@ export function groupByDay(list: Card[]): { date: string; items: Card[]; total: 
 
 /* ---------- number pad ---------- */
 
-const MAX_INT_DIGITS = 8; // up to ₹9,99,99,999
+const MAX_INT_DIGITS = 8; // up to ₹9,99,99,999 per number
+const MAX_LEN = 40;
+const isOp = (c: string | undefined) => c === '+' || c === '-';
 
-/** Applies one key ("0"–"9", "00", ".", "back") to the typed amount string. */
+/** Index where the number being typed starts (just after the last + or −). */
+const numStart = (s: string) => Math.max(s.lastIndexOf('+'), s.lastIndexOf('-')) + 1;
+
+/**
+ * Applies one key ("0"–"9", "00", ".", "+", "-", "=", "back") to the typed amount string.
+ * Digit rules apply to the number being typed (after the last operator).
+ * "=" collapses a sum like "300+200+50" to its total.
+ */
 export function padPress(cur: string, key: string): string {
   if (key === 'back') return cur.slice(0, -1);
+  if (key === '=') {
+    if (!padHasOp(cur)) return cur;
+    const v = padEval(cur);
+    return v > 0 ? String(v) : '';
+  }
+  if (isOp(key)) {
+    if (!cur) return cur;
+    let base = cur;
+    if (isOp(base[base.length - 1]) || base.endsWith('.')) base = base.slice(0, -1);
+    if (!base) return '';
+    if (isOp(base[base.length - 1])) base = base.slice(0, -1); // "12+." can't happen, but stay safe
+    return base.length + 1 > MAX_LEN ? cur : base + key;
+  }
+  const at = numStart(cur);
+  const head = cur.slice(0, at);
+  let num = cur.slice(at);
   if (key === '.') {
-    if (cur.includes('.')) return cur;
-    return (cur || '0') + '.';
+    if (num.includes('.')) return cur;
+    num = (num || '0') + '.';
+    return head.length + num.length > MAX_LEN ? cur : head + num;
   }
   if (!/^\d{1,2}$/.test(key)) return cur;
-  let out = cur;
   for (const ch of key) {
-    const dot = out.indexOf('.');
+    if (head.length + num.length >= MAX_LEN && !(num === '0' && ch !== '0')) break;
+    const dot = num.indexOf('.');
     if (dot >= 0) {
-      if (out.length - dot - 1 >= 2) break;
-      out += ch;
-    } else if (out === '0' || out === '') {
-      out = ch === '0' && key === '00' && out === '' ? '' : ch;
+      if (num.length - dot - 1 >= 2) break;
+      num += ch;
+    } else if (num === '0' || num === '') {
+      num = ch === '0' && key === '00' && num === '' ? '' : ch;
     } else {
-      if (out.length >= MAX_INT_DIGITS) break;
-      out += ch;
+      if (num.length >= MAX_INT_DIGITS) break;
+      num += ch;
     }
   }
-  return out;
+  return head + num;
 }
 
-export const padValue = (s: string): number => {
-  const n = parseFloat(s);
-  return Number.isFinite(n) ? n : 0;
-};
+/** True when the typed amount is a sum ("300+200"). */
+export const padHasOp = (s: string): boolean => /[+-]/.test(s);
 
-/** "1250.5" → "1,250.5" (Indian grouping, keeps what was typed after the dot). */
-export function padDisplay(s: string): string {
-  if (!s) return '0';
-  const [i, d] = s.split('.');
+/** Total of the typed amount: "300+200+50" → 550. Never negative; 0 when it can't be read. Rounded to paise. */
+export function padEval(s: string): number {
+  let t = s;
+  if (isOp(t[t.length - 1]) || t.endsWith('.')) t = t.slice(0, -1);
+  if (!t) return 0;
+  const v = evalExpr(t);
+  if (v === null || !Number.isFinite(v) || v < 0) return 0;
+  return Math.round(v * 100) / 100;
+}
+
+export const padValue = padEval;
+
+function fmtNum(n: string): string {
+  if (!n) return '';
+  const [i, d] = n.split('.');
   const int = Number(i || '0').toLocaleString('en-IN');
   return d === undefined ? int : `${int}.${d}`;
+}
+
+/** "125000+50" → "1,25,000 + 50" (Indian grouping per number, keeps what was typed after a dot). */
+export function padDisplay(s: string): string {
+  if (!s) return '0';
+  return s.split(/([+-])/).map(p => (p === '+' ? ' + ' : p === '-' ? ' − ' : fmtNum(p))).join('');
 }
