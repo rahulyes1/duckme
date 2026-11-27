@@ -94,6 +94,27 @@ export const chipTitle = (chip: SmartChip): string => {
   return (t || chip.match).slice(0, 80);
 };
 
+/**
+ * A checklist with several priced lines gets ONE "Add total ₹X as expense" chip instead of one per line.
+ * With only one priced line the per-line chip stays. Bills/tasks and non-checklist chips are untouched.
+ */
+export function mergeChecklistChips(chips: SmartChip[], checklistLines: string[], noteTitle: string): SmartChip[] {
+  const lines = new Set(checklistLines.map(l => l.trim()).filter(Boolean));
+  const isItem = (c: SmartChip) => c.suggest === 'expense' && c.date === null && c.amount !== null && lines.has(c.match);
+  const items = chips.filter(isItem);
+  if (items.length < 2) return chips;
+  const sum = Math.round(items.reduce((a, c) => a + (c.amount ?? 0), 0) * 100) / 100;
+  const name = noteTitle.replace(/[\d₹]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40) || 'Checklist';
+  const merged: SmartChip = { match: `${name} total ${sum}`, amount: sum, date: null, suggest: 'expense', total: true };
+  const out: SmartChip[] = [];
+  let placed = false;
+  for (const c of chips) {
+    if (!isItem(c)) { out.push(c); continue; }
+    if (!placed) { out.push(merged); placed = true; }
+  }
+  return out;
+}
+
 export const CHIP_ACTION: Record<SmartChip['suggest'], string> = {
   bill: 'Make bill', expense: 'Add expense', task: 'Make task',
 };

@@ -30,7 +30,7 @@ import { PlanRow } from './PlanRow';
 import { hasMarkup } from './md-lite';
 import { calcLineTexts } from './calc';
 import {
-  CHIP_ACTION, chipCard, chipLabel, chipTitle, convertFill, deleteForeverWithUndo, emptyItem, itemsToText, readImages,
+  CHIP_ACTION, mergeChecklistChips, chipCard, chipLabel, chipTitle, convertFill, deleteForeverWithUndo, emptyItem, itemsToText, readImages,
   relTime, textToItems,
 } from './notes-lib';
 import { isActive } from '../../lib/types';
@@ -175,8 +175,9 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   // Calc lines ("Rent 18000 + 2500 =") are sums, not bills: no ₹18,000 chip for them.
   const chips = useMemo(() => {
     const calc = calcLineTexts(scanText);
-    return detectChips(scanText).filter(c => !calc.has(c.match));
-  }, [scanText]);
+    const found = detectChips(scanText).filter(c => !calc.has(c.match));
+    return mergeChecklistChips(found, (checklist ?? []).map(i => i.text), title);
+  }, [scanText, checklist, title]);
   const words = useMemo(() => countWords(scanText), [scanText]);
   const total = checklist ? checklistTotal({ ...card, checklist }) : null;
 
@@ -238,7 +239,7 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
   const togglePin = () => save({ pinned: !card.pinned });
 
   const toggleLock = async () => {
-    if (card.locked) { await save({ locked: false }); app.toast('Lock removed'); return; }
+    if (card.locked) { await save({ locked: false }); app.toast('Lock removed', async () => { await save({ locked: true }); }); return; }
     if (!settings.pinHash) { setSheet('pin'); return; }
     app.unlock(id);
     await save({ locked: true });
@@ -464,8 +465,8 @@ function EditorBody({ card, onClose }: { card: Card; onClose: () => void }) {
                 >
                   <CI size={16} aria-hidden="true" />
                   <span>
-                    {lbl && <span className="num">{lbl} </span>}
-                    <b>{done ? `${KIND_LABEL[chip.suggest]} made, open` : `→ ${CHIP_ACTION[chip.suggest]}`}</b>
+                    {lbl && !chip.total && <span className="num">{lbl} </span>}
+                    <b>{done ? `${KIND_LABEL[chip.suggest]} made, open` : chip.total ? `→ Add total ${inr(chip.amount ?? 0)} as expense` : `→ ${CHIP_ACTION[chip.suggest]}`}</b>
                   </span>
                 </button>
               );

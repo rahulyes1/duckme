@@ -26,6 +26,8 @@ const PAID_WORDS = ['paid', 'spent', 'kharcha', 'diya', 'diye', 'bhara', 'bhare'
 const TITLE_DROP = ['due', 'paid', 'monthly', 'bhara', 'bhare', 'bhari'];
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const FILLER = ['rs', 'rs.', '₹', 'rupay', 'rupaye', 'rupees', 'ka', 'ki', 'ke', 'ko', 'pe', 'par', 'on', 'by', 'for', 'tak', 'se'];
+/** "flat 302", "locker no. 42", "room 5": the number after these is an identifier, not money. */
+const ID_WORDS = ['no', 'number', 'num', 'nos', 'flat', 'room', 'house', 'plot', 'block', 'floor', 'gate', 'shop', 'seat', 'roll', 'locker', 'bay', 'unit', 'apt', 'apartment', 'tower', 'wing', 'bed', 'table', 'platform', 'coach', 'pnr', 'otp', 'id'];
 const DATE_WORDS = ['tareekh', 'tarikh', 'tarik', 'date'];
 const UNIT_WORDS = ['month', 'months', 'mahine', 'mahina', 'day', 'days', 'din', 'year', 'years', 'saal', 'week', 'weeks', 'hour', 'hours', 'hrs', 'min', 'mins', 'minutes', 'baje', 'am', 'pm', 'kg', 'g', 'gm', 'km', 'l', 'litre', 'litres', 'pcs', 'pieces', 'items', 'people', 'log', 'times', 'baar', '%', 'percent'];
 const SCALE_WORDS: Record<string, number> = { k: 1e3, thousand: 1e3, hazaar: 1e3, hazar: 1e3, lakh: 1e5, lac: 1e5, lakhs: 1e5, cr: 1e7, crore: 1e7, crores: 1e7 };
@@ -114,7 +116,9 @@ export function parse(text: string, ref: Date = today()): Parsed {
       date = dayToDate(+m[1], +m[2] - 1, ref);
       continue;
     }
+    if (/^#\d+$/.test(raw)) { words.push(raw); continue; }
     let amt = parseAmountToken(raw);
+    if (amt !== null && !/^(₹|rs)/i.test(raw) && ID_WORDS.includes(norm(toks[i - 1] ?? ''))) { words.push(raw); continue; }
     if (amt !== null) {
       const marked = /^(₹|rs)/i.test(raw);
       // "12 months", "3 days", "2 kg" are counts, not money.
@@ -164,6 +168,8 @@ export interface SmartChip {
   amount: number | null;
   date: string | null;
   suggest: 'bill' | 'expense' | 'task';
+  /** True for one chip that stands for a whole checklist's total. */
+  total?: boolean;
 }
 
 /**
@@ -191,6 +197,8 @@ export function detectChips(text: string, ref: Date = today()): SmartChip[] {
 
 /** Sum of ₹ amounts found in checklist lines (self-totalling lists). */
 export function lineAmount(text: string): number | null {
+  // "Locker no. 42", "flat 302", "#7" are identifiers, not prices.
+  text = text.replace(new RegExp(`\\b(?:${ID_WORDS.join('|')})\\.?\\s*#?\\d+`, 'gi'), ' ').replace(/#\d+/g, ' ');
   const m = text.replace(/,(?=\d{2,3}\b|\d{2,3},)/g, '').match(/(?:₹|rs\.?\s?)\s?(\d+(?:\.\d+)?)(k|l|lakh)?|\b(\d+(?:\.\d+)?)(k|l|lakh)\b|\b(\d{2,}(?:\.\d+)?)\b/i);
   if (!m) return null;
   const num = m[1] ?? m[3] ?? m[5];

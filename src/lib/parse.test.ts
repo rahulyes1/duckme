@@ -200,3 +200,21 @@ describe('numbers that are not money', () => {
     expect(parse('credit card bill 18,450 due 2 dec', REF)).toMatchObject({ type: 'bill', title: 'Credit card bill', date: '2026-12-02' });
   });
 });
+
+describe('identifiers are not money', () => {
+  it.each(['Locker no. 42', 'flat 302', 'room 5', 'no. 7', '#42', 'Locker no 42 key lena'])('%s has no amount', t => {
+    expect(parse(t, REF).amount).toBeNull();
+    expect(parse(t, REF).type).not.toBe('expense');
+    expect(detectChips(t, REF)).toEqual([]);
+  });
+  it('still finds the real amount next to an identifier', () => {
+    expect(parse('flat 302 rent 18000', REF).amount).toBe(18000);
+    expect(parse('chai ₹20 room 5', REF).amount).toBe(20);
+  });
+  it('lineAmount ignores identifiers', () => {
+    expect(lineAmount('Locker no. 42')).toBeNull();
+    expect(lineAmount('flat 302')).toBeNull();
+    expect(lineAmount('#42')).toBeNull();
+    expect(lineAmount('Locker no. 42 rent 500')).toBe(500);
+  });
+});

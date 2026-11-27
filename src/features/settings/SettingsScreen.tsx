@@ -182,7 +182,10 @@ async function renameLabel(from: string, to: string, settings: Settings) {
   });
 }
 
-async function deleteLabel(name: string, settings: Settings) {
+/** Deletes a label everywhere. Returns an undo that puts it back on the same cards. */
+async function deleteLabel(name: string, settings: Settings): Promise<() => Promise<void>> {
+  const before = settings.labels;
+  const ids = (await db.cards.where('labels').equals(name).primaryKeys()) as string[];
   await db.transaction('rw', db.cards, db.settings, async () => {
     await db.cards.where('labels').equals(name).modify((c: Card) => {
       c.labels = c.labels.filter(l => l !== name);
@@ -190,6 +193,17 @@ async function deleteLabel(name: string, settings: Settings) {
     });
     await saveSettings({ labels: settings.labels.filter(l => l !== name) });
   });
+  return async () => {
+    await db.transaction('rw', db.cards, db.settings, async () => {
+      for (const id of ids) {
+        await db.cards.where('id').equals(id).modify((c: Card) => {
+          if (!c.labels.includes(name)) c.labels = [...c.labels, name];
+          c.updatedAt = Date.now();
+        });
+      }
+      await saveSettings({ labels: before });
+    });
+  };
 }
 
 /** Labels the app itself relies on: renaming or deleting them would turn templates/journal pages into plain notes. */
@@ -232,7 +246,7 @@ function LabelRow({ name, count, settings, all }: { name: string; count: number;
       <li className="set-lbl set-confirm" role="group" aria-label={`Delete label ${name}`}>
         <span className="set-text">Delete “{name}”? It is removed from {count} {count === 1 ? 'card' : 'cards'}. The cards stay.</span>
         <div className="set-btnrow">
-          <button type="button" className="btn danger" onClick={async () => { await deleteLabel(name, settings); toast(`Label “${name}” deleted`); }}>Delete label</button>
+          <button type="button" className="btn danger" onClick={async () => { const undo = await deleteLabel(name, settings); toast(`Label “${name}” deleted`, undo); }}>Delete label</button>
           <button type="button" className="btn ghost" onClick={() => setMode(null)}>Cancel</button>
         </div>
       </li>
