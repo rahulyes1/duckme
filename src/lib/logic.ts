@@ -69,14 +69,27 @@ export function salarySplit(cards: Card[], salaryDay: number, ref: Date): Salary
 const counts = (c: Pick<Card, 'type' | 'status'>) => c.type === 'expense' && c.status !== 'trashed' && c.status !== 'killed';
 const looksInvested = (c: Pick<Card, 'category' | 'title'>) => c.category === 'Investment' || !!investKindFromText(c.title);
 
-/** A real spend: a live expense that is not money put into an investment (SIP, MF, FD, PPF…). */
-export function isSpend(c: Pick<Card, 'type' | 'status' | 'category' | 'title'>): boolean {
-  return counts(c) && !looksInvested(c);
+/**
+ * A real spend: a live expense that is not money put into an investment (SIP, MF, FD, PPF…) and
+ * not a credit-card bill payment (the card spends were already counted when you made them).
+ */
+export function isSpend(c: Pick<Card, 'type' | 'status' | 'category' | 'title'> & { cardPayment?: boolean }): boolean {
+  return counts(c) && !c.cardPayment && !looksInvested(c);
+}
+
+/** A live expense line that pays off a credit-card bill. Cash leaves the account, but it is not a spend. */
+export function isCardPayment(c: Pick<Card, 'type' | 'status'> & { cardPayment?: boolean }): boolean {
+  return c.type === 'expense' && c.status !== 'trashed' && c.status !== 'killed' && !!c.cardPayment;
+}
+
+/** A credit-card bill: marked "last safe day" (card style), or titled like "Credit card" / "Card bill". */
+export function isCardBill(c: Pick<Card, 'type' | 'title'> & { lastSafe?: boolean }): boolean {
+  return c.type === 'bill' && (c.lastSafe === true || /credit ?card|card bill/i.test(c.title ?? ''));
 }
 
 /** A live expense line that records money invested (category Investment, or a title like "SIP 5000"). */
-export function isInvestLog(c: Pick<Card, 'type' | 'status' | 'category' | 'title'>): boolean {
-  return counts(c) && looksInvested(c);
+export function isInvestLog(c: Pick<Card, 'type' | 'status' | 'category' | 'title'> & { cardPayment?: boolean }): boolean {
+  return counts(c) && !c.cardPayment && looksInvested(c);
 }
 
 /** Spend totals for one month ("YYYY-MM"), per category, biggest first. Trashed/killed expenses and investments don't count. */

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { parseBankSms } from './lib/capture';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { QuickSearch, openQuickSearch } from './ui/QuickSearch';
+import { CardPayHost } from './features/money/CardPaySheet';
 import { Search } from 'lucide-react';
 import { startReminderLoop } from './lib/notify';
 import { CalendarRange, Home, Settings2, StickyNote, Wallet } from 'lucide-react';
@@ -231,6 +232,7 @@ export default function App() {
         </AnimatePresence>
       </div>
       <QuickSearch />
+      <CardPayHost />
     </AppCtx.Provider>
   );
 }

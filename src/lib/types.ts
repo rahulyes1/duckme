@@ -118,6 +118,8 @@ export interface Card {
   category?: string;
   /** Payment mode for expenses: UPI, Card, Cash, Net banking, Auto-debit. */
   mode?: string;
+  /** Expense that pays off a credit-card bill: money moving to the card, not a new spend (the card spends already counted). */
+  cardPayment?: boolean;
 
   horizon: Horizon;
   /** The ONLY sort order for tasks and bills. Lower = higher priority. */
@@ -241,7 +243,8 @@ export const HORIZON_LABEL: Record<Horizon, string> = {
   week: 'This week', month: 'This month', year: 'This year', none: 'No horizon',
 };
 export const EXPENSE_CATEGORIES = [
-  'Food', 'Groceries', 'Travel', 'Fuel', 'Shopping', 'Bills', 'Rent', 'Staff', 'Health', 'Education', 'Entertainment', 'Family', 'Investment', 'Other',
+  'Food', 'Groceries', 'Travel', 'Fuel', 'Shopping', 'Bills', 'Rent', 'Staff', 'Health', 'Education', 'Entertainment', 'Family', 'Investment',
+  'EMI', 'Insurance', 'Recharge & OTT', 'Personal care', 'Gifts & festivals', 'Other',
 ] as const;
 export const PAY_MODES = ['UPI', 'Card', 'Cash', 'Net banking', 'Auto-debit'] as const;
 export const INVEST_KINDS: InvestKind[] = ['SIP', 'FD', 'RD', 'PPF', 'MF', 'Stock', 'Gold', 'NPS', 'Other'];

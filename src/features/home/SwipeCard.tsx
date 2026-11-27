@@ -3,7 +3,9 @@ import { Archive, CalendarClock, Check, X } from 'lucide-react';
 import type { Card, Settings } from '../../lib/types';
 import { CardTile } from '../../ui/CardTile';
 import { useApp } from '../../app-context';
-import { delay, kill, markDone, nextInstalment, payBill } from '../../lib/actions';
+import { delay, kill, markDone, nextInstalment, payBill, type PayOpts } from '../../lib/actions';
+import { askCardPayment } from '../money/CardPaySheet';
+import { isCardBill } from '../../lib/logic';
 import { investKindFromText } from '../../lib/capture';
 import { buzz, fmtDate, inr, prefersReducedMotion, salarySide, todayISO } from '../../lib/format';
 
@@ -115,12 +117,13 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
     }, T(200));
   };
 
-  const doRight = async (rect: DOMRect) => {
+  const doRight = async (rect: DOMRect, opts?: PayOpts) => {
     if (card.type === 'bill') {
       app.burst(rect);
       buzz([12, 40, 12]);
-      const { undo, nextDue } = await payBill(card.id);
-      const what = investKindFromText(card.title) ? 'Paid. Logged as investment.' : `Paid ${inr(card.amount)}. Logged as an expense.`;
+      const { undo, nextDue, expense } = await payBill(card.id, opts);
+      const what = investKindFromText(card.title) ? 'Paid. Logged as investment.'
+        : expense.cardPayment ? `Card bill paid ${inr(expense.amount)}. Not a new spend.` : `Paid ${inr(card.amount)}. Logged as an expense.`;
       app.toast(`${what}${nextDue ? ` Next bill due ${fmtDate(nextDue)}.` : ''}`, undo);
     } else if (sip) {
       const next = nextInstalment(card, todayISO());
@@ -160,7 +163,11 @@ export function SwipeCard({ card, settings, hidden, isNew, onSwiped }: Props) {
     if (z === 'right') {
       const rect = (mover.current ?? wrap.current!).getBoundingClientRect();
       if (repeats) { snapBack(); void doRight(rect); }
-      else flyOut(1, () => doRight(rect));
+      else if (isCardBill(card)) {
+        // Card bill: ask how much was paid first; the card stays put if you cancel.
+        snapBack();
+        void askCardPayment(card).then(opts => { if (opts) flyOut(1, () => doRight(rect, opts)); });
+      } else flyOut(1, () => doRight(rect));
     } else if (z === 'kill') {
       flyOut(-1, doKill);
     } else if (z === 'delay') {

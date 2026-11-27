@@ -56,10 +56,12 @@ export function parseAmount(raw: string): number | null {
 export const fmtPlain = (n: number | undefined): string =>
   n === undefined || n === null ? '' : n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
-export function paidMessage(bill: Card | undefined, nextDue: string | null): string {
+export function paidMessage(bill: Card | undefined, nextDue: string | null, expense?: Card): string {
   const what = bill?.title || 'Bill';
-  const amt = bill?.amount ? ` ${inr(bill.amount)}` : '';
-  return nextDue ? `${what} paid${amt}. Next bill due ${fmtDate(nextDue)}.` : `${what} paid${amt}.`;
+  const paid = expense?.amount ?? bill?.amount;
+  const amt = paid ? ` ${inr(paid)}` : '';
+  const card = expense?.cardPayment ? ' Card bill, not a new spend.' : '';
+  return nextDue ? `${what} paid${amt}.${card} Next bill due ${fmtDate(nextDue)}.` : `${what} paid${amt}.${card}`;
 }
 
 /** Last six months ending at `end` (oldest first). */

@@ -54,7 +54,8 @@ export function monthRecap(cards: Card[], salary: number, salaryDay: number, ref
   const spent = sum(now), prevSpent = sum(then);
   const a = byCat(now), b = byCat(then);
   const top = Object.entries(a).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([name, amount]) => ({ name, amount, prev: b[name] ?? 0 }));
-  const bills = now.filter(c => c.category === 'Bills');
+  // Card bill payments are transfers (cardPayment), never in `now`, so a card bill isn't counted on top of its spends.
+  const bills = now.filter(c => c.category === 'Bills' && !c.cardPayment);
   const days = Math.max(1, daysBetween(fromISO(start), fromISO(end)));
   const spentDays = new Set(now.map(c => c.date));
   const biggestCard = now.reduce<Card | null>((m, c) => (!m || (c.amount ?? 0) > (m.amount ?? 0) ? c : m), null);

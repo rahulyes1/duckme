@@ -41,6 +41,7 @@ export function PaperHero({ flow, onSpend, onEditSalary }: { flow: CashFlow; onS
         <div><span>{billsLabel}</span><b>{inr(flow.billsTotal + flow.sipsTotal)}</b></div>
         <div><span>Spent</span><b>{inr(flow.spent)}</b></div>
       </div>
+      {flow.onCard > 0 && <p className="pb-oncard num">On card {inr(flow.onCard)} · paid via card bill</p>}
       <button type="button" className="pb-spend" onClick={e => onSpend(e.currentTarget)}><Plus size={18} strokeWidth={2.6} aria-hidden="true" /> Add spend</button>
     </section>
   );

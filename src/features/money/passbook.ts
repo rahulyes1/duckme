@@ -7,7 +7,7 @@ import type { Card } from '../../lib/types';
 import { isActive } from '../../lib/types';
 import { coveredInstalments, salaryCycle } from './cashflow';
 import { isMonthly } from './money-util';
-import { isInvestLog, isSpend } from '../../lib/logic';
+import { isCardPayment, isInvestLog, isSpend } from '../../lib/logic';
 
 export interface PassLine {
   id: string;
@@ -26,7 +26,8 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
   const cyc = salaryCycle(salaryDay, ref);
   const spends = cards
     // Investment lines stay in the ledger (the money did leave the account), marked as invested, not spent.
-    .filter(c => (isSpend(c) || isInvestLog(c)) && c.date && c.date >= cyc.start && c.date < cyc.end && (c.amount ?? 0) > 0)
+    // Card bill payments stay too: cash left the account (a transfer to the card, not a spend).
+    .filter(c => (isSpend(c) || isInvestLog(c) || isCardPayment(c)) && c.date && c.date >= cyc.start && c.date < cyc.end && (c.amount ?? 0) > 0)
     .sort((a, b) => (a.date! < b.date! ? -1 : a.date! > b.date! ? 1 : a.createdAt - b.createdAt));
   const dues = cards
     .filter(c => c.type === 'bill' && isActive(c) && c.due && c.due < cyc.end && (c.amount ?? 0) > 0)
@@ -42,10 +43,13 @@ export function passbook(cards: Card[], salary: number, salaryDay: number, ref: 
   const asc: PassLine[] = [];
   if (has) asc.push({ id: `salary-${cyc.start}`, date: cyc.start, title: 'Salary', sub: 'Credited', amount: salary, balance: bal, kind: 'salary' });
   for (const c of spends) {
-    bal -= c.amount!;
+    // A spend on a credit card doesn't touch the account yet: it leaves via the card bill.
+    const onCard = isSpend(c) && c.mode === 'Card';
+    if (!onCard) bal -= c.amount!;
+    const what = isCardPayment(c) ? 'Card bill paid' : isSpend(c) ? c.category : 'Invested';
     asc.push({
       id: c.id, date: c.date!, title: c.title || c.category || 'Spend',
-      sub: [isSpend(c) ? c.category : 'Invested', c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
+      sub: [what, onCard ? 'Card · paid via card bill' : c.mode].filter(Boolean).join(' · '), amount: -c.amount!, balance: has ? bal : null, kind: 'spend', card: c,
     });
   }
   // Bills and SIP/RD instalments still due, soonest first, so the projected balance runs in date order.

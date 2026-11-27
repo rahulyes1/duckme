@@ -20,7 +20,8 @@ export function spendingInsights(cards: Card[], ref: Date): Insight[] {
   const sameDayLast = `${lastM}-${pad(Math.min(day, lastMonthDays))}`;
   const todayISO = toISO(ref);
 
-  const exp = cards.filter(c => isSpend(c) && c.date && (c.amount ?? 0) > 0);
+  // isSpend leaves out investments and credit-card bill payments (transfers, not spends).
+  const exp = cards.filter(c => isSpend(c) && !c.cardPayment && c.date && (c.amount ?? 0) > 0);
   const now = exp.filter(c => c.date!.startsWith(thisM) && c.date! <= todayISO);
   const then = exp.filter(c => c.date!.startsWith(lastM) && c.date! <= sameDayLast);
   const sum = (l: Card[]) => l.reduce((s, c) => s + (c.amount ?? 0), 0);

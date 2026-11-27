@@ -151,8 +151,8 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
         toast(`Saved as investment (${kind} ${inr(value)}), not a spend.`, undo);
         buzz(15);
         const safe = salary > 0;
-        const from = safe ? before.safeToday : before.spent;
-        const to = safe ? after.safeToday : after.spent;
+        const from = safe ? before.safeToday : before.spent + before.onCard;
+        const to = safe ? after.safeToday : after.spent + after.onCard;
         setShown(from);
         setSaved({ amount: value, category: 'Investment', date, from, to, safe });
         reset();
@@ -181,8 +181,8 @@ export default function QuickExpense({ open, onClose }: { open: boolean; onClose
       buzz(crossed ? [30, 60, 30] : 15);
 
       const safe = salary > 0;
-      const from = safe ? before.safeToday : before.spent;
-      const to = safe ? after.safeToday : after.spent;
+      const from = safe ? before.safeToday : before.spent + before.onCard;
+      const to = safe ? after.safeToday : after.spent + after.onCard;
       setShown(from);
       setSaved({ amount: value, category, date, from, to, safe });
       reset();

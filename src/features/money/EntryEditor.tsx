@@ -4,7 +4,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../../app-context';
-import { convert, duplicate, payBill, trash, updateCard } from '../../lib/actions';
+import { convert, duplicate, trash, updateCard } from '../../lib/actions';
+import { payBillAsking } from './CardPaySheet';
 import { db } from '../../lib/db';
 import { addDaysISO, fmtDate, fmtDateY, inr, nextSalary, salarySide, toISO } from '../../lib/format';
 import { useCard, useSettings } from '../../lib/hooks';
@@ -208,9 +209,10 @@ export default function EntryEditor({ id, onClose }: { id: string; onClose: () =
   const markPaid = async (el: HTMLElement) => {
     const rect = el.getBoundingClientRect();
     await flush();
-    const r = await payBill(id);
+    const r = await payBillAsking(c);
+    if (!r) return;
     burst(rect);
-    toast(paidMessage(c, r.nextDue), r.undo);
+    toast(paidMessage(c, r.nextDue, r.expense), r.undo);
     // The paid bill is now done; a repeating bill has a new card for the next due date.
     onClose();
   };

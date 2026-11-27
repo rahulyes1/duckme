@@ -17,16 +17,16 @@ describe('passbook', () => {
     base('Rent', { type: 'bill', due: '2026-12-05', amount: 18000 }), // after next salary: not in this cycle
   ];
 
-  it('salary first, spends debit, running balance oldest → newest', () => {
+  it('salary first, spends debit, running balance oldest → newest (card spends leave via the card bill)', () => {
     const { lines } = passbook(cards, 65000, 1, REF);
     expect(lines.map(l => [l.title, l.amount, l.balance, l.kind])).toEqual([
-      ['Card bill', -18450, 43210, 'due'],
-      ['Groceries', -1840, 61660, 'spend'],
-      ['Petrol', -1500, 63500, 'spend'],
+      ['Card bill', -18450, 44710, 'due'],
+      ['Groceries', -1840, 63160, 'spend'],
+      ['Petrol', -1500, 65000, 'spend'],
       ['Salary', 65000, 65000, 'salary'],
     ]);
     expect(lines[0].sub).toBe('Due · Late fee ₹900');
-    expect(lines[2].sub).toBe('Fuel · Card');
+    expect(lines[2].sub).toBe('Fuel · Card · paid via card bill');
   });
   it('without a salary: no balance, no salary line', () => {
     const { lines } = passbook(cards, 0, 1, REF);

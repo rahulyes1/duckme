@@ -7,7 +7,7 @@ import type { Card } from '../../lib/types';
 import { EXPENSE_CATEGORIES, isActive } from '../../lib/types';
 import { addMonths, daysBetween, fromISO, toISO } from '../../lib/format';
 import { isMonthly } from './money-util';
-import { isInvestLog, isSpend } from '../../lib/logic';
+import { isCardPayment, isInvestLog, isSpend } from '../../lib/logic';
 
 /* ---------- salary cycle ---------- */
 
@@ -53,10 +53,15 @@ export interface CashFlow {
   billsTotal: number;
   sips: CycleItem[];
   sipsTotal: number;
+  /** Real spends this cycle paid from your account (UPI, cash, net banking…). Card spends are in `onCard`. */
   spent: number;
+  /** Spends made on a credit card this cycle. They reach your cash through the card bill, so `left` doesn't take them off. */
+  onCard: number;
+  /** Credit-card bills already paid this cycle (transfers to the card, not spends). Cash has left. */
+  cardPaid: number;
   /** Money put into investments this cycle (logged SIP / MF / FD lines). Not a spend, but it has left your account. */
   invested: number;
-  /** salary − bills − instalments − spent − invested. Negative when you are over. */
+  /** salary − bills − instalments − spent − invested − card bills paid. Negative when you are over. */
   left: number;
   /** left ÷ days until salary, never negative. */
   safeToday: number;
@@ -94,14 +99,16 @@ export function coveredInstalments(cards: Card[], start: string, end: string): S
  * Salary cash flow for the cycle that contains `ref`:
  * - bills: live bills due before the next salary (overdue ones included, they still need paying)
  * - sips: live SIP/RD instalments whose next date falls before the next salary
- * - spent: real spends dated inside the cycle (paid bills become expenses, so nothing counts twice)
+ * - spent: real spends dated inside the cycle, not on a card (paid bills become expenses, so nothing counts twice)
+ * - onCard: spends on a credit card — shown, but cash only drops when the card bill is due / paid
+ * - cardPaid: card bill payments this cycle (transfers, never spends)
  * - invested: investment lines dated inside the cycle; a SIP they already cover is not counted again
  */
 export function cashFlow(cards: Card[], salary: number, salaryDay: number, ref: Date): CashFlow {
   const cycle = salaryCycle(salaryDay, ref);
   const bills: CycleItem[] = [];
   const sips: CycleItem[] = [];
-  let spent = 0, invested = 0;
+  let spent = 0, onCard = 0, cardPaid = 0, invested = 0;
   const covered = coveredInstalments(cards, cycle.start, cycle.end);
   for (const c of cards) {
     if (c.type === 'bill' && isActive(c) && c.due && c.due < cycle.end) {
@@ -109,22 +116,45 @@ export function cashFlow(cards: Card[], salary: number, salaryDay: number, ref: 
     } else if (c.type === 'invest' && isActive(c) && isMonthly(c.invest?.kind) && c.invest?.next && c.invest.next < cycle.end) {
       if (!covered.has(c.id)) sips.push({ card: c, amount: c.amount ?? 0, date: c.invest.next });
     } else if (c.type === 'expense' && c.date && c.date >= cycle.start && c.date < cycle.end) {
-      if (isSpend(c)) spent += c.amount ?? 0;
+      if (isSpend(c)) { if (c.mode === 'Card') onCard += c.amount ?? 0; else spent += c.amount ?? 0; }
+      else if (isCardPayment(c)) cardPaid += c.amount ?? 0;
       else if (isInvestLog(c)) invested += c.amount ?? 0;
     }
   }
   bills.sort(byDate); sips.sort(byDate);
   const billsTotal = bills.reduce((s, b) => s + b.amount, 0);
   const sipsTotal = sips.reduce((s, b) => s + b.amount, 0);
-  const left = salary - billsTotal - sipsTotal - spent - invested;
+  const left = salary - billsTotal - sipsTotal - spent - invested - cardPaid;
   const safe = safeToSpend(left, cycle.daysLeft);
-  return { cycle, salary, bills, billsTotal, sips, sipsTotal, spent, invested, left, safeToday: safe.perDay, overBy: safe.overBy };
+  return { cycle, salary, bills, billsTotal, sips, sipsTotal, spent, onCard, cardPaid, invested, left, safeToday: safe.perDay, overBy: safe.overBy };
 }
 
 /** Per-day amount you can spend until salary. Never negative; `overBy` says how far over you are. */
 export function safeToSpend(left: number, daysLeft: number): { perDay: number; overBy: number } {
   if (left <= 0) return { perDay: 0, overBy: left < 0 ? -left : 0 };
   return { perDay: Math.floor(left / Math.max(1, daysLeft)), overBy: 0 };
+}
+
+/* ---------- paid this cycle ---------- */
+
+export interface PaidBill { bill: Card; expense: Card | null; paidOn: string; amount: number }
+
+/**
+ * Bills marked paid inside the salary cycle that contains `ref`, newest first, each with the expense
+ * that paying it created (linked bill → expense) and its amount. Pure.
+ */
+export function paidThisCycle(cards: Card[], salaryDay: number, ref: Date): PaidBill[] {
+  const cyc = salaryCycle(salaryDay, ref);
+  const byId = new Map(cards.map(c => [c.id, c]));
+  const out: PaidBill[] = [];
+  for (const b of cards) {
+    if (b.type !== 'bill' || b.status !== 'done' || !b.doneAt) continue;
+    const paidOn = toISO(new Date(b.doneAt));
+    if (paidOn < cyc.start || paidOn >= cyc.end) continue;
+    const expense = b.links.map(id => byId.get(id)).find(x => !!x && x.type === 'expense' && x.status !== 'trashed' && x.status !== 'killed' && x.links.includes(b.id)) ?? null;
+    out.push({ bill: b, expense, paidOn: expense?.date ?? paidOn, amount: expense?.amount ?? b.amount ?? 0 });
+  }
+  return out.sort((a, b) => (b.bill.doneAt ?? 0) - (a.bill.doneAt ?? 0));
 }
 
 /* ---------- budgets ---------- */

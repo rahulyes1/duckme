@@ -8,7 +8,9 @@ import { ArrowRight, Check, Target } from 'lucide-react';
 import type { Card } from '../../lib/types';
 import { KIND_LABEL } from '../../lib/types';
 import { useApp } from '../../app-context';
-import { markDone } from '../../lib/actions';
+import { markDone, payBill } from '../../lib/actions';
+import { isCardBill } from '../../lib/logic';
+import { askCardPayment } from '../money/CardPaySheet';
 import { buzz, inr } from '../../lib/format';
 import { DuePill, TYPE_ICON } from '../../ui/CardTile';
 import { whenLabel } from '../../ui/WhenPicker';
@@ -27,11 +29,20 @@ function Row({ card: c }: { card: Card }) {
   const done = async (el: HTMLElement) => {
     // Check pop + strike-through first, then slide away.
     const rect = el.getBoundingClientRect();
+    // Card bill: ask how much was paid (prefilled, one tap Confirm). Cancel leaves it as it was.
+    const opts = isCardBill(c) ? await askCardPayment(c) : undefined;
+    if (opts === null) return;
     setPhase('ticked');
     buzz([8, 40, 14]);
     await new Promise(r => setTimeout(r, reduce ? 0 : 420));
     setPhase('leaving');
     try {
+      if (opts) {
+        const r = await payBill(c.id, opts);
+        app.burst(rect);
+        app.toast(`Card bill paid ${inr(r.expense.amount)}. Not a new spend.`, r.undo);
+        return;
+      }
       const undo = await markDone(c.id);
       if (c.type === 'bill') {
         app.burst(rect);

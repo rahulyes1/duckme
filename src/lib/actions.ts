@@ -3,7 +3,7 @@ import { db, getSettings } from './db';
 import type { Card, CardType, InvestKind, Version } from './types';
 import { DEFAULT_COLOR, isActive } from './types';
 import { addDaysISO, addMonthsISO, todayISO, uid } from './format';
-import { nextDueDate, rankForNewCard } from './logic';
+import { isCardBill, nextDueDate, rankForNewCard } from './logic';
 import { investKindFromText } from './capture';
 
 export type Undo = () => Promise<void>;
@@ -93,20 +93,40 @@ const nextDue = nextDueDate;
  * the bill repeats a NEW bill card is created for the next due date, keeping the same rank so your
  * order doesn't change. Chain: bill → expense, bill → next bill.
  */
-export async function payBill(id: string): Promise<{ undo: Undo; expense: Card; nextDue: string | null; nextBill: Card | null }> {
+export interface PayOpts {
+  /** What you actually paid, when it differs from the bill (a card bill paid in part, say). */
+  amount?: number;
+  /** Day you paid (YYYY-MM-DD). Defaults to today. */
+  date?: string;
+}
+
+/**
+ * The expense line paying a bill creates (pure, unit tested). A bill that is really an investment
+ * (SIP, PPF, NPS…) is logged as one; a credit-card bill is a transfer: `cardPayment`, by net banking.
+ */
+export function billPaymentExpense(bill: Card, opts: PayOpts, today: string): Partial<Card> & { type: 'expense' } {
+  const card = isCardBill(bill);
+  const amount = opts.amount !== undefined && Number.isFinite(opts.amount) && opts.amount >= 0 ? opts.amount : bill.amount ?? 0;
+  return {
+    type: 'expense', title: `${bill.title} paid`, amount, date: opts.date || today,
+    category: investKindFromText(bill.title) ? 'Investment' : bill.category ?? (bill.autorenew ? 'Entertainment' : 'Bills'),
+    mode: card ? 'Net banking' : 'UPI', links: [bill.id],
+    ...(card ? { cardPayment: true } : {}),
+  };
+}
+
+/**
+ * A credit-card bill is paid as a transfer: the expense is marked `cardPayment` (never a spend — the
+ * card spends already counted) and paid by net banking.
+ */
+export async function payBill(id: string, opts: PayOpts = {}): Promise<{ undo: Undo; expense: Card; nextDue: string | null; nextBill: Card | null }> {
   let expense!: Card;
   let nd: string | null = null;
   let nextBill: Card | null = null;
   const undo = await withUndo(async () => {
     const bill = await db.cards.get(id);
     if (!bill) return;
-    expense = newCard({
-      type: 'expense', title: `${bill.title} paid`, amount: bill.amount ?? 0, date: todayISO(),
-      // A bill that is really an investment (SIP, PPF, NPS…) is logged as one, never as a spend.
-      category: investKindFromText(bill.title) ? 'Investment' : bill.category ?? (bill.autorenew ? 'Entertainment' : 'Bills'),
-      mode: 'UPI', links: [bill.id],
-      rank: await nextRank(),
-    });
+    expense = newCard({ ...billPaymentExpense(bill, opts, todayISO()), rank: await nextRank() });
     await db.cards.add(expense);
     nd = bill.due ? nextDue(bill.due, bill.repeat) : null;
     const links = [...bill.links, expense.id];
